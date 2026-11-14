@@ -720,6 +720,8 @@ def stair_ends(data, world, problems):
     at the head's height with room for a body over it, at its foot the same. A flight that climbs on into
     the dark on purpose (a stairwell closed off by a gate) says so ("closed": the head is not checked)."""
     for r in data["ramps"]:
+        if r.get("terrain"):
+            continue  # (a slab of open ground under a hummock: its neighbours are its ends)
         (ax, az), (bx, bz) = r["a"], r["b"]
         run = math.dist((ax, az), (bx, bz))
         if run < 1e-6:

@@ -19,8 +19,6 @@ export type Costume = {
 	skin: { [string]: Color3 }?,
 	-- for a dressed player: which of their own accessory slots to empty first
 	clear: { string }?,
-	-- a face drawn for the costume (an image id), put on the head in place of the avatar's
-	face: string?,
 }
 
 local PURPLE = Color3.fromRGB(104, 84, 128)
@@ -28,11 +26,13 @@ local PALE = Color3.fromRGB(234, 206, 182)
 local TAN = Color3.fromRGB(204, 160, 128)
 
 Cast.COSTUMES = {
-	-- requiem's killer: Giorno Giovanna in his pink suit, the Requiem hair
+	-- requiem's killer: Giorno Giovanna in his pink suit, the Requiem hair, and his face (a marketplace face
+	-- accessory; 2026-11-14, the user: "add an actual face to giorno ... use the marketplace for a head accessory",
+	-- not a face drawn here)
 	giorno = {
 		shirt = 7837252937,
 		pants = 7836972770,
-		accessories = { HairAccessory = { 107142249545136 } },
+		accessories = { HairAccessory = { 107142249545136 }, FaceAccessory = { 108476297699904 } },
 		skin = { head = PALE, torso = PALE, arms = PALE, legs = PALE },
 	},
 	-- Let's dance!'s killer: Raiden, cyborg armour, the white hair and visor
@@ -42,14 +42,14 @@ Cast.COSTUMES = {
 		accessories = { HairAccessory = { 132697257855291 } },
 		skin = { head = PALE, torso = PALE, arms = PALE, legs = PALE },
 	},
-	-- the patriot's saluter: Snake's fatigues, the long-tailed bandana, his weathered skin and his face (drawn:
-	-- art/scripts/ui/snake_face.py; 2026-11-12, the user: "snake doesnt have a face")
+	-- the patriot's saluter: Snake's fatigues, the long-tailed bandana, his weathered skin, and his face from the
+	-- marketplace (2026-11-14, the user: the drawn one "isnt accurate and sucks ... use the marketplace for a head
+	-- accessory"): the classic Snake face with its beard, and the eyepatch on its strap over it
 	snake = {
-		face = "rbxassetid://101416068910426",
 		skin = { head = TAN, torso = TAN, arms = TAN, legs = TAN },
 		shirt = 12463194829,
 		pants = 12463202877,
-		accessories = { HatAccessory = { 137173363080914 } },
+		accessories = { HatAccessory = { 137173363080914 }, FaceAccessory = { 111744462200963, 74484209898344 } },
 		clear = {
 			"HatAccessory",
 			"FaceAccessory",
@@ -157,25 +157,6 @@ local function describe(spec: Costume, base: HumanoidDescription?): HumanoidDesc
 	return d
 end
 
--- The costume's own face on the model's head (an R6 head shows its face as a decal).
-local function wearFace(model: Model, spec: Costume)
-	if not spec.face then
-		return
-	end
-	local head = model:FindFirstChild("Head")
-	if not head then
-		return
-	end
-	local face = head:FindFirstChild("face")
-	if not (face and face:IsA("Decal")) then
-		face = Instance.new("Decal")
-		face.Name = "face"
-		face.Face = Enum.NormalId.Front
-		face.Parent = head
-	end
-	(face :: Decal).Texture = spec.face
-end
-
 local function make(description: HumanoidDescription): Model?
 	local ok, model = pcall(function()
 		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R6)
@@ -206,9 +187,6 @@ local function load(key: string)
 	end
 	loading[key] = true
 	local model = make(describe(spec))
-	if model then
-		wearFace(model, spec)
-	end
 	if model then
 		model.Name = "Cast_" .. key
 	end
@@ -244,7 +222,6 @@ function Cast.dressed(userId: number, key: string): Model?
 	end)
 	local model = make(describe(spec, if ok then base else nil))
 	if model then
-		wearFace(model, spec)
 		model.Name = "Cast_" .. key .. "_" .. tostring(userId)
 	end
 	return model

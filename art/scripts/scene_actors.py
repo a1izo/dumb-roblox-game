@@ -59,11 +59,18 @@ def look_back_turn(m, t0, turn, t1, seed=0):
     v = (seed % 3) - 1
     body_key(m, t0, "smooth", -14, 10, 0, hips=(0, -0.5), drop=0.2, neck=(-2, -6, 0), rShoulder=BLOW["rShoulder"],
              lShoulder=BLOW["lShoulder"])
-    body_key(m, turn - 0.14, "smooth", -13, 9, 0, hips=(0, -0.48), drop=0.2, neck=(-6, -10, 0),
-             rShoulder=BLOW["rShoulder"], lShoulder=BLOW["lShoulder"])  # the dip before the turn
-    body_key(m, turn + 0.22, "out", 5, -20, -3, hips=(0, 0.05), drop=0.04, neck=(12 + 2 * v, 70 + 3 * v, 5),
-             rShoulder=LOOK_BACK["rShoulder"], lShoulder=LOOK_BACK["lShoulder"])  # round, a little past
-    look_back_hold(m, turn + 0.5, t1, seed)
+    # (2026-11-14, the user: "dont make the characters turn that fast ... more accurately to the anime": there the
+    # head comes round slowly, in dread, over more than a second: the eyes first, the chin following, the shoulders
+    # last. It was a 0.36 s whip.)
+    body_key(m, turn - 0.3, "smooth", -13, 9, 0, hips=(0, -0.48), drop=0.2, neck=(-5, -8, 0),
+             rShoulder=BLOW["rShoulder"], lShoulder=BLOW["lShoulder"])  # the breath held before the turn
+    body_key(m, turn + 0.3, "smooth", -9, 3, -1, hips=(0, -0.34), drop=0.15, neck=(1, 22 + 2 * v, 2),
+             rShoulder=BLOW["rShoulder"], lShoulder=BLOW["lShoulder"])  # the head leads; the body has not moved yet
+    body_key(m, turn + 0.85, "smooth", -1, -11, -2, hips=(0, -0.1), drop=0.08, neck=(8 + 2 * v, 50 + 3 * v, 4),
+             rShoulder=J((90, 0, -13), (0, 0.1, -0.22)), lShoulder=J((-4, 0, -26)))  # the shoulders follow
+    body_key(m, turn + 1.35, "smooth", 4, -18, -3, hips=(0, 0.05), drop=0.04, neck=(10 + 2 * v, 62 + 3 * v, 4),
+             rShoulder=LOOK_BACK["rShoulder"], lShoulder=LOOK_BACK["lShoulder"])  # round: it sees
+    look_back_hold(m, turn + 1.6, t1, seed)
 
 
 def look_back_hold(m, t0, t1, seed=0):
@@ -223,11 +230,23 @@ GUARD_L = reach(-1, (-0.2, -0.1, -0.85), direction=(0.5, 0.1, -0.85))
 sv = Motion("sceneSamVictim", 14.0, note="In guard, cut by the combo; blade mode freezes him; cut, staggering, "
             "grabbed, run through, reeling, the blade out, staggering away, standing half turned.", floor=True)
 sv.key(0.0, **REST)
-body_key(sv, 0.0, "smooth", -10, 0, 0, hips=(0, 0.1), drop=0.32, neck=(4, 0, 0), rShoulder=GUARD_R, lShoulder=GUARD_L)
-for t, s in ((0.45, 1), (0.8, -1), (1.1, 1)):
-    strike(sv, t, body(-10, 0, 0, hips=(0, 0.1), drop=0.32, rShoulder=GUARD_R, lShoulder=GUARD_L),
-           body(-4, 10 * s, 6 * s, hips=(0, 0.25), drop=0.3, neck=J((10, -8 * s, 0)), rShoulder=GUARD_R,
-                lShoulder=GUARD_L), antic=0.02, travel=0.03, over=0.3, settle=0.12)
+# (2026-11-14, the user: "at the start they shouldnt be trading blows but instead clashing swords in a close up shot":
+# the two blades locked between them, each leaning his weight in; he is the one being driven back, a hand's width
+# at a time; at 0.95 the lock is thrown open and two cuts land (1.08, 1.32) before the kanji.)
+LOCK_V = dict(rShoulder=J((50, 0, -22)), lShoulder=J((56, 0, 20)))
+body_key(sv, 0.0, "smooth", -14, 0, 0, hips=(0, -0.1), drop=0.34, neck=(8, 0, 0), **LOCK_V)
+body_key(sv, 0.5, "smooth", -11, 2, 1, hips=(0, 0.04), drop=0.37, neck=(10, -2, 0), **LOCK_V)
+body_key(sv, 0.9, "smooth", -8, 3, 1, hips=(0, 0.14), drop=0.4, neck=(12, -3, 0), **LOCK_V)
+shiver(sv, 0.0, 0.92, {"rShoulder": (0.9, 0.4, 0.9), "lShoulder": (0.7, 0.3, 0.7), "root": (0.3, 0.2, 0.3)},
+       amount=1.0, hz=7.5, seed=3)
+body_key(sv, 1.0, "out", 9, 12, 5, hips=(0, 0.42), drop=0.28, neck=(-12, -6, 0), rShoulder=J((62, 0, 70)),
+         lShoulder=J((30, 0, -50)))  # the lock thrown open: his guard flung wide, a half step back
+strike(sv, 1.1, body(9, 12, 5, hips=(0, 0.42), drop=0.28, rShoulder=J((62, 0, 70)), lShoulder=J((30, 0, -50))),
+       body(-2, -12, -6, hips=(0, 0.36), drop=0.3, neck=J((10, 8, 0)), rShoulder=GUARD_R, lShoulder=GUARD_L),
+       antic=0.02, travel=0.03, over=0.3, settle=0.1)
+strike(sv, 1.33, body(-2, -12, -6, hips=(0, 0.36), drop=0.3, rShoulder=GUARD_R, lShoulder=GUARD_L),
+       body(-6, 6, 4, hips=(0, 0.32), drop=0.34, neck=J((-8, -4, 0)), rShoulder=GUARD_R, lShoulder=GUARD_L),
+       antic=0.02, travel=0.03, over=0.3, settle=0.1)
 body_key(sv, 1.5, "out", -8, -6, 0, hips=(0, 0.3), drop=0.3, neck=(8, 0, 0), rShoulder=GUARD_R, lShoulder=GUARD_L)
 body_key(sv, 3.15, "linear", -8.5, -6, 0, hips=(0, 0.3), drop=0.3, neck=(8, 0, 0), rShoulder=GUARD_R,
          lShoulder=GUARD_L)  # blade mode: all but frozen
@@ -277,13 +296,20 @@ sk = Motion("sceneSamKiller", 14.0, note="The blade: a combo of cuts, the vertic
             floor=True)
 sk.key(0.0, **REST)
 READY = dict(neck=(0, 0, 0), rShoulder=J((60, 0, 40)), lShoulder=J((40, 0, -20)))
-body_key(sk, 0.0, "smooth", -8, -10, 0, drop=0.2, **READY)
-for t, a in ((0.4, -1), (0.75, 1), (1.05, -1)):
-    strike(sk, t, body(-8, -10 * a, 0, drop=0.2, rShoulder=J((110, 0, 70 * a)), lShoulder=J((40, 0, -20))),
-           body(-14, 14 * a, 0, drop=0.24, rShoulder=J((70, 0, -60 * a)), lShoulder=J((40, 0, -20))), antic=0.04,
-           travel=0.04, over=0.2, settle=0.08)
-strike(sk, 1.3, body(-6, drop=0.2, rShoulder=SWORD_UP, lShoulder=J((60, 0, -10))),
-       body(-20, drop=0.3, rShoulder=J((30, 0, 0)), lShoulder=J((40, 0, -20))), antic=0.08, travel=0.05, over=0.2,
+# (2026-11-14: the blade lock: he bears down on it, closer by the moment, gathers and throws it open, then one cut
+# across before the vertical one)
+LOCK_K = dict(rShoulder=J((50, 0, -22)), lShoulder=J((54, 0, 20)))
+body_key(sk, 0.0, "smooth", -14, 0, 0, hips=(0, -0.5), drop=0.3, neck=(6, 0, 0), **LOCK_K)
+body_key(sk, 0.5, "smooth", -17, -2, 0, hips=(0, -0.62), drop=0.34, neck=(8, 2, 0), **LOCK_K)
+body_key(sk, 0.86, "in", -12, -5, 0, hips=(0, -0.56), drop=0.38, neck=(6, 2, 0), **LOCK_K)
+shiver(sk, 0.0, 0.88, {"rShoulder": (0.7, 0.3, 0.7), "lShoulder": (0.5, 0.3, 0.5)}, amount=1.0, hz=8.5, seed=9)
+body_key(sk, 0.96, "out", -22, 8, 0, hips=(0, -0.7), drop=0.3, neck=(2, -4, 0), rShoulder=J((98, 0, -42)),
+         lShoulder=J((72, 0, 10)))  # the shove: both arms through it
+strike(sk, 1.08, body(-8, 12, 0, hips=(0, -0.3), drop=0.2, rShoulder=J((112, 0, 70)), lShoulder=J((40, 0, -20))),
+       body(-14, -14, 0, hips=(0, -0.2), drop=0.24, rShoulder=J((70, 0, -60)), lShoulder=J((40, 0, -20))),
+       antic=0.03, travel=0.04, over=0.2, settle=0.06)
+strike(sk, 1.32, body(-6, drop=0.2, rShoulder=SWORD_UP, lShoulder=J((60, 0, -10))),
+       body(-20, drop=0.3, rShoulder=J((30, 0, 0)), lShoulder=J((40, 0, -20))), antic=0.06, travel=0.05, over=0.2,
        settle=0.1)
 body_key(sk, 2.4, "out", 2, -20, 0, drop=0.12, neck=(6, 0, 0), rShoulder=SWORD_UP, lShoulder=J((90, 0, -30)))
 body_key(sk, 3.15, "linear", 3, -20, 0, drop=0.12, neck=(6, 0, 0), rShoulder=SWORD_UP, lShoulder=J((90, 0, -30)))
@@ -489,27 +515,36 @@ floor_key(iv, 12.9, "linear", -4, 0, 0, IV_HIPS, ONE_KNEE, dict(neck=(-4, 0, 0),
                                                                 lShoulder=J((20, 0, -20))))
 IV_SIT = (0.0, 1.4)
 ARM_HELD = J((62, 0, 26), (0, 0.06, -0.1))  # (the left hand across to the burnt arm)
-# (2026-11-12, the user: the falls were "extremely stiff": weight first, then the body follows, then it settles)
-floor_key(iv, 13.4, "smooth", 18, 4, 2, (0.0, 0.25), crouch_legs(62, 0.35),
-          dict(neck=(-20, 0, 4), rShoulder=BURNT, lShoulder=ARM_HELD))
-floor_key(iv, 13.7, "smooth", 6, 8, 6, (0.0, 0.55), crouch_legs(70, 0.42),
-          dict(neck=(-8, 10, 6), rShoulder=BURNT, lShoulder=ARM_HELD))
-floor_key(iv, 13.92, "in", -8, 6, 4, (0.0, 0.85), crouch_legs(58, 0.48),
-          dict(neck=(6, 4, 2), rShoulder=BURNT, lShoulder=J((-10, 0, -40))))
-sit_key(iv, 14.25, "in", lean=12, turn=6, roll=6, neck=(4, 0, 6), hips=IV_SIT, rShoulder=BURNT,
-        lShoulder=J((-24, 0, -34), (0, 0.06, 0)))
-sit_key(iv, 14.7, "out", lean=30, turn=6, roll=4, neck=(-22, 0, 8), hips=IV_SIT, rShoulder=BURNT,
-        lShoulder=J((-20, 0, -30), (0, 0.06, 0)))
-sit_key(iv, 15.6, "sine", lean=26, turn=6, roll=6, neck=(-24, 0, 10), hips=IV_SIT, rShoulder=BURNT,
-        lShoulder=J((-16, 0, -28), (0, 0.06, 0)))
-sit_key(iv, 18.0, "sine", lean=28, turn=6, roll=8, neck=(-34, 10, 16), hips=IV_SIT, rShoulder=BURNT,
-        lShoulder=J((-14, 0, -26), (0, 0.06, 0)))
+# (2026-11-12, the user: the falls were "extremely stiff"; 2026-11-14: "the falling animations better still". He does
+# not sit down: he tries to stand, cannot, and is put down by his own weight. Up off the knee; a step back that does
+# not hold; he catches himself the other way; the legs go; down hard, a hand out to the floor; the back meets the wall
+# and throws the head forward; he rocks off it and settles; the hand slides off the burnt arm; the head goes last.)
+floor_key(iv, 13.25, "smooth", 10, 2, -3, (0.0, 0.12), crouch_legs(70, 0.4),
+          dict(neck=(-16, 0, 4), rShoulder=BURNT, lShoulder=ARM_HELD))
+floor_key(iv, 13.6, "out", 20, 6, 5, (0.05, 0.45), crouch_legs(58, 0.3),
+          dict(neck=(-24, -6, 6), rShoulder=J((14, 0, 30), (0, 0.04, 0)), lShoulder=ARM_HELD))
+floor_key(iv, 13.85, "smooth", 8, 9, -4, (-0.04, 0.75), crouch_legs(74, 0.44),
+          dict(neck=(-6, 12, -4), rShoulder=BURNT, lShoulder=J((30, 0, -34))))
+floor_key(iv, 14.1, "in", 2, 7, 3, (0.0, 1.05), crouch_legs(84, 0.5),
+          dict(neck=(8, 4, 2), rShoulder=BURNT, lShoulder=J((-10, 0, -40))))
+sit_key(iv, 14.3, "in", lean=6, turn=6, roll=5, neck=(10, 0, 4), hips=IV_SIT, rShoulder=BURNT,
+        lShoulder=J((-30, 0, -36), (0, 0.06, 0)))
+sit_key(iv, 14.52, "out", lean=34, turn=6, roll=3, neck=(-30, 0, 6), hips=IV_SIT, rShoulder=BURNT,
+        lShoulder=J((-22, 0, -32), (0, 0.06, 0)))
+sit_key(iv, 14.82, "smooth", lean=25, turn=6, roll=6, neck=(-10, 4, 10), hips=IV_SIT, rShoulder=BURNT,
+        lShoulder=J((10, 0, -30), (0, 0.04, 0)))
+sit_key(iv, 15.3, "smooth", lean=29, turn=6, roll=5, neck=(-20, 6, 12), hips=IV_SIT, rShoulder=BURNT,
+        lShoulder=ARM_HELD)
+sit_key(iv, 16.4, "sine", lean=28, turn=6, roll=7, neck=(-26, 8, 14), hips=IV_SIT, rShoulder=BURNT,
+        lShoulder=J((-8, 0, -22), (0, 0.04, 0)))
+sit_key(iv, 18.0, "sine", lean=30, turn=6, roll=9, neck=(-36, 12, 18), hips=IV_SIT, rShoulder=BURNT,
+        lShoulder=J((-4, 0, -18), (0, 0.02, 0)))
 alive(iv, amount=0.35, seed=12)
 soft(iv, head=2.4, arms=2.0)
 iv.build()
 
-ik = Motion("sceneIronKiller", 18.0, note="The warlord: towering, the empty fist clenched, the turn, sitting down slow "
-            "as he goes to ash.", floor=True)
+ik = Motion("sceneIronKiller", 18.0, note="The warlord: towering, the empty fist clenched, the turn, down onto one "
+            "knee as he goes to ash.", floor=True)
 ik.key(0.0, **REST)
 body_key(ik, 0.0, "smooth", -4, neck=(-10, 0, 0), rShoulder=J((50, 0, 10)), lShoulder=J((6, 0, -12)))
 body_key(ik, 1.8, "out", -4, neck=(-12, 0, 0), rShoulder=J((70, 0, -6)), lShoulder=J((6, 0, -12)))
@@ -528,15 +563,18 @@ body_key(ik, 10.3, "smooth", 2, 8, 2, drop=0.06, neck=(-12, 26, 0), rShoulder=J(
 body_key(ik, 11.0, "sine", 9, 0, 0, drop=0.08, neck=(-30, 0, 0), rShoulder=J((40, 0, 10)),
          lShoulder=J((40, 0, -10)))
 stand(ik, 0.0, 11.0, Feet(stance=0.25))
-IK_HIPS = (0.0, 1.0)
-floor_key(ik, 11.55, "in", 16, 0, 0, (0.0, 0.45), crouch_legs(40, 0.35),
-          dict(neck=(-26, 0, 0), rShoulder=J((24, 0, 24)), lShoulder=J((24, 0, -24))))
-floor_key(ik, 11.95, "smooth", 20, 0, 0, (0.0, 0.8), crouch_legs(62, 0.5),
-          dict(neck=(-22, 0, 0), rShoulder=J((10, 0, 26)), lShoulder=J((10, 0, -26))))
-sit_key(ik, 12.35, "in", lean=24, head=-24, hips=IK_HIPS, rShoulder=J((16, 0, 18)), lShoulder=J((16, 0, -18)))
-sit_key(ik, 12.8, "out", lean=8, head=-18, hips=IK_HIPS, rShoulder=J((12, 0, 18)), lShoulder=J((12, 0, -18)))
-sit_key(ik, 14.0, "sine", lean=12, head=-26, hips=IK_HIPS, rShoulder=J((10, 0, 18)), lShoulder=J((10, 0, -18)))
-sit_key(ik, 18.0, "linear", lean=16, head=-34, hips=IK_HIPS, rShoulder=J((8, 0, 16)), lShoulder=J((8, 0, -16)))
+# (2026-11-14, the user: "thanos should kneel not fall over": he sat down and leant back, which read as falling. He
+# goes down onto one knee, slowly, a hand on the raised knee, the head bowing as the ash takes him.)
+floor_key(ik, 11.6, "smooth", 6, 0, 0, (0.0, 0.1), crouch_legs(36, 0.28),
+          dict(neck=(-26, 0, 0), rShoulder=J((30, 0, 16)), lShoulder=J((30, 0, -14))))
+floor_key(ik, 12.3, "in", -6, 0, 0, (0.0, 0.0), ONE_KNEE,
+          dict(neck=(-22, 0, 0), rShoulder=J((62, 0, -8)), lShoulder=J((24, 0, -16))))
+floor_key(ik, 12.65, "out", -12, 0, 0, (0.0, 0.0), ONE_KNEE,
+          dict(neck=(-34, 0, 0), rShoulder=J((58, 0, -8)), lShoulder=J((16, 0, -12))))
+floor_key(ik, 14.0, "sine", -9, -3, 0, (0.0, 0.0), ONE_KNEE,
+          dict(neck=(-30, -8, 0), rShoulder=J((56, 0, -7)), lShoulder=J((14, 0, -11))))
+floor_key(ik, 18.0, "linear", -14, 0, 0, (0.0, 0.0), ONE_KNEE,
+          dict(neck=(-40, 0, 0), rShoulder=J((54, 0, -6)), lShoulder=J((12, 0, -10))))
 alive(ik, amount=0.5, seed=21)
 soft(ik, head=2.6, arms=2.2)
 ik.build()

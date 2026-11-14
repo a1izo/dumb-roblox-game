@@ -28,7 +28,8 @@ local function copyAt(k: number): Vector3
 	return Vector3.new(0.85 * k, 0, 1.25 * k)
 end
 local TURN_FIRST = 3.75 -- the victim looks back first (sceneRequiemVictim), then each copy, this far apart
-local TURN_EVERY = 0.34
+-- (2026-11-14: the turn itself is slow now, 1.35 s as in the anime, so the wave runs a little wider apart)
+local TURN_EVERY = 0.4
 
 -- A burst of white speed lines on blue, drawn on a plane standing behind the subject and facing the lens (crisp lines
 -- at any distance, behind the body, never over it). Returns the plane and its lines.
@@ -55,14 +56,65 @@ local function speedBurst(ctx, centre: Vector3, eye: Vector3)
 	local glow = Instance.new("UIGradient")
 	glow.Color = ColorSequence.new(Color3.fromRGB(150, 180, 255), BLUE)
 	glow.Parent = back
+	-- (2026-11-14, the user: "make those straight lines better": they were 90 plain bars of one thickness. Now each is a
+	-- drawn wedge: wide at the rim of the frame, tapering to a point toward the middle, in three weights (hairs, strokes,
+	-- a few heavy blades), some in ink over the white, bunched unevenly round the circle as a hand draws them, and a
+	-- white core glowing behind the fist.)
+	local core = Instance.new("Frame")
+	core.AnchorPoint = Vector2.new(0.5, 0.5)
+	core.Position = UDim2.fromScale(0.5, 0.5)
+	core.Size = UDim2.fromOffset(520, 520)
+	core.BorderSizePixel = 0
+	core.BackgroundColor3 = Color3.fromRGB(226, 236, 255)
+	core.Parent = gui
+	local round = Instance.new("UICorner")
+	round.CornerRadius = UDim.new(0.5, 0)
+	round.Parent = core
+	local fade = Instance.new("UIGradient")
+	fade.Rotation = 90
+	fade.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.5, 0.35),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	fade.Parent = core
 	local lines = {}
-	for k = 1, 90 do
-		local f = Instance.new("Frame")
-		f.BorderSizePixel = 0
-		f.BackgroundColor3 = Color3.new(1, 1, 1)
-		f.AnchorPoint = Vector2.new(0.5, 0.5)
-		f.Parent = gui
-		table.insert(lines, { frame = f, angle = (k + math.random() * 0.6) / 90 * math.pi * 2, seed = math.random() })
+	local rng = Random.new(41)
+	local angle = 0
+	local count = 0
+	while angle < math.pi * 2 and count < 150 do
+		count += 1
+		-- bunched: mostly small steps, now and then a gap
+		angle += if rng:NextNumber() < 0.16 then rng:NextNumber(0.09, 0.16) else rng:NextNumber(0.018, 0.06)
+		local roll = rng:NextNumber()
+		local weight = if roll < 0.08 then 3 elseif roll < 0.4 then 2 else 1
+		local ink = weight < 3 and rng:NextNumber() < 0.22
+		-- a wedge of three stacked bars: the full length thin, two shorter and wider toward the rim
+		local pieces = {}
+		for layer = 1, 3 do
+			local f = Instance.new("Frame")
+			f.BorderSizePixel = 0
+			f.BackgroundColor3 = if ink then Color3.fromRGB(10, 14, 44) else Color3.new(1, 1, 1)
+			f.AnchorPoint = Vector2.new(0, 0.5)
+			f.Rotation = math.deg(angle)
+			f.ZIndex = if ink then 3 else 2
+			f.Parent = gui
+			local tip = Instance.new("UIGradient")
+			tip.Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 1),
+				NumberSequenceKeypoint.new(0.22, if ink then 0.25 else 0.1),
+				NumberSequenceKeypoint.new(1, 0),
+			})
+			tip.Parent = f
+			pieces[layer] = f
+		end
+		table.insert(lines, {
+			pieces = pieces,
+			angle = angle,
+			seed = rng:NextNumber(),
+			weight = weight,
+			inner = 150 + rng:NextNumber() * 150,
+		})
 	end
 	return plane, lines
 end
@@ -199,15 +251,28 @@ local function build(ctx)
 			return
 		end
 		-- (the lines flicker in length on every other frame, as hand-drawn speed lines are redrawn)
-		local beat = math.floor(t * 24)
-		for i, l in ipairs(lines) do
-			local r = math.random(1000) / 1000
-			local len = if (beat + i) % 2 == 0 then 120 + 260 * ((l.seed + r * 0.4) % 1) else 90 + 220 * l.seed
-			local inner = 130 + 60 * ((i * 7) % 5) / 5
-			local mid = inner + len / 2
-			l.frame.Size = UDim2.fromOffset(len, 2 + (i % 3) * 2)
-			l.frame.Position = UDim2.fromOffset(400 + math.cos(l.angle) * mid, 400 + math.sin(l.angle) * mid)
-			l.frame.Rotation = math.deg(l.angle)
+		-- redrawn on twos (12 a second), as hand-drawn speed lines are: each redraw the tips jump in and out and the whole
+		-- burst closes in on the fist as the punch comes
+		local beat = math.floor(t * 12)
+		if beat == (ctx :: any).requiemLines then
+			return
+		end
+		(ctx :: any).requiemLines = beat
+		local close = math.clamp((t - 0.25) / 0.95, 0, 1)
+		local rng = Random.new(beat * 977 + 3)
+		for _, l in ipairs(lines) do
+			local jitter = rng:NextNumber()
+			local inner = l.inner * (1 - 0.38 * close) + (jitter - 0.5) * 90
+			local thick = if l.weight == 3 then 26 elseif l.weight == 2 then 9 else 3
+			local wobble = (rng:NextNumber() - 0.5) * 0.012
+			local c, sn = math.cos(l.angle + wobble), math.sin(l.angle + wobble)
+			for layer, f in ipairs(l.pieces) do
+				-- layer 1 runs from the tip to past the rim; 2 and 3 start further out and are wider: a taper
+				local from = inner + (layer - 1) * (70 + 60 * l.seed)
+				f.Size = UDim2.fromOffset(620 - from, math.max(1, thick * layer / 3))
+				f.Position = UDim2.fromOffset(400 + c * from, 400 + sn * from)
+				f.Rotation = math.deg(l.angle + wobble)
+			end
 		end
 	end)
 	ctx:at(1.24, function()

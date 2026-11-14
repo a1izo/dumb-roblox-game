@@ -473,7 +473,7 @@ Cosmetics.ITEMS = {
 		source = "shop",
 		price = 1400,
 		style = "sam",
-		scene = 14, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
+		scene = 15, -- a full cutscene of its own, seconds (Presentation/SceneDeaths)
 		color = Color3.fromRGB(255, 34, 48),
 	},
 	{

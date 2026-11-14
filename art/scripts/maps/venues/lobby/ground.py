@@ -6,7 +6,13 @@ paving, and it comes up out of it over a few studs. Holes where the rift and the
 
 Walking is on the flat floors terrain.ground lays (and the far plain's): the swells stay low where people go (a foot
 sinks a little into the ash), and the banks rise where the rocks' walls keep people off. Past REACH the plain lies level
-under the haze, as terrain.far_plain draws it."""
+under the haze, as terrain.far_plain draws it.
+
+2026-11-14 (the user: "make the terrain better not just straight"): the ground people walk was level to the foot,
+its swells a hand high. Out in the open, well clear of everything laid on the ground, it now RISES: hummocks and long
+low backs of ash up to HILL studs over the level, in patches with flat between them, never under paving, a game or a
+hole's edge. They are real: `slabs` lays a tilted solid under each stretch of them (the game's ramps), so a body
+climbs them, and whatever small thing was strewn there is lifted onto them (`lift`)."""
 
 import math
 import random
@@ -27,6 +33,11 @@ WALK = 0.3  # how high the swells and ripples rise where people walk
 BANK = 0.7  # ash banked against a rock's foot, at most (studs), over BANK_REACH (a foot sinks that far at most)
 BANK_REACH = 5.5
 DUNE = 3.2  # the dunes out on the plain, past the basin's ridge
+HILL = 3.6  # the hummocks out in the open of the basin, at most (studs over the level; people climb them)
+HILL_PAD = 3.0  # nothing rises this near to anything laid on the ground, a footprint or a hole
+HILL_FADE = 12.0  # and it comes up to its full height over this much more (a slope a body walks: under 25 degrees)
+SLAB = 8.0  # the side of the solid slabs laid under the hummocks
+SLAB_FROM = 0.22  # a stretch is given a slab when it stands this far over the level
 FADE = 5.0  # over how far the ground comes up out of the level round something laid on it
 TILE = 64.0  # the surface is drawn in tiles of this side (each its own mesh piece)
 
@@ -55,10 +66,36 @@ class Field:
 
     CELL = 24.0
 
-    def __init__(self, level, feet, holes):
+    def __init__(self, level, feet, holes, quiet=()):
         self.level, self.feet, self.holes = level, feet, holes
         self._level = self._index([(poly, pad + FADE) for poly, pad in level])
         self._feet = self._index([(poly, BANK_REACH) for poly in feet])
+        # what the hummocks keep off: everything level, every other footprint (`quiet`), every hole and every rock
+        self.calm = [poly for poly, _ in level] + list(quiet) + list(holes) + list(feet)
+        self._calm = self._index([(poly, HILL_PAD + HILL_FADE) for poly in self.calm])
+
+    def hill(self, x, z):
+        """How high the hummocks stand here over the level (0 near anything laid on the ground)."""
+        if not g2.contains(P.BASIN, (x, z)):
+            return 0.0
+        m = _smooth(HILL_PAD + 9.0, HILL_PAD + 9.0 + HILL_FADE, g2.dist_to_poly_edge(P.BASIN, (x, z)))
+        if m <= 0.0:
+            return 0.0
+        warp = 2.2 * _n(x / 11.0, z / 11.0, 41.3)
+        for k in self._near(self._calm, x, z):
+            poly = self.calm[k]
+            if g2.contains(poly, (x, z)):
+                return 0.0
+            d = g2.dist_to_poly_edge(poly, (x, z)) + warp
+            if d < HILL_PAD + HILL_FADE:
+                m = min(m, _smooth(HILL_PAD, HILL_PAD + HILL_FADE, d))
+                if m <= 0.0:
+                    return 0.0
+        # hummocks in patches (flat between them), on long low backs
+        v = 0.5 + 0.5 * max(-1.0, min(1.0, _fbm(x / 40.0, z / 40.0, 21.7, 3) / 1.1))
+        mound = _smooth(0.4, 0.8, v)
+        back = _smooth(0.35, 0.9, 0.5 + 0.5 * _n(x / 105.0, z / 105.0, 31.9))
+        return HILL * m * (0.72 * mound + 0.28 * back * (0.4 + 0.6 * mound))
 
     def _index(self, items):
         grid = {}
@@ -117,6 +154,7 @@ class Field:
         out = _smooth(P.rim_r(math.atan2(z, x)) + 6.0, P.rim_r(math.atan2(z, x)) + 70.0, r)
         relief += DUNE * out * (0.5 + 0.5 * _fbm(x / 90.0, z / 90.0, 7.3, 3)) * (0.75 + 0.25 * ripple)
         relief += BANK * self.bank(x, z)
+        relief += self.hill(x, z)
         # (down to the far plain's height at the relief's edge)
         fall = _smooth(REACH - 40.0, REACH, edge)
         return LOW + (relief * (1.0 - fall)) * m + (PLAIN - LOW) * fall
@@ -195,9 +233,69 @@ def _grid_points(step, lo, hi, rng, keep):
     return pts, n
 
 
+def quiet_places():
+    """The footprints the ash banks against (rock and bone: not kept level), which the hummocks still keep off."""
+    from maps.venues.lobby import dressing  # (it imports this module: asked for here, when both are loaded)
+
+    out = [g2.ccw(poly) for name, poly in P.footprints().items()
+           if name in ("throne rock", "tusks", "arch") or name.startswith("junk")]
+    # (and the wreckage dressing.ruins stood: ash drifts up to it, never over it)
+    return out + [g2.ccw(P.circle((x, z), reach * 0.8, 12)) for x, z, reach in dressing.STOOD]
+
+
+def slabs(s, field):
+    """The solids under the hummocks: over the basin in cells of SLAB studs, wherever the ground stands SLAB_FROM
+    over the level, a tilted slab on the ground's own plane there (a ramp up its steepest way; level where it is
+    level), a little wider than its cell so neighbours overlap and no foot finds a gap. Returns how many."""
+    x0, z0, x1, z1 = g2.bbox(P.BASIN)
+    count = 0
+    half = SLAB / 2
+    for i in range(math.floor(x0 / SLAB), math.ceil(x1 / SLAB)):
+        for j in range(math.floor(z0 / SLAB), math.ceil(z1 / SLAB)):
+            cx, cz = (i + 0.5) * SLAB, (j + 0.5) * SLAB
+            around = [field.height(cx + dx, cz + dz) for dx in (-half, 0.0, half) for dz in (-half, 0.0, half)]
+            if max(around) - LOW < SLAB_FROM:
+                continue
+            h = sum(around) / len(around)
+            gx = (field.height(cx + half, cz) - field.height(cx - half, cz)) / SLAB
+            gz = (field.height(cx, cz + half) - field.height(cx, cz - half)) / SLAB
+            slope = math.hypot(gx, gz)
+            reach = half + 0.9
+            # (a hair under the drawn ground: feet stand in the ash, never over it)
+            top = h - 0.06
+            # (a level stretch is a slab too, of no slope: the checks know a slab of ground from a wall)
+            if slope < 0.012:
+                gx, gz, slope = 0.0001, 0.0, 0.0001
+            if True:
+                ux, uz = gx / slope, gz / slope
+                s.ramp((cx - ux * reach, cz - uz * reach), (cx + ux * reach, cz + uz * reach), top - slope * reach,
+                       top + slope * reach, 2 * reach, 1.0, None, True)
+                s.ramps[-1]["terrain"] = True
+            count += 1
+    return count
+
+
+def lift(s, field):
+    """Whatever small thing was strewn on the open ground (the grass, the bones, the skulls: every prop standing at
+    the level that is not rock) is lifted onto the hummock under it. Returns how many."""
+    from maps import catalog
+
+    count = 0
+    for k, item in enumerate(s.props):
+        key, x, y, z = item[0], item[1], item[2], item[3]
+        if catalog.is_terrain(key) or abs(y) > 0.05:
+            continue
+        up = field.height(x, z) - LOW
+        if up > 0.15:
+            s.props[k] = (key, x, y + up - 0.1, z) + tuple(item[4:])
+            count += 1
+    return count
+
+
 def build(s):
     """Draws the ground (after every rock has stood: their feet are in rocks.FEET)."""
-    field = Field(level_places(), list(rocks.FEET), holes())
+    field = Field(level_places(), list(rocks.FEET), holes(), quiet_places())
+    print(f"[lobby] hummocks: {slabs(s, field)} slabs under them, {lift(s, field)} things lifted onto them")
     hole_polys = field.holes
     hole_boxes = [g2.bbox(h) for h in hole_polys]
     rng = random.Random(4040)

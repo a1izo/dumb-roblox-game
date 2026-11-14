@@ -213,8 +213,9 @@ function SettingsPanel.init()
 	do
 		local holder = Kit.frame({
 			Name = "Page_controls",
-			Position = UDim2.new(0, 0, 0, T.touch + T.space.s),
-			Size = UDim2.new(1, 0, 1, -(T.touch + T.space.s)),
+			-- (beside the list of sections like every other page: it lay over the list, seen 2026-11-14)
+			Position = UDim2.fromOffset(SECTIONS_WIDTH + T.space.l, 0),
+			Size = UDim2.new(1, -(SECTIONS_WIDTH + T.space.l), 1, 0),
 			Visible = false,
 			Parent = win.body,
 		})

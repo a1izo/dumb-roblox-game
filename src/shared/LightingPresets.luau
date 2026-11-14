@@ -585,22 +585,24 @@ LightingPresets.scenes = {
 	-- Desert hills at dusk: the sun low and gold to the front-left of the over-the-shoulder shots, long shadows.
 	sam = scene({
 		clockTime = 17.5,
-		sunAim = aim(0.55, 0.16, 0.82),
-		brightness = 2.2,
-		exposure = -0.05,
-		ambient = rgb(108, 86, 68),
-		outdoorAmbient = rgb(150, 116, 86),
-		envDiffuse = 0.5,
-		envSpecular = 0.4,
-		density = 0.28,
-		haze = 1.4,
-		glare = 0.5,
-		atmosphereColor = rgb(222, 172, 120),
-		decay = rgb(150, 100, 70),
-		saturation = -0.06,
-		contrast = 0.12,
-		tint = rgb(255, 236, 206),
-		bloom = 0.3,
+		-- (2026-11-14, the user: "make the sky more dramatic": the sun lower and redder under a storm front, the
+		-- shadows deeper, the horizon burning; the scene adds the cloud banks and the dry lightning)
+		sunAim = aim(0.55, 0.11, 0.82),
+		brightness = 2.7,
+		exposure = -0.22,
+		ambient = rgb(84, 60, 52),
+		outdoorAmbient = rgb(118, 80, 62),
+		envDiffuse = 0.45,
+		envSpecular = 0.5,
+		density = 0.33,
+		haze = 2.0,
+		glare = 1.1,
+		atmosphereColor = rgb(214, 134, 84),
+		decay = rgb(176, 72, 40),
+		saturation = 0.04,
+		contrast = 0.24,
+		tint = rgb(255, 222, 190),
+		bloom = 0.42,
 		sky = "SceneDusk",
 	}),
 	-- A battlefield's orange dusk under smoke: the sun low behind the warlord's army (silhouettes), ember fill.
@@ -654,6 +656,10 @@ LightingPresets.scenes = {
 		contrast = 0.12,
 		bloom = 0.25,
 		bloomThreshold = 2.2,
+		-- (as the god's sky: nothing of the maps shows far off)
+		density = 0.42,
+		atmosphereColor = rgb(26, 14, 48),
+		decay = rgb(26, 14, 48),
 		sky = "SceneRequiem",
 	}),
 	-- The Devourer's purple sky.
@@ -666,6 +672,10 @@ LightingPresets.scenes = {
 		contrast = 0.1,
 		bloom = 0.25,
 		bloomThreshold = 2.2,
+		-- (thick purple air and no haze: the sky's stars stay clear, anything far off, the maps, is gone into it)
+		density = 0.5,
+		atmosphereColor = rgb(58, 26, 92),
+		decay = rgb(58, 26, 92),
 		sky = "SceneGod",
 	}),
 	-- The six custom deaths remade as scene deaths (2026-11-11): a rainy night over a canal (A broken heart), a

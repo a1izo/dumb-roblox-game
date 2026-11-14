@@ -6,8 +6,9 @@
 -- up a step or two, the hand coming up (5.4-7.3); the front soldier, the only one who raises his rifle, fires ONCE
 -- (7.3); about eight seconds of slow motion, still standing: the hand comes up red from the wound, reaches out at him
 -- (7.7-15.2); then he empties the rifle into them (15.3-16.4); only then they fall, onto their back (16.6-17.9);
--- lying there, the swarm boiling up at the edge; dark; blood over the lens under a white glare; black. The soldiers
--- never walk in: each is at his own business in the doorway (their clips, scene_actors.py).
+-- lying there, the swarm boiling up at the edge; blood landing on the lens and running; the picture fades to black.
+-- The soldiers never walk in: each is at his own business in the doorway (their clips, scene_actors.py), and none of
+-- them comes to stand over the body (2026-11-14, the user: "fix the soldier appearing on top of you at the end").
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -17,19 +18,23 @@ local Cinema = require(script.Parent.Parent.Cinema)
 local Vfx = require(script.Parent.Parent.Vfx)
 local Suit = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Suit"))
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
+local Splat = require(script.Parent.Splat)
 
 local CONCRETE = Color3.fromRGB(150, 164, 172)
 local STEEL = Color3.fromRGB(70, 80, 88)
 local BLOOD = Color3.fromRGB(110, 8, 10)
 local BLACK = Color3.fromRGB(20, 20, 22)
 
+local WALK = 3.3 -- on their feet: the walk at the door begins
+local DOORS = WALK + 1.0 -- the doors part a second into the walk (2026-11-14, the user: "not immediately")
 local SEEN = 5.4 -- they see the soldiers and stop
 local SHOT = 7.3 -- the one shot (soldier 3's clip fires then)
 local SLOW_FROM, SLOW_TO = 7.7, 15.2 -- the slow motion, still standing
 -- the shot, then the volley (soldier 3's clip recoils on each: scene_actors.py VOLLEY)
 local VOLLEY = { SHOT, 15.3, 15.42, 15.53, 15.66, 15.78, 15.9, 16.03, 16.15, 16.28, 16.4 }
 local FALL = 16.6 -- only now do they fall
-local DARK = 19.6
+local DARK = 19.6 -- the blood lands on the lens
+local FADE = 20.2 -- the picture goes down to black from here (2026-11-14: "make the screen fade to black")
 local LENGTH = 21.5
 
 local function lerp(a: number, b: number, u: number): number
@@ -450,10 +455,19 @@ local function build(ctx)
 		end
 	end)
 
-	-- the doors part while the victim is still rising (they stand open by the time they are on their feet)
-	ctx:at(2.3, function()
-		ctx:tween(doorL, 0.8, { CFrame = doorL.CFrame * CFrame.new(-3.4, 0, 0) })
-		ctx:tween(doorR, 0.8, { CFrame = doorR.CFrame * CFrame.new(3.4, 0, 0) })
+	-- the doors stay shut while the victim gets up and for the first second of the walk at them; then they part: a
+	-- crack of the white room's light first, a jolt as they unlatch, and they slide (heavy: slow to start)
+	ctx:at(DOORS, function()
+		Sfx.play("realmMetal1", { pitch = 0.6, volume = 1.0 })
+		Vfx.Screen.shake(0.35, 0.25)
+		ctx:tween(doorL, 0.14, { CFrame = doorL.CFrame * CFrame.new(-0.12, 0, 0) }, Enum.EasingStyle.Quad)
+		ctx:tween(doorR, 0.14, { CFrame = doorR.CFrame * CFrame.new(0.12, 0, 0) }, Enum.EasingStyle.Quad)
+		local openL, openR = doorL.CFrame * CFrame.new(-3.4, 0, 0), doorR.CFrame * CFrame.new(3.4, 0, 0)
+		ctx:atNow(DOORS + 0.2, function()
+			ctx:tween(doorL, 0.8, { CFrame = openL }, Enum.EasingStyle.Cubic)
+			ctx:tween(doorR, 0.8, { CFrame = openR }, Enum.EasingStyle.Cubic)
+			Cinema.flash(Color3.fromRGB(236, 242, 255), 0.22, 0.9)
+		end)
 	end)
 	-- a muzzle flash at the front soldier's rifle (its light on the room), smoke off the muzzle, the casing
 	local function fire(strength: number, slow: boolean)
@@ -497,14 +511,27 @@ local function build(ctx)
 			lit = 1,
 		}, 1)
 	end
-	-- the hit on the view: a red spray across the edge of the lens
-	local function hit(strength: number)
+	-- the hit on the view: the picture jolts red, and now and then blood lands at the edge of the lens (`splat`: where
+	-- and how big; they fade before the next, so the view never fills until the end)
+	local lens = ctx:layer(3)
+	local function hit(strength: number, splat: { number }?)
 		Cinema.flash(Color3.fromRGB(150, 10, 8), 0.45 * strength, 0.18)
 		Vfx.Screen.shake(0.9 * strength, 0.2)
+		if splat then
+			Splat.screen(lens, {
+				at = Vector2.new(splat[1], splat[2]),
+				size = splat[3],
+				seed = math.floor(splat[1] * 977 + splat[2] * 131),
+				hold = splat[4] or 0.7,
+				fade = 0.8,
+				drips = if splat[3] > 0.3 then 2 else 0,
+				alpha = 0.12,
+			})
+		end
 	end
 	ctx:at(SHOT, function()
 		fire(1.6, true)
-		hit(1.2)
+		hit(1.2, { 0.14, 0.78, 0.46, 2.6 })
 		Cinema.flash(Color3.fromRGB(255, 236, 200), 0.75, 0.25)
 		Cinema.still(Color3.fromRGB(255, 200, 160), 0.12)
 		bleed(0.75)
@@ -569,7 +596,14 @@ local function build(ctx)
 		if i > 1 then
 			ctx:at(t, function()
 				fire(1, false)
-				hit(0.8)
+				-- (a splat on the second, fifth, eighth and last rounds, each at another edge)
+				local where = ({
+					[2] = { 0.9, 0.24, 0.26 },
+					[5] = { 0.08, 0.3, 0.3 },
+					[8] = { 0.82, 0.8, 0.34 },
+					[11] = { 0.3, 0.9, 0.28 },
+				})[i]
+				hit(0.8, where)
 				bleed(math.min(1, 0.75 + i * 0.03))
 			end)
 		end
@@ -608,70 +642,71 @@ local function build(ctx)
 			swarm.Enabled = false
 		end)
 	end)
-	-- dark; then blood over the lens, a white glare, the front man standing over (the cut hides him getting there)
-	local dark: Frame? = nil
+	-- the end (2026-11-14, the user: "fix the soldier appearing on top of you at the end, make the screen fade to black
+	-- and make those on screen blood splatters way more high quality"): nobody comes to stand over the body. The view
+	-- dims as the eyes go; blood lands on the lens, one heavy splat and then others round it, each thrown on, creeping
+	-- and running down; the ceiling's light blooms pale through it; and the picture goes down to black, slowly, and
+	-- stays black.
 	ctx:at(DARK, function()
 		local layer = ctx:layer(4)
-		local d = Instance.new("Frame")
-		d.BackgroundColor3 = Color3.new(0, 0, 0)
-		d.BorderSizePixel = 0
-		d.Size = UDim2.fromScale(1, 1)
-		d.BackgroundTransparency = 0.35
-		d.Parent = layer
-		dark = layer
-		if shooter then
-			shooter.model:PivotTo(
-				ctx.origin
-					* CFrame.lookAt(Vector3.new(0.7, 0.2, 4.6), Vector3.new(0.7, 0.2, 8))
-					* CFrame.new(0, 3, 0)
-					* CFrame.Angles(math.rad(-30), 0, 0)
-			)
-		end
-	end)
-	ctx:at(DARK + 0.3, function()
-		if dark then
-			dark:Destroy()
-		end
-		local layer = ctx:layer(4)
+		local dim = Instance.new("Frame")
+		dim.BackgroundColor3 = Color3.new(0, 0, 0)
+		dim.BorderSizePixel = 0
+		dim.Size = UDim2.fromScale(1, 1)
+		dim.BackgroundTransparency = 1
+		dim.Parent = layer
+		ctx:tween(dim, 0.5, { BackgroundTransparency = 0.5 })
 		local glare = Instance.new("Frame")
 		glare.BackgroundColor3 = Color3.fromRGB(235, 236, 240)
 		glare.BorderSizePixel = 0
 		glare.Size = UDim2.fromScale(1, 1)
-		glare.BackgroundTransparency = 0.45
+		glare.BackgroundTransparency = 1
 		local g = Instance.new("UIGradient")
 		g.Transparency = NumberSequence.new({
 			NumberSequenceKeypoint.new(0, 1),
-			NumberSequenceKeypoint.new(0.45, 0.2),
+			NumberSequenceKeypoint.new(0.45, 0.25),
 			NumberSequenceKeypoint.new(1, 1),
 		})
 		g.Parent = glare
 		glare.Parent = layer
-		local rng = Random.new(41)
-		for k = 1, 46 do
-			local drop = Instance.new("Frame")
-			drop.BorderSizePixel = 0
-			drop.BackgroundColor3 = if k % 4 == 0 then Color3.fromRGB(190, 20, 18) else Color3.fromRGB(120, 6, 8)
-			drop.AnchorPoint = Vector2.new(0.5, 0.5)
-			drop.Position = UDim2.fromScale(rng:NextNumber(0.05, 0.75), rng:NextNumber(0.05, 0.85))
-			local long = k % 3 == 0
-			drop.Size = if long then UDim2.fromScale(rng:NextNumber(0.1, 0.3), 0.012) else UDim2.fromScale(0.02, 0.035)
-			drop.Rotation = rng:NextNumber(-40, 40)
-			drop.BackgroundTransparency = rng:NextNumber(0.05, 0.35)
-			local c = Instance.new("UICorner")
-			c.CornerRadius = UDim.new(1, 0)
-			c.Parent = drop
-			drop.Parent = layer
+		ctx:tween(glare, 0.35, { BackgroundTransparency = 0.6 })
+		ctx:atNow(DARK + 0.4, function()
+			ctx:tween(glare, 1.2, { BackgroundTransparency = 1 })
+		end)
+		-- the blood: the heavy one first, then the rest in their own time (none on a beat), each its own picture, size
+		-- and turn; they stay to the end and go down with the picture
+		for _, spec in ipairs({
+			{ 0.0, 0.34, 0.42, 0.78, 3, 3 },
+			{ 0.11, 0.72, 0.3, 0.5, 1, 2 },
+			{ 0.19, 0.58, 0.76, 0.44, 4, 1 },
+			{ 0.3, 0.12, 0.74, 0.36, 2, 2 },
+			{ 0.36, 0.88, 0.68, 0.3, 1, 1 },
+			{ 0.47, 0.5, 0.14, 0.26, 2, 0 },
+			{ 0.55, 0.16, 0.16, 0.32, 4, 1 },
+		}) do
+			ctx:atNow(DARK + spec[1], function()
+				Splat.screen(layer, {
+					at = Vector2.new(spec[2], spec[3]),
+					size = spec[4],
+					image = spec[5],
+					seed = math.floor(spec[2] * 1000 + spec[3] * 77),
+					drips = spec[6],
+					hold = 10,
+					alpha = 0.04,
+					z = 2,
+				})
+				Vfx.Screen.shake(0.25, 0.12)
+			end)
 		end
-		ctx:tween(glare, 1.5, { BackgroundTransparency = 0.9 })
-		ctx:atNow(LENGTH - 0.3, function()
+		ctx:atNow(FADE, function()
 			local black = Instance.new("Frame")
 			black.BackgroundColor3 = Color3.new(0, 0, 0)
 			black.BackgroundTransparency = 1
 			black.BorderSizePixel = 0
 			black.Size = UDim2.fromScale(1, 1)
-			black.ZIndex = 5
+			black.ZIndex = 20
 			black.Parent = layer
-			ctx:tween(black, 0.3, { BackgroundTransparency = 0 })
+			ctx:tween(black, LENGTH - FADE - 0.35, { BackgroundTransparency = 0 }, Enum.EasingStyle.Sine)
 		end)
 	end)
 	ctx:grade(0, nil, { Saturation = -0.25, Contrast = 0.15, TintColor = Color3.fromRGB(214, 226, 236) }, 0.1)

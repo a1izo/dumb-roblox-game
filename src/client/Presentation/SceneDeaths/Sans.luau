@@ -84,7 +84,9 @@ local function build(ctx)
 	local victim =
 		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(0, 0, -1)), "sceneSansVictim")
 	-- the flat camera: far off, a narrow lens, the victim small in the upper middle
-	ctx:shot(0, Vector3.new(0, 4.6, -70), Vector3.new(0, 1.4, 0), 11.5)
+	-- (2026-11-14, the user's picture sans_box_overlap: the battle box lay over his legs. He stands higher and a little
+	-- smaller in the frame now: his feet end at 0.46 of its height, the box begins at 0.49.)
+	ctx:shot(0, Vector3.new(0, 4.6, -70), Vector3.new(0, -0.6, 0), 12.6)
 	ctx:grade(0, nil, { Saturation = -1, Contrast = 0.6, Brightness = 0.05 }, 0.05)
 
 	-- the UI
@@ -307,14 +309,71 @@ local function build(ctx)
 		task.delay(0.5, function()
 			star:Destroy()
 		end)
+		-- the wound (2026-11-14, the user: "make the line wound on the body more high quality": it was one thin red
+		-- bar). A gash in the battle's own pixels, from his shoulder down across the chest: a point at each end,
+		-- three pixels deep at its middle, bright along its heart and dark at its lips; it opens along its length
+		-- white, turns red, and three drops run down from it, each in its own time, and stop.
 		local w = Instance.new("Frame")
-		w.BorderSizePixel = 0
-		w.BackgroundColor3 = RED
+		w.BackgroundTransparency = 1
 		w.AnchorPoint = Vector2.new(0.5, 0.5)
-		w.Size = UDim2.new(0, 5, 0.06, 0)
-		w.Rotation = -48
+		w.Size = UDim2.fromScale(0.105, 0.105)
+		w.SizeConstraint = Enum.SizeConstraint.RelativeYY
 		w.Parent = ui
 		wound = w
+		local G = 15
+		local DARK, LIP = Color3.fromRGB(96, 0, 0), Color3.fromRGB(34, 0, 0)
+		local cells = {}
+		local function cell(col: number, row: number, color: Color3, z: number, along: number)
+			local px = Instance.new("Frame")
+			px.BorderSizePixel = 0
+			px.BackgroundColor3 = WHITE
+			px.Position = UDim2.fromScale(col / G, row / G)
+			px.Size = UDim2.fromScale(1 / G + 0.004, 1 / G + 0.004)
+			px.ZIndex = z
+			px.Visible = false
+			px.Parent = w
+			table.insert(cells, { frame = px, color = color, along = along })
+		end
+		for i = 0, G - 1 do
+			local along = i / (G - 1)
+			local deep = math.floor(1 + 2.2 * math.sin(math.pi * along) + 0.5)
+			local col = G - 1 - i
+			local top = i - math.floor(deep / 2)
+			-- the dark lips above and below, then the gash itself: its middle row bright
+			cell(col, top - 1, LIP, 1, along)
+			cell(col, top + deep, LIP, 1, along)
+			for k = 0, deep - 1 do
+				local heart = deep >= 3 and k == math.floor(deep / 2)
+				cell(col, top + k, if heart then RED elseif deep == 1 then RED else DARK, 2, along)
+			end
+		end
+		local opened = ctx:now()
+		ctx:during(opened, opened + 0.5, function(t)
+			local k = t - opened
+			for _, c in ipairs(cells) do
+				local age = k - c.along * 0.09
+				c.frame.Visible = age >= 0
+				c.frame.BackgroundColor3 = if age < 0.06 then WHITE else c.color
+			end
+		end)
+		for n, drop in ipairs({ { 9, 0.55, 5 }, { 5, 1.3, 7 }, { 11, 2.2, 3 } }) do
+			local col, wait, run = drop[1], drop[2], drop[3]
+			local row0 = (G - 1 - col) + 2
+			local px = Instance.new("Frame")
+			px.BorderSizePixel = 0
+			px.BackgroundColor3 = if n == 2 then RED else DARK
+			px.Position = UDim2.fromScale(col / G, row0 / G)
+			px.Size = UDim2.fromScale(1 / G + 0.004, 1 / G + 0.004)
+			px.ZIndex = 2
+			px.Visible = false
+			px.Parent = w
+			ctx:during(opened + wait, 30, function(t)
+				-- a cell at a time, slower as it runs out; its trail stays behind it
+				local fell = math.min(run, math.floor(math.sqrt(math.max(0, t - opened - wait)) * 3.2))
+				px.Visible = true
+				px.Size = UDim2.fromScale(1 / G + 0.004, (1 + fell) / G + 0.004)
+			end)
+		end
 	end)
 	ctx:at(26.1, function()
 		if bubble then

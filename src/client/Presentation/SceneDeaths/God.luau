@@ -70,6 +70,10 @@ local function link(ctx, key: string, scale: number, standIn: Vector3)
 end
 
 local function build(ctx)
+	-- (2026-11-14, the user: "the map being visible in the distance": this scene has no set, only sky, and its wide
+	-- cameras saw the maps far below the scenes' common origin. It plays much higher now, so they lie far under every
+	-- frame, and its look (LightingPresets.scenes.god) carries a thick purple air that takes anything that far off.)
+	ctx.origin = ctx.origin + Vector3.new(0, 5000, 0)
 	if not ctx:imported() then
 		SceneDeaths.box(ctx, Vector3.new(500, 400, 500), Vector3.new(0, -150, 0), Color3.fromRGB(44, 16, 86))
 	end
@@ -312,9 +316,13 @@ local function build(ctx)
 		if n > 1 then
 			ctx:at(at + BREAK_AFTER, function()
 				breakLink(n)
-				if n % 4 == 0 then
-					Vfx.Screen.shake(0.8, 0.3)
-				end
+				-- (2026-11-14, "add shake": every link's break is felt, harder the nearer the head it is, the heaviest
+				-- on each fourth; uneven on purpose, never a steady rumble)
+				local near = 1 - n / #links
+				Vfx.Screen.shake(
+					if n % 4 == 0 then 1.5 + near * 1.3 else 0.5 + near * 0.9,
+					if n % 4 == 0 then 0.42 else 0.22
+				)
 			end)
 		end
 		-- the cracks pulse while they spread, and the plates pale toward the light inside (until the link breaks)
@@ -332,12 +340,18 @@ local function build(ctx)
 			end
 		end)
 	end
+	-- its passes before it cracks: the weight of it going by is felt (the boasts land with it)
+	for _, pass in ipairs({ { 0.4, 0.7, 0.5 }, { 2.8, 1.1, 0.6 }, { 3.7, 0.5, 0.3 } }) do
+		ctx:at(pass[1], function()
+			Vfx.Screen.shake(pass[2], pass[3])
+		end)
+	end
 	-- the head alone: it shudders with light, more and more
 	ctx:during(CRACK_TO, FLARE, function(t)
 		local u = (t - CRACK_TO) / (FLARE - CRACK_TO)
 		if math.floor(t * 8) ~= (ctx :: any).godBeat then
 			(ctx :: any).godBeat = math.floor(t * 8)
-			Vfx.Screen.shake(0.3 + u * 1.2, 0.2)
+			Vfx.Screen.shake(0.5 + u * 2.0, 0.2)
 			Vfx.Light.flash(headFrame.Position, CRACK, 30 * SCALE, 2 + u * 4, 0.2)
 		end
 	end)
@@ -365,9 +379,10 @@ local function build(ctx)
 			end)
 		end
 		Vfx.Light.flash(at, Color3.new(1, 1, 1), 90, 8, 1.2)
-		Vfx.Screen.shake(2.4, 0.8)
+		Vfx.Screen.shake(3.6, 1.1)
 		Vfx.Clock.after(0.5, function()
 			breakLink(1)
+			Vfx.Screen.shake(4.2, 1.4)
 		end)
 		local layer = ctx:layer(8)
 		local w = Instance.new("Frame")

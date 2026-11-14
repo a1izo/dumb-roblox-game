@@ -64,3 +64,5 @@
 - [Bounce lights are the flat wash](bounce-lights-are-the-flat-wash.md) - the even look of Agency/Campus rooms is the SceneBuilder Bounce lights, not the fill; per-room FILL_ROOMS fix; export and Studio traps (2026-11-14)
 - [Scene previews in Studio](studio-scene-preview-check.md) — look at a scene death's HUD layer in the user's Studio: temp LocalScript + attribute + screen_capture; delete it before saving
 - [Photo mode and moving titles](photo-mode-and-moving-titles.md) — added overnight 2026-11-14 on "just innovate", not yet judged by the user
+- [Lobby hummocks and ruins](lobby-hummocks-and-ruins.md) — 2026-11-14: real hills in the lobby's open ground (terrain ramps), things lifted onto them, wreckage by dressing.ruins; Maps_Lobby v48
+- [Scene death hits and blood](scene-death-hits-and-blood.md) — 2026-11-14: Splat (drawn blood on the lens), Sam's hitFx and OPEN shift, the unseen first 0.75 s, harness texture folder, marketplace faces

@@ -173,6 +173,9 @@ local function build(ctx)
 	local gauntlet: Model? = nil
 	local chestLight: PointLight? = nil
 	local chestDisc: BasePart? = nil
+	local chestParts: { BasePart } = {}
+	local chestBloom: ParticleEmitter? = nil
+	local chestGlint: ParticleEmitter? = nil
 	if victim then
 		-- the gauntlet (modelled: props_scenes), its six sockets empty until each stone slides in at 2.05+
 		gauntlet = ctx:wear(victim, "gauntlet")
@@ -234,12 +237,61 @@ local function build(ctx)
 				rot = Vector3.new(0, 90, 0),
 			})
 		end
+		-- (2026-11-14, the user: "make the core heart visible": the housing was there but its light was a speck, lost
+		-- against the shirt. The heart is its own lit pieces now, proud of the housing whatever the import holds: a
+		-- white-blue core, a ring round it, a soft bloom over both and a slow glint.)
+		local core = ctx:attach(victim, "Torso", {
+			size = Vector3.new(0.3, 0.3, 0.3),
+			at = Vector3.new(0, 0.33, -0.62),
+			color = Color3.fromRGB(214, 244, 255),
+			glow = true,
+			shape = "Ball",
+			name = "ReactorCore",
+		})
+		local ring = ctx:attach(victim, "Torso", {
+			size = Vector3.new(0.05, 0.64, 0.64),
+			at = Vector3.new(0, 0.33, -0.585),
+			rot = Vector3.new(0, 90, 0),
+			color = Color3.fromRGB(110, 204, 255),
+			glow = true,
+			shape = "Cylinder",
+			alpha = 0.2,
+			name = "ReactorRing",
+		})
+		table.insert(chestParts, core)
+		table.insert(chestParts, ring)
+		if core then
+			chestBloom = Vfx.Emit.make(core, {
+				tex = "VfxGlow",
+				color = Color3.fromRGB(150, 220, 255),
+				size = { { 0, 1.1 }, { 1, 1.4 } },
+				alpha = { { 0, 0.6 }, { 1, 1 } },
+				life = 0.7,
+				speed = 0.01,
+				light = 1,
+				bright = 1.6,
+				rate = 6,
+				z = 1,
+			})
+			chestGlint = Vfx.Emit.make(core, {
+				tex = "VfxFlare",
+				color = Color3.fromRGB(226, 246, 255),
+				size = { { 0, 0 }, { 0.4, 0.9 }, { 1, 0 } },
+				life = { 0.7, 1.1 },
+				speed = 0.01,
+				rot = { 0, 20 },
+				light = 1,
+				bright = 2.4,
+				rate = 1.3,
+				z = 1.2,
+			})
+		end
 		local torso = ctx:limb(victim, "Torso")
 		if torso then
 			chestLight = Instance.new("PointLight")
 			chestLight.Color = Color3.fromRGB(150, 220, 255)
-			chestLight.Range = 5
-			chestLight.Brightness = 2
+			chestLight.Range = 8
+			chestLight.Brightness = 3
 			chestLight.Parent = torso
 		end
 	end
@@ -378,7 +430,7 @@ local function build(ctx)
 		end
 	end)
 	ctx:shot(9.0, Vector3.new(14, 7, 8), Vector3.new(0, 3, -8), 56)
-	-- 10.0 the army goes to ash, figure by figure; the warlord sits down slowly and goes too
+	-- 10.0 the army goes to ash, figure by figure; the warlord goes down onto one knee and goes too
 	for k, s in ipairs(army) do
 		ctx:at(10.0 + k * 0.17, function()
 			ashAway(ctx, s, 1.4)
@@ -458,10 +510,23 @@ local function build(ctx)
 	local LIT, OUT = Color3.fromRGB(170, 228, 255), Color3.fromRGB(26, 30, 36)
 	local function chest(share: number, seconds: number)
 		if chestLight then
-			ctx:tween(chestLight, seconds, { Brightness = 2 * share })
+			ctx:tween(chestLight, seconds, { Brightness = 3 * share })
 		end
 		if chestDisc then
 			ctx:tween(chestDisc, seconds, { Color = OUT:Lerp(LIT, share) })
+		end
+		for _, piece in ipairs(chestParts) do
+			ctx:tween(piece, seconds, { Color = OUT:Lerp(LIT, share) })
+			if share <= 0 then
+				piece.Material = Enum.Material.SmoothPlastic
+			end
+		end
+		if chestBloom then
+			chestBloom.Rate = 6 * share
+			chestBloom.Enabled = share > 0
+		end
+		if chestGlint then
+			chestGlint.Enabled = share > 0.5
 		end
 	end
 	for _, step in ipairs({
