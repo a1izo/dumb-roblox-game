@@ -495,22 +495,39 @@ cue, grade state set only through the Client DM's `Lighting` children):
 | `manualWrite`, 1.43 s | **off** | 4.3 | page visible, dim brown, grey ink, "Kenji Mori" readable |
 | `manualWrite`, 1.38 s | **off** | 17.2 (4 times) | the same dim page, no brighter |
 
-- **Cause 1, seen: the colour grade hides the page.** Only switching `DeathsGambitGrade` off makes the page appear. The
-  likely mechanism (inferred, not measured): a contrast of 0.46 around mid grey sends any pixel below roughly 0.16 to
-  zero, and the page is far below that.
-- **Cause 2, seen, not explained: the lamp does not seem to light the page.** Raising the lamp four times changed
-  nothing (grade on or off), so the page is lit by ambient light alone and BookStage's PointLight (range 9, 3.2 studs over
-  the page, enabled, brightness 4.3 as built) contributes nothing visible. So brightening the lamp is not the fix. Not
-  found why: the likely suspects are the lamp part (a 0.2 stud invisible cube, no collision) or Roblox dropping or
-  ignoring the light up at y 1500 or in this light budget (see `lighting-rework-2026-11.md` on lights the engine
-  drops). My tries to test it (a fresh page and lamp at y 1500 and at y 60 seen through a camera I placed, then through
-  `screen_capture`'s own camera arguments) did not work: the capture seems to reset a scripted camera (see
-  `studio-capture-disturbs-camera.md`), one call timed out, and the y 60 control was black too, so they prove nothing.
-- **Not tried:** raising ambient or exposure only for the set, a different light type (a SurfaceLight or SpotLight), moving
-  the set to a lower altitude in the code, or a per-shot grade. Those are the next tests, in that order, and they need a
-  repo change (a scratch copy of `BookStage`), which this audit does not make.
-- **What it means for the verdict:** the Manual's shots (the Outro's book and the writing shot, and probably the death
-  scene's book opening, which uses the same set) most likely show a black frame in the live game today, whatever the
-  names. That is a bigger fault than the pace or the fit, and a small one to fix once the light is understood. It still
-  needs the owner's eyes in a normal play session: this was a Studio play test with Studio in front, and a real client
-  could differ.
+**Corrected 2026-11-15, when the owner said "manual yes" and the cause was run down properly (the table above is still
+true, its reading was not).** The grade is only an amplifier. The real causes, all seen in a Play session:
+
+- **Cause 1: the shot is lit by the wrong look.** The Manual's set stands at (0, 1500, 300). `Venues.at` classes that as
+  the lobby, so on the cut the lighting controller does nothing for about 1.8 s (the meeting's look stays on: ambient
+  0.03, exposure -0.5, contrast 0.53), then blends over 3.5 s (`BLEND`) into the lobby's look (Lighting.Brightness 1.3,
+  ambient 0.22, the Grey Realm's sky and afternoon clock, haze 2.1). Logged every 0.5 s through a 12 s shot. A 2.6 s
+  writing shot or a 3 s Outro book lives entirely inside the dark part; the page only reads from about 5 s, by the lobby's
+  sky light.
+- **Cause 2: the set's lamp lights nothing, at any brightness.** BookStage's PointLight (range 9, 3.2 studs over the page,
+  enabled) left the page black at brightness 4.3, 17.2 and 40 (range 20); a visible Neon bulb with its own PointLight 1.2
+  studs over the page did too, while the same kind of light lit the stone floor in the lobby at ground level. Why it does
+  not light the page is not found (suspects: the altitude, the 60 x 60 lid and floor, the page's PBR surface). The sun
+  does not reach the page either (Brightness 1.3 with a dark ambient: black). The page is lit by ambient and sky light
+  only, which the grade (contrast 0.46 or 0.53) then crushes when it is low.
+- **The fix (src, 2026-11-15):** a scene look of the set's own, the way the death scenes light their far-off sets.
+  `LightingPresets.scenes.manual` (ambient and outdoor ambient rgb(176, 170, 164), env diffuse 0.5, saturation -0.4,
+  contrast 0.12, a warm tint, bloom 0.4; the floor and lid are near-black parts, so only the book reads); `BookStage.play`
+  calls `LightingController.scene("manual")` before it builds the set (the look is applied at once, no blend) and its stop
+  function puts it back with `task.defer`, once the caller has moved the camera on and only if the look is still
+  "manual" (new `LightingController.currentScene()`), so a scene death that follows the book keeps its own look. The
+  lamp is kept but no longer scaled by the exposure read at build time (the shot's exposure is 0 now).
+- **Seen with the look forced (stills, the page lit as the new look lights it):** the writing shot at 0.28 s (the name
+  being written, the ruled page already readable) and at 1.5 s ("Kenji Mori" legible, black around the book); the Outro's
+  Manual with 10 names at 2.3 s (every name readable, the struck ones crossed out, black around). Before the fix the same
+  shots were black at 0.35, 1.0, 3.0 and 7.0 s. No veil from black is needed at the start: the page shows from the first
+  frames once the look is its own.
+- **Not verified, needs the owner's Rojo sync:** the new code itself ran nowhere. The place's scripts are older than the
+  repo and cannot be written from here, so the look's values were forced onto `Lighting` and the grade every frame from
+  the cut (the real controller tweens the same properties), on a BookStage copy. To check after the sync: the first frame
+  and the end of the writing shot and of the Outro's book (the world's look must come back at once, with no flash up or
+  3.5 s blend), the Ace turn right after the Outro's book, a death by the Manual into a scene death (it must keep its
+  look), and the Hand-won red wash (`Cinema.tint`, its own effect on the camera) over the page.
+- **Verdict for the Manual shots:** the black frame is fixed at its cause in the set's own lighting, nothing global
+  changed. What is left of the audit's list for them is the fit (about half the names out of frame at 10 names behind the
+  letterbox) and the pace, as written above.

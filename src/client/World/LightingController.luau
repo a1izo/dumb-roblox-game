@@ -580,6 +580,12 @@ function LightingController.scene(key: string?)
 	update(true)
 end
 
+-- The scene look in force (LightingPresets.scenes key), nil when none: a shot that sets one and clears it later (the
+-- Manual's, Presentation/BookStage) checks it is still its own before clearing, so it never ends a scene death's look.
+function LightingController.currentScene(): string?
+	return sceneKey
+end
+
 -- Debug panel: forces a lighting preset (nil to follow the camera again).
 function LightingController.setDebugPreset(key: string?)
 	debugKey = key

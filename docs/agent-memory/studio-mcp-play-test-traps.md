@@ -25,6 +25,15 @@ route works once these are handled ([[studio-mcp]], [[studio-cutscene-testing]],
   reads `Custom` while they do. Wait on the cue's own clock, not on the camera type.
 - Bots wander and the phase timer runs: skip to `Meeting`, send `pause` once (a toggle; it survives `skipTo`), or
   everything moves under the cue.
+- **"Foreground" by the OS is not enough** (2026-11-15): with the Claude app on top, `AppActivate` returned False, the
+  game ran at 12 to 16 fps, `execute_luau` on the Client failed with "Target is not reachable" and `screen_capture` gave
+  only Roblox's top-left buttons, although the foreground window's title read Studio. Fix: ask the user to click the Studio
+  window, then check 60 fps with a 2 s `RenderStepped` count before any still. Do not keep stealing the focus: do the
+  non-Studio work first and run the stills in one batch.
+- **A play test cannot run new repo code.** The place's scripts are older than main and writes into the shared place are
+  refused ([[studio-shared-place-write-blocked]]); the Client's `require` gives private copies whose `Cinema.letterbox`
+  errors. To judge a lighting or look change, force its resolved values onto `Lighting` and the grade each frame (a
+  `BindToRenderStep` after the controller) and drive `BookStage` from a copy with a `CameraDirector` copy's token.
 - Stop the play test you started (`start_stop_play false`) and confirm `get_studio_state` says Edit before leaving.
 
 **How to apply:** to look at a Luau match scene, ask once for "Studio in front, screen ok", then follow "How to watch

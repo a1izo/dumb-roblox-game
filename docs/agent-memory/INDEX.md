@@ -82,4 +82,4 @@
 - [Luau intro is a fallback](luau-intro-is-fallback.md) - Presenters/Intro.luau plays on no live map (all three have a Blender intro); audit of the other Luau match scenes is in docs/handoff (2026-11-14)
 - [Studio MCP play-test traps](studio-mcp-play-test-traps.md) - require gives module copies, screen_capture needs Studio in front (15 fps otherwise); with both handled the Debug cues and stills work, recipe in the match-scenes audit (2026-11-14)
 - [Capture disturbs the camera](studio-capture-disturbs-camera.md) - a screen_capture seems to pull a scripted camera back to the player's (4 of 4 runs): log numbers and take stills in separate runs (2026-11-14)
-- [Manual stage dark frames](manual-stage-dark-frames.md) - BookStage shots are black under the colour grade (any number of names) and the lamp does not seem to light the page; fix the light before the framing (2026-11-14)
+- [Manual stage dark frames](manual-stage-dark-frames.md) - the Manual shot was black: its far-off set (venue "lobby") got the wrong look for 5 s and its lamp lights nothing; fixed 2026-11-15 with a "manual" scene look (ambient-lit), unverified in-game until the Rojo sync
