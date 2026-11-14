@@ -25,3 +25,13 @@ and a pilot scene with a stop for the owner's verdict.
 polish them. Ask before restructuring IntroCampus (a restructure was reverted once) and before touching
 RoleDiavolo. One scene, one commit, one report, then wait for the owner. Related: [[cutscene-pipeline]],
 [[cutscene-quality-bar]], [[animation-bar]], [[cutscene-footwork]], [[cutscene-life-layer]].
+
+**2026-11-14 progress and the owner's words.** Stage 0 tools and the RoleAce pilot landed on main. The owner watched the
+pilot in the game: "meh, I guess it works", with three faults: the Butler's walk is off, the cutscene does not exit (a
+bug that Blender never showed), and the final camera pan is awkward, "second hand embarrassment". First miss at the gate.
+Their answers to the ask-first scenes: IntroCampus yes, re-act poses, cameras and light with the same cuts; RoleDiavolo
+is bothered by stale cameras in every non-POV shot and by how the Specter (Ryuk) appears and how stiff he is (they guess
+he is unrigged), and the same for the Oculus deal (`EyesDeal.luau`); the Manual's black writing shot is to be fixed now;
+stage 2 is for later. The plan's Status block has the current state. **Why it matters:** a scene that passes the motion
+report can still feel off (the Butler's walk), and a bug only shows in the real game flow. **How to apply:** watch the
+real flow in the game, from the start to the exit, before calling a scene done.

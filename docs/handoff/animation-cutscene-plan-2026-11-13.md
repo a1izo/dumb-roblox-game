@@ -23,8 +23,9 @@ Read this before picking up work. Stage order and the owner's gates are unchange
   Tool 3 the `[shape]` notes in `run_cinema.py --lint`. Their numbers and how to run them are under Part 2.
 - **Stage 1a, the RoleAce pilot, is rebuilt and on main** (`art/scripts/cinema/shots/role_ace.py`; the old `role_l.py`
   is kept and no longer imported; reference `art/refs/cinema/RoleAce.toml`). Both clips pass the motion report. The owner
-  has seen it play in the game. **The owner's verdict on whether it is clearly better is still pending.** Do not start
-  1b or any later scene until the owner gives it. If the answer is no, fix the method in this file and redo the pilot.
+  has seen it play in the game and called it "meh": it works, but the Butler's walk animation is off, **the cutscene does
+  not exit**, and the final camera pan is awkward ("second hand embarrassment"). That is the first miss at the owner's
+  gate (the plan allows two): the pilot is fixed on those three points first, and 1b to 1f wait for the second verdict.
   Known faults listed in the pilot's report: the cup tips a little on its saucer at the sip, one cup stays on the
   Butler's tray after Ace lifts his, Ace's face is mostly hair in cut 2 and during the tea, the near arm is a large dark
   block in some frames, and `--lint` still prints `[frame]` notes on the close cuts.
@@ -34,8 +35,13 @@ Read this before picking up work. Stage order and the owner's gates are unchange
 - **Audit of the Luau-built match scenes (1i):** [animation-audit-match-scenes-2026-11-14.md](animation-audit-match-scenes-2026-11-14.md).
   Its biggest find: the Manual's writing shot is black under the game's normal colour grade. Fix that before the
   Manual's pacing or framing.
-- **Still to ask the owner:** 1g (IntroCampus: keep the cuts and re-act, or leave it) and 1h (RoleDiavolo: what bothers
-  them). The defaults written there stand until they answer.
+- **The owner's answers, 2026-11-14.**
+  - **1g IntroCampus:** yes, re-act poses, cameras and light, with the same cuts and the same lengths.
+  - **1h RoleDiavolo:** what bothers them is how stale the camera is in every shot that is not a camera-POV shot, how
+    Ryuk (the Specter) appears, and how stiff he is (they guess he is not rigged). The same goes for the Oculus deal
+    (`EyesDeal.luau`). Nothing else in the scene is complained about, so the story and the cuts stay.
+  - **The Manual's black writing shot:** fix it now (a task of its own).
+  - **Stage 2:** later. Do not start it.
 - After merging the pilot, `art/blend/Animations.blend` was kept from main and `run_anims.py -- --add
   RoleAce_self,RoleAce_butler` was re-run, as the rules below say; the exports came out byte-identical.
 
