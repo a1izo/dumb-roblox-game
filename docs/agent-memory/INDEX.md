@@ -61,3 +61,4 @@
 - [Animation plan 2026-11](animation-plan-2026-11.md) - the owner's 2026-11-13 verdict (only RoleMuerto, maybe RoleDiavolo, are good), why those two work, and the plan: tools first, a pilot, then base scenes, deaths, wins, emotes and movement
 - [Harness paths stale](harness-paths-stale.md) - docs/handoff/harness came from another machine: rojo.exe and AUDIT_REPO paths need setting, and no probe covers the Luau match scenes (2026-11-14)
 - [Luau intro is a fallback](luau-intro-is-fallback.md) - Presenters/Intro.luau plays on no live map (all three have a Blender intro); audit of the other Luau match scenes is in docs/handoff (2026-11-14)
+- [Studio MCP play-test traps](studio-mcp-play-test-traps.md) - execute_luau require gives module copies, screen_capture shows no 3D when Studio is not in front (15 fps), Debug replies did not come back (2026-11-14)

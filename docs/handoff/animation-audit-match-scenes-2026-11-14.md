@@ -5,9 +5,10 @@ what reads as cheap or stiff in the six match scenes that are built in Luau and 
 changed.
 
 **Every line below comes from reading the code and not one was watched in game** ("not watched in game"). When the
-audit was written Studio was in Play, started by someone else, so it was left alone (see "How to watch them" at the
-end). Times are worked out from the code (phase lengths, `task.wait`s, tween lengths), not measured on a screen. Where a
-fault depends on how a thing looks, it is marked "check in game".
+audit was written Studio was in Play, started by someone else, so it was left alone. The owner then said yes to a
+watch and Studio was free, but the watch through the Studio MCP did not work (see "The watch that was tried" at the
+end). Times are worked out from the code (phase lengths, `task.wait`s, tween lengths), not measured on a screen. Where
+a fault depends on how a thing looks, it is marked "check in game".
 
 Yardstick: the plan's "what sloppy has meant" list and "the owner's taste", the Part 3 checklist, and the Part 1 table
 of counts (RoleMuerto: 7 moving cameras, 0 locked, 12 effect events, 13 hands on targets).
@@ -237,11 +238,32 @@ Not seen: all of it; what the default ink's wipe looks like at the end of the cr
 If the owner wants them done after the Stage 1 list: the Oculus deal and the Verdict first (smallest, most seen by one
 player each), then the Manual's pace, then the Outro with Stage 3; the Arrest is a Blender scene of its own.
 
-## How to watch them (not done, the Studio was in Play)
+## The watch that was tried (2026-11-14, nothing seen)
 
-Studio was in Play at the time of the audit, started by someone else, so I did not touch it. The Studio MCP
-(`mcp__Roblox_Studio__*`) and the no-screen methods are allowed by the owner (2026-11-14); a session that watches should
-first run `list_roblox_studios` and `get_studio_state` and leave it alone while another session is in Play.
+First the Studio was in Play, started by someone else, so it was left alone. Later it was in Edit and the owner had
+said yes, so I started a play test through the Studio MCP and stopped it again (Studio is back in Edit, nothing in the
+place was edited). It produced no pictures and no measurements of the scenes:
+
+- `screen_capture` during Play returned only Roblox's own top-left buttons on a dark grey frame, no 3D and none of the
+  game's screens. The client drew 14.9 frames a second: Studio was not the window in front. Getting full frames needs
+  Studio in front (the owner's screen), which the yes did not cover.
+- The `Debug` remote reached the server (a listener of mine saw it) but the real `DebugService` sent no reply, no cue
+  and no snapshot within 8 s, so none of the match cues (`verdict`, `arrest`, `eyesDeal`) could be fired this way. A
+  match with bots was already running by then (its own intro cutscene was on the camera), so a measuring script of
+  mine fought it for the camera and read nonsense; it is not used here.
+- `require` in the MCP's `execute_luau` returns its own copy of every game module (a fresh `Match`, a fresh `Bots`),
+  not the running one, so game state cannot be read or driven by requiring the services. See
+  `docs/agent-memory/studio-mcp-play-test-traps.md`.
+
+So the list above is still from the code. Two ways to see them: the owner plays the cues (the list below) with the
+list of "check in game" lines in hand, or a session starts Studio's play test with Studio in front, once the owner
+agrees to the screen.
+
+## How to watch them
+
+The Studio MCP (`mcp__Roblox_Studio__*`) and the no-screen methods are allowed by the owner (2026-11-14); a session that
+watches should first run `list_roblox_studios` and `get_studio_state` and leave it alone while another session is in
+Play.
 
 - A running match with bots is needed for the server cues: `Net.event("Debug"):FireServer("fillBots", {total=6})` then
   `"startMatch"` (`studio-cutscene-testing.md`). Then, one at a time, from the client:
