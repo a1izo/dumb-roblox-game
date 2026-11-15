@@ -1,7 +1,7 @@
 """Cutscenes: export them for the game, and render preview videos on the real venue (background Blender):
 
     blender -b --factory-startup --python art/scripts/run_cinema.py -- --export [Shot ...]
-    blender -b --factory-startup --python art/scripts/run_cinema.py -- --lint [Shot ...]   (camera checks, and a [shape]
+    blender -b --factory-startup --python art/scripts/run_cinema.py -- --lint [Shot ...]   (camera checks, [shape] and [end]
         note for each hold whose black shape reads badly from the shot's camera: both arms inside the torso's outline, or
         the head overlapped by a raised arm: cinema/silhouette.py)
     blender -b --factory-startup --python art/scripts/run_cinema.py -- --preview Shot [--size=960x540] [--from=0 --to=8]
@@ -715,6 +715,8 @@ def main():
                 print(f"[frame] {name} {line}")
             for line in silhouette.shape_lint(shots[name]):
                 print(f"[shape] {name} {line}")
+            for line in shotlib.end_lint(shots[name]):
+                print(f"[end] {name} {line}")
     if "--clear" in argv:
         # room to move: the actors against the set and each other
         import run_maps
