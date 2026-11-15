@@ -132,6 +132,15 @@ local function build(ctx)
 			end
 		end
 		letter.Anchored = true
+		-- (the paper keeps a little of the lamp's light as it falls, so it reads against the black water: seen in the
+		-- place, 2026-11-15, the shot following it down was black)
+		local glow = Instance.new("PointLight")
+		glow.Color = Color3.fromRGB(255, 226, 190)
+		glow.Range = 7
+		glow.Brightness = 1.1
+		glow.Shadows = false
+		glow.Parent = letter
+		letter.Material = Enum.Material.SmoothPlastic
 		local from = ctx.origin:PointToObjectSpace(letter.Position)
 		local t0 = BEAT2 + 0.05
 		ctx:during(t0, t0 + LETTER_UP + LETTER_DOWN, function(t)

@@ -24,6 +24,9 @@ local function build(ctx)
 	ctx:light(Vector3.new(-1.6, 5.4, -2.4), LAMP, 16, 1.8, true)
 	ctx:light(Vector3.new(0, 6, -9), Color3.fromRGB(130, 150, 190), 22, 0.6)
 	ctx:light(Vector3.new(6, 7, 6), Color3.fromRGB(90, 96, 120), 20, 0.3)
+	-- (the window's cold light lying across the boards where they fall, so the fall reads in the high shot: they land
+	-- 2.7 back from the desk now, out of the lamp's pool)
+	ctx:light(Vector3.new(0.4, 3.2, 2.2), Color3.fromRGB(150, 168, 205), 9, 0.55)
 
 	-- the bag on the desk, at its front corner (found by looking down onto the desk's top)
 	local deskTop = 2.9

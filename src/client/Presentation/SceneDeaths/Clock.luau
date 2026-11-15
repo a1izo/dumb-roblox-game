@@ -103,6 +103,10 @@ local function build(ctx)
 					p.Anchored = true
 					p.CanCollide = false
 					p.CastShadow = true
+					-- (its own colour under the texture: when Roblox is slow with a new texture the hand shows
+					-- blued steel, not the plain grey seen in the place on 2026-11-15)
+					p.Color = spec.color
+					p.Material = Enum.Material.Metal
 				end
 			end
 			model.Parent = ctx.stage.folder
@@ -146,6 +150,12 @@ local function build(ctx)
 			if p:IsA("BasePart") then
 				p.Anchored = true
 				p.CanCollide = false
+			end
+		end
+		for _, p in ipairs(pendulum:GetDescendants()) do
+			if p:IsA("BasePart") then
+				p.Color = BRASS
+				p.Material = Enum.Material.Metal
 			end
 		end
 		pendulum.Parent = ctx.stage.folder
@@ -453,7 +463,8 @@ local function build(ctx)
 		return CFrame.lookAt(
 			Vector3.new(0.1, 52 - 18 * u, 0.2),
 			Vector3.new(0, 0, 0),
-			Vector3.new(math.sin(a), 0, -math.cos(a))
+			-- (XII at the top of the picture: seen in the place, the opposite up turned it upside down)
+			Vector3.new(-math.sin(a), 0, math.cos(a))
 		),
 			40
 	end)
@@ -484,7 +495,14 @@ local function build(ctx)
 		local h = STAND + Vector3.new(0, 2.6, -1.9)
 		return CFrame.lookAt(h + Vector3.new(3 + 6 * u, 3 + 18 * u, -6 - 10 * u), h), 36 + 6 * u
 	end)
-	ctx:grade(0, nil, { Saturation = -0.5, Contrast = 0.12 }, 0.1)
+	-- (seen in the place: the white dial and the void washed the picture out; more contrast, a hair darker and warm, so
+	-- the black numerals, the brass and the figure stand off the face)
+	ctx:grade(0, nil, {
+		Saturation = -0.4,
+		Contrast = 0.26,
+		Brightness = -0.05,
+		TintColor = Color3.fromRGB(255, 243, 226),
+	}, 0.1)
 	ctx:grade(STOP, nil, { Saturation = -0.9, Contrast = 0.16 }, 0.6)
 end
 

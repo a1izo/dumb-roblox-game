@@ -403,14 +403,19 @@ def _backing(s, field, hole_polys, hole_boxes):
                            for dz in (-h, -h / 2, 0.0, h / 2, h)) - BACK_UNDER
         return low[key]
 
-    # (each hole grown 1.5 studs out from its middle: the sheet's edge stays back from a rim, never in a throat's view)
+    # (each hole grown 1.5 studs out from its middle: the sheet's edge stays back from a rim, never in a throat's view.
+    # Not the bowl (2026-11-15, the user: cracks "still"; seen in the place: a bright arc round the bowl's near rim and
+    # seams near it): it is no throat, its top terrace closes over the rim from inside, so nothing sees under its rim,
+    # and with the sheet held 1.5 out the rim's joint and every relief seam within 1.5 of it showed the sky. Under the
+    # bowl the sheet runs on a stud INSIDE the rim, hidden under the top terrace.)
     def grown(poly):
         cx = sum(q[0] for q in poly) / len(poly)
         cz = sum(q[1] for q in poly) / len(poly)
+        by = -1.0 if math.dist((cx, cz), P.BOWL_C) < 1.0 else 1.5
         out = []
         for x, z in poly:
             d = math.hypot(x - cx, z - cz) or 1.0
-            out.append((x + (x - cx) / d * 1.5, z + (z - cz) / d * 1.5))
+            out.append((x + (x - cx) / d * by, z + (z - cz) / d * by))
         return g2.ccw(out)
 
     hole_polys = [grown(h) for h in hole_polys]
