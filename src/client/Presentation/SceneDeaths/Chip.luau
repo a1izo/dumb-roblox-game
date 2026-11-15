@@ -190,6 +190,134 @@ local function build(ctx)
 		Vfx.Screen.shake(0.8, 0.4)
 	end)
 
+	-- (2026-11-15, every cutscene at the death scenes' level) dust hanging in the lamp's pool the whole time
+	local motes = Vfx.Emit.point(ctx:world(Vector3.new(-0.6, 4.2, -2.0)), Vector3.new(5, 3, 4))
+	motes.Parent = ctx.stage.folder
+	Vfx.Emit.make(motes, {
+		tex = "VfxGlow",
+		color = LAMP,
+		size = { { 0, 0 }, { 0.2, 0.07 }, { 0.8, 0.06 }, { 1, 0 } },
+		life = { 3, 5 },
+		speed = { 0.05, 0.25 },
+		spread = 180,
+		rate = 12,
+		bright = 0.8,
+		light = 0.5,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+	-- the flourish: a crimson flare behind them and red streaks rushing past as the camera whips round
+	ctx:at(FLOURISH, function()
+		local c = ctx:world(chest())
+		Vfx.Emit.burst(c, {
+			{
+				{
+					tex = "VfxGlow",
+					color = Color3.fromRGB(200, 20, 30),
+					size = { { 0, 2 }, { 0.3, 9 }, { 1, 11 } },
+					alpha = { { 0, 0.5 }, { 0.3, 0.3 }, { 1, 1 } },
+					life = 0.9,
+					bright = 1.2,
+					z = -2,
+				},
+				1,
+			},
+			{
+				{
+					tex = "VfxRing",
+					color = {
+						{ 0, Color3.new(1, 1, 1) },
+						{ 0.3, Color3.fromRGB(255, 60, 60) },
+						{ 1, Color3.fromRGB(120, 0, 10) },
+					},
+					size = { { 0, 1 }, { 1, 12 } },
+					alpha = { { 0, 0.1 }, { 0.6, 0.5 }, { 1, 1 } },
+					life = 0.5,
+					bright = 2,
+					z = 1,
+				},
+				1,
+			},
+		})
+		Vfx.Light.flash(c, Color3.fromRGB(255, 40, 50), 16, 4, 0.8)
+	end)
+	ctx:during(FLOURISH, CRUNCH, function(t)
+		if math.floor(t * 20) ~= math.floor((t - 1 / 60) * 20) then
+			local c = ctx:world(chest())
+			Vfx.Emit.burst(c + Vector3.new(math.random() * 6 - 3, math.random() * 4 - 1, math.random() * 6 - 3), {
+				tex = "VfxStreak",
+				color = { { 0, Color3.new(1, 1, 1) }, { 1, Color3.fromRGB(255, 50, 60) } },
+				size = { { 0, 0.12 }, { 1, 0.02 } },
+				squash = -5,
+				life = 0.25,
+				speed = { 30, 40 },
+				dir = Enum.NormalId.Top,
+				spread = 15,
+				face = "along",
+				bright = 2,
+			}, 2)
+		end
+	end)
+	-- the crunch also lands as a hit: a gold burst at the mouth, the lens punched
+	ctx:at(CRUNCH, function()
+		local h = victim and ctx:limb(victim, "Head")
+		if h then
+			local mouth = h.Position + h.CFrame.LookVector * 0.6 - Vector3.new(0, 0.25, 0)
+			Vfx.Recipes.impact(CFrame.new(mouth), { color = GOLD, scale = 0.35, shake = false, spikes = false })
+		end
+		Vfx.Screen.punch(-2.4, 0.3)
+	end)
+	-- choking: dark red pulses of the picture with each failed breath, harder and closer together
+	for k, t in ipairs({ 5.35, 5.9, 6.35, 6.75, 7.1 }) do
+		ctx:at(t, function()
+			Cinema.flash(Color3.fromRGB(70, 0, 6), 0.2 + k * 0.05, 0.35)
+			Vfx.Screen.shake(0.4 + k * 0.1, 0.2)
+		end)
+	end
+	-- the knees on the boards, then the face: dust and the last crumbs jumping, the screen jolted
+	for _, spec in ipairs({ { 8.15, 0.8, 0.9 }, { 9.0, 1.3, 1.4 } }) do
+		ctx:at(spec[1], function()
+			local c = chest()
+			local floor = ctx:world(Vector3.new(c.X, 0.1, c.Z - 0.4))
+			Vfx.Emit.burst(floor, {
+				{
+					{
+						tex = "VfxDust",
+						color = Color3.fromRGB(96, 80, 66),
+						size = { { 0, 0.8 * spec[3] }, { 1, 2.6 * spec[3] } },
+						alpha = { { 0, 0.5 }, { 1, 1 } },
+						life = { 0.6, 1.2 },
+						speed = { 2, 6 },
+						drag = 4,
+						spread = 85,
+						rot = { 0, 360 },
+						light = 0,
+						lit = 1,
+					},
+					8,
+				},
+				{
+					{
+						tex = "VfxChunk",
+						grid = 2,
+						startRandom = true,
+						color = Color3.fromRGB(226, 182, 92),
+						size = 0.08,
+						life = { 0.4, 0.8 },
+						speed = { 3, 7 },
+						spread = 60,
+						accel = Vector3.new(0, -40, 0),
+						rot = { 0, 360 },
+						spin = { -300, 300 },
+						lit = 0.8,
+						light = 0,
+					},
+					6,
+				},
+			})
+			Vfx.Screen.shake(spec[2], 0.3)
+		end)
+	end
+
 	-- cameras
 	-- 0.0 from in front of the desk, low: the figure behind the lamp, the bag
 	ctx:camera(0, 1.5, function(t)

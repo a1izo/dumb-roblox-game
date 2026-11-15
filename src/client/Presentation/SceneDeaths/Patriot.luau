@@ -196,6 +196,20 @@ local function build(ctx)
 		who = SceneDeaths.Cast.dressed(ctx.saluter, "snake") or ctx.saluter
 	end
 	local saluter = ctx:actor(who, CFrame.lookAt(Vector3.zero, GRAVE), "scenePatriotSaluter")
+	-- (2026-11-15, every cutscene at the death scenes' level, kept to the reference's sunlit morning mist: dust and
+	-- pollen drifting slow through the sun's shafts round the saluter and the grave)
+	SceneDeaths.emit(ctx, Vector3.new(0, 4.5, -1.5), Vector3.new(12, 7, 12), {
+		tex = "VfxGlow",
+		color = Color3.fromRGB(255, 240, 214),
+		size = { { 0, 0 }, { 0.2, 0.08 }, { 0.8, 0.06 }, { 1, 0 } },
+		life = { 4, 6 },
+		speed = { 0.05, 0.25 },
+		spread = 180,
+		accel = Vector3.new(0.12, 0.02, 0),
+		rate = 14,
+		bright = 0.8,
+		light = 0.5,
+	})
 	local function head(): Vector3
 		local h = saluter and ctx:limb(saluter, "Head")
 		return if h then ctx.origin:PointToObjectSpace(h.Position) else Vector3.new(0, 4.6, 0)

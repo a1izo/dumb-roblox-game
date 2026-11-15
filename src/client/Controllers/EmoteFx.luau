@@ -1676,10 +1676,11 @@ end)
 -- Bunny Ears: pastel sparkles flicked off the hands on the head, every other beat.
 local PASTEL = ColorSequence.new(Color3.fromRGB(255, 182, 220), Color3.fromRGB(170, 215, 255))
 FX.bunnyEars = accent(4 * 60 / 165, { 0.0, 2 * 60 / 165 }, function(character)
-	for _, arm in ipairs({ "Right Arm", "Left Arm" }) do
+	for k, arm in ipairs({ "Right Arm", "Left Arm" }) do
 		local part = character:FindFirstChild(arm)
 		if part and part:IsA("BasePart") then
-			burst((part.CFrame * CFrame.new(0, -1, 0)).Position, {
+			local hand = (part.CFrame * CFrame.new(0, -1, 0)).Position
+			burst(hand, {
 				color = PASTEL,
 				count = 5,
 				size = 0.22,
@@ -1687,7 +1688,25 @@ FX.bunnyEars = accent(4 * 60 / 165, { 0.0, 2 * 60 / 165 }, function(character)
 				life = NumberRange.new(0.4, 0.7),
 				gravity = 4,
 			})
+			-- (2026-11-15, "100x better": a twinkle at each fingertip, pink and blue)
+			Vfx.Recipes.twinkle(hand + Vector3.new(0, 0.3, 0), {
+				color = if k == 1 then Color3.fromRGB(255, 182, 220) else Color3.fromRGB(170, 215, 255),
+				scale = 0.6,
+			})
 		end
+	end
+	-- and a soft pastel ring opening round the head
+	local head = character:FindFirstChild("Head")
+	if head and head:IsA("BasePart") then
+		Vfx.Emit.burst(head.Position, {
+			tex = "VfxRing",
+			color = PASTEL,
+			size = { { 0, 0.8 }, { 1, 4.5 } },
+			alpha = { { 0, 0.3 }, { 0.6, 0.6 }, { 1, 1 } },
+			life = 0.4,
+			bright = 1.4,
+			z = 1,
+		}, 1)
 	end
 end)
 
@@ -1714,6 +1733,16 @@ local jackpotCoins = accent(JACKPOT_TURN, { 0.0 }, function(character)
 			gravity = 30,
 			light = 0.7,
 		})
+		-- (2026-11-15, "100x better": the jackpot lands each turn: a green wave out over the floor, a gold glint in
+		-- the spray, its light)
+		Vfx.Beams.wave(CFrame.new(sole + Vector3.new(0, 0.08, 0)), 0.6, 7, 0.8, {
+			tex = "VfxRingBand",
+			color = LUCK,
+			width = 0.8,
+			bright = 2,
+		})
+		Vfx.Recipes.twinkle(sole + Vector3.new(0.4, 2.2, 0), { color = Color3.fromRGB(255, 226, 120), scale = 1.1 })
+		Vfx.Light.flash(sole + Vector3.new(0, 1.5, 0), LUCK, 12, 2.5, 0.4)
 	end
 end)
 
@@ -1821,17 +1850,25 @@ FX.jackpotShuffle = function(character, preview, phase)
 		tex = "VfxGlow",
 		color = LUCK,
 		size = { { 0, 3.4 }, { 0.5, 4.4 }, { 1, 3.8 } },
-		alpha = { { 0, 1 }, { 0.35, 0.8 }, { 0.7, 0.86 }, { 1, 1 } },
+		alpha = { { 0, 1 }, { 0.35, 0.64 }, { 0.7, 0.72 }, { 1, 1 } },
 		life = { 1.4, 2.0 },
 		speed = { 0, 0.15 },
 		spread = 180,
 		light = 1,
-		bright = 1,
-		rate = 3,
+		bright = 1.2,
+		rate = 4,
 		z = -1,
 		locked = true,
 	})
 	haze:SetAttribute("DGEmote", true)
+	-- (2026-11-15) a ring of green light on the floor round the dancer, breathing with the turn
+	local floorAt = floorUnder(root.Position, character) + Vector3.new(0, 0.06, 0)
+	local setRing, stopRing =
+		Vfx.Beams.ring(CFrame.new(floorAt), 2.6, { tex = "VfxRingBand", color = LUCK, width = 0.45, bright = 1.6 })
+	local ringClock = RunService.Heartbeat:Connect(function()
+		local u = (os.clock() % JACKPOT_TURN) / JACKPOT_TURN
+		setRing(2.6 + 0.35 * math.sin(u * math.pi * 2), 0.45 + 0.15 * math.cos(u * math.pi * 2))
+	end)
 	-- sparks drifting up through the body
 	local sparks, stopSparks = Vfx.Emit.hold(torso, {
 		tex = "VfxEmber",
@@ -1870,6 +1907,8 @@ FX.jackpotShuffle = function(character, preview, phase)
 		stopCoins()
 		stopHaze()
 		stopSparks()
+		ringClock:Disconnect()
+		stopRing()
 		light:Destroy()
 		task.delay(2.2, function()
 			holder:Destroy()

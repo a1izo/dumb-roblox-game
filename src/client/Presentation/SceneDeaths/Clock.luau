@@ -119,6 +119,19 @@ local function build(ctx)
 			Sfx.play("clockTick", { volume = 0.4 })
 		end)
 	end
+	-- (2026-11-15, every cutscene at the death scenes' level: each tick also shakes the screen harder, sends a ripple of
+	-- light through the air round them and a glint along the second hand; dust hangs in the void the whole time)
+	SceneDeaths.emit(ctx, Vector3.new(0, 6, -2), Vector3.new(26, 10, 26), {
+		tex = "VfxGlow",
+		color = Color3.fromRGB(236, 232, 222),
+		size = { { 0, 0 }, { 0.2, 0.1 }, { 0.8, 0.08 }, { 1, 0 } },
+		life = { 3, 5 },
+		speed = { 0.05, 0.3 },
+		spread = 180,
+		rate = 16,
+		bright = 0.8,
+		light = 0.5,
+	})
 	for k, tick in ipairs(TICKS) do
 		ctx:at(tick, function()
 			Sfx.play("clockTick", { volume = 0.7 + k * 0.1, pitch = 1 - k * 0.07 })
@@ -131,8 +144,50 @@ local function build(ctx)
 				{ color = Color3.fromRGB(236, 236, 240), width = 0.9, bright = 2 }
 			)
 			Cinema.flash(Color3.new(1, 1, 1), 0.12 + k * 0.03, 0.15)
+			Vfx.Screen.shake(0.35 + k * 0.12, 0.18)
+			local chest = ctx:world(at("Torso", Vector3.new(0, 3, 0)))
+			Vfx.Emit.burst(chest, {
+				tex = "VfxRing",
+				color = { { 0, Color3.new(1, 1, 1) }, { 1, Color3.fromRGB(200, 200, 210) } },
+				size = { { 0, 1 }, { 1, 9 + k } },
+				alpha = { { 0, 0.2 }, { 0.6, 0.55 }, { 1, 1 } },
+				life = 0.45,
+				bright = 1.6,
+				z = 1,
+			}, 1)
+			-- (the second hand's tip, where it has jumped to)
+			local s = shown(tick) * math.pi * 2 / 12
+			local tip = ctx:world(Vector3.new(math.sin(s) * 27, 1.6, -math.cos(s) * 27))
+			Vfx.Recipes.twinkle(tip, { color = Color3.fromRGB(255, 120, 120), scale = 1.4 })
 		end)
 	end
+	-- stopped: a grey shockwave runs out across the whole face, and the light drains
+	ctx:at(STOP, function()
+		local feet = at("Torso", Vector3.zero)
+		Vfx.Beams.wave(
+			CFrame.new(ctx:world(Vector3.new(feet.X, 0.2, feet.Z))),
+			1,
+			40,
+			1.4,
+			{ color = Color3.fromRGB(210, 210, 216), width = 2.4, bright = 2.4 }
+		)
+		Vfx.Screen.shake(1.4, 0.4)
+		Vfx.Screen.punch(-2, 0.3)
+		Vfx.Light.flash(ctx:world(Vector3.new(0, 6, 0)), Color3.fromRGB(236, 236, 240), 40, 4, 0.8)
+	end)
+	-- the sand they become pours on through the face for a while after they are gone
+	SceneDeaths.emit(ctx, Vector3.new(0, 1.2, 0), Vector3.new(1.4, 0.4, 1.0), {
+		tex = "VfxDust",
+		color = SAND,
+		size = { { 0, 0.16 }, { 1, 0.1 } },
+		life = { 1.4, 2.2 },
+		speed = { 0.5, 2 },
+		spread = 40,
+		dir = Enum.NormalId.Bottom,
+		accel = Vector3.new(0, -16, 0),
+		lit = 0.8,
+		rate = 90,
+	}, STOP + 1.4, 11)
 	-- stopped: the colour goes out of them, then they run out as sand from the head down, falling through the face
 	ctx:at(STOP, function()
 		Sfx.play("clockTick", { volume = 1.2, pitch = 0.5 })

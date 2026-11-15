@@ -169,6 +169,41 @@ local function build(ctx)
 			ctx:tween(glow, 0.5, { Brightness = 0.8 * strength })
 		end
 		Cinema.flash(DEEP, 0.18 * strength, 0.35)
+		-- (2026-11-15, every cutscene at the death scenes' level: the beat pulses out of the chest as a ring of red light,
+		-- and the screen feels it)
+		local torso = victim and ctx:limb(victim, "Torso")
+		if torso then
+			local at = torso.CFrame * Vector3.new(0.25, 0.35, -0.6)
+			Vfx.Emit.burst(at, {
+				{
+					{
+						tex = "VfxRing",
+						color = { { 0, Color3.fromRGB(255, 200, 200) }, { 0.4, RED }, { 1, DEEP } },
+						size = { { 0, 0.4 }, { 1, 5 * strength } },
+						alpha = { { 0, 0.1 }, { 0.6, 0.5 }, { 1, 1 } },
+						life = 0.5,
+						bright = 2,
+						z = 1,
+					},
+					1,
+				},
+				{
+					{
+						tex = "VfxGlow",
+						color = RED,
+						size = { { 0, 0.6 }, { 0.25, 3 * strength }, { 1, 2.4 * strength } },
+						alpha = { { 0, 0.2 }, { 1, 1 } },
+						life = 0.6,
+						bright = 1.4,
+					},
+					1,
+				},
+			})
+		end
+		Vfx.Screen.punch(-1.2 * strength, 0.25)
+		if strength >= 1 then
+			Vfx.Screen.shake(0.7, 0.25)
+		end
 	end
 	ctx:at(BEAT1, function()
 		beat(0.7)
@@ -217,6 +252,11 @@ local function build(ctx)
 				bright = 2,
 			}, 34)
 			Vfx.Light.flash(torso.Position, RED, 16, 6, 0.6)
+			-- (and the break itself: a red hit and a dome of light out of the chest)
+			Vfx.Recipes.impact(
+				torso.CFrame * CFrame.new(0.25, 0.35, -0.65),
+				{ color = RED, scale = 0.28, shake = false, spikes = true }
+			)
 		end
 		if core then
 			core.Transparency = 1
@@ -228,12 +268,66 @@ local function build(ctx)
 		Cinema.flash(RED, 0.4, 0.5)
 		Vfx.Screen.shake(1.2, 0.5)
 	end)
-	-- the lamp gutters and goes out over the body
+	-- red shards of the heart still drifting down out of the chest after the break, glowing as they fall
+	ctx:during(CRACK + 0.2, 9.6, function(t)
+		local torso = victim and ctx:limb(victim, "Torso")
+		if torso and math.floor(t * 9) ~= math.floor((t - 1 / 60) * 9) then
+			Vfx.Emit.burst(torso.CFrame * Vector3.new(0.25, 0.3, -0.6), {
+				tex = "VfxEmber",
+				color = { { 0, Color3.fromRGB(255, 150, 160) }, { 0.5, RED }, { 1, DEEP } },
+				size = { { 0, 0.14 }, { 1, 0.03 } },
+				life = { 0.8, 1.4 },
+				speed = { 0.5, 1.5 },
+				spread = 60,
+				accel = Vector3.new(0, -5, 0),
+				rot = { 0, 360 },
+				spin = { -200, 200 },
+				bright = 2,
+			}, 2)
+		end
+	end)
+	-- the knees on the wet stones: splashes
+	ctx:at(9.25, function()
+		local feet = ctx:world(at("Torso", Vector3.zero) * Vector3.new(1, 0, 1) + Vector3.new(0, 0.1, -0.4))
+		Vfx.Emit.burst(feet, {
+			tex = "VfxStreak",
+			color = Color3.fromRGB(210, 220, 232),
+			size = { { 0, 0.1 }, { 1, 0.03 } },
+			squash = -2,
+			life = { 0.3, 0.6 },
+			speed = { 5, 11 },
+			spread = 70,
+			accel = Vector3.new(0, -50, 0),
+			face = "along",
+			lit = 0.7,
+			light = 0.4,
+		}, 18)
+		Vfx.Beams.wave(CFrame.new(feet), 0.3, 3.5, 0.6, {
+			tex = "VfxRingBand",
+			color = Color3.fromRGB(210, 220, 232),
+			width = 0.3,
+			bright = 1,
+		})
+	end)
+	-- the lamp gutters and goes out over the body, spitting sparks as it dies
 	ctx:during(10.4, 11.4, function(t)
 		lamp.Brightness = if math.floor(t * 18) % 3 == 0 then 0.2 else 1.4 * (1 - smooth((t - 10.4) / 1.0))
 	end)
 	ctx:at(11.4, function()
 		lamp.Brightness = 0
+		Vfx.Emit.burst(ctx:world(Vector3.new(3.6, 8.6, -1.6)), {
+			tex = "VfxStreak",
+			color = { { 0, Color3.new(1, 1, 1) }, { 0.4, LAMP }, { 1, Color3.fromRGB(255, 140, 60) } },
+			size = { { 0, 0.14 }, { 1, 0.02 } },
+			squash = -2,
+			life = { 0.3, 0.7 },
+			speed = { 5, 12 },
+			spread = 180,
+			accel = Vector3.new(0, -40, 0),
+			face = "along",
+			bright = 2.2,
+		}, 12)
+		Vfx.Light.flash(ctx:world(Vector3.new(3.6, 8.6, -1.6)), LAMP, 16, 3, 0.2)
 	end)
 
 	-- cameras

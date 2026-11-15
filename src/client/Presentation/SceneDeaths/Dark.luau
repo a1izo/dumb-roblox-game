@@ -6,6 +6,7 @@
 -- dark and take their legs; dragged back down the hall in pulls, clawing at the boards, into the black, gone. Nothing
 -- is left of them (the server leaves no body either: RagdollService). No words, no faces.
 
+local SceneDeaths = require(script.Parent)
 local Cinema = require(script.Parent.Parent.Cinema)
 local Vfx = require(script.Parent.Parent.Vfx)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
@@ -55,8 +56,34 @@ local function build(ctx)
 			bulb.Color = Color3.fromRGB(40, 36, 30)
 			bulb.Material = Enum.Material.SmoothPlastic
 			Sfx.play("uiHover", { pitch = 0.4, volume = 0.6 })
+			-- (2026-11-15: each bulb dies with a pop: a spit of sparks and a last flash of its light)
+			Vfx.Emit.burst(ctx:world(Vector3.new(0, 7.3, z)), {
+				tex = "VfxStreak",
+				color = { { 0, Color3.new(1, 1, 1) }, { 0.4, BULB }, { 1, Color3.fromRGB(255, 140, 60) } },
+				size = { { 0, 0.14 }, { 1, 0.02 } },
+				squash = -2,
+				life = { 0.25, 0.6 },
+				speed = { 6, 14 },
+				spread = 180,
+				accel = Vector3.new(0, -40, 0),
+				face = "along",
+				bright = 2.2,
+			}, 9)
+			Vfx.Light.flash(ctx:world(Vector3.new(0, 7.1, z)), BULB, 14, 3, 0.18)
 		end)
 	end
+	-- dust hanging in the bulbs' light down the hall
+	SceneDeaths.emit(ctx, Vector3.new(0, 5, 6), Vector3.new(7, 5, 50), {
+		tex = "VfxGlow",
+		color = BULB,
+		size = { { 0, 0 }, { 0.2, 0.07 }, { 0.8, 0.06 }, { 1, 0 } },
+		life = { 3, 5 },
+		speed = { 0.05, 0.25 },
+		spread = 180,
+		rate = 22,
+		bright = 0.7,
+		light = 0.4,
+	})
 
 	local victim =
 		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(0, 0, -6)), "sceneDarkVictim")
@@ -80,6 +107,24 @@ local function build(ctx)
 		alpha = 0.05,
 		cast = false,
 	})
+	-- (its front curls: black smoke rolling off it, toward the light, the whole way up the hall)
+	local curl = Vfx.Emit.make(haze, {
+		tex = "VfxSmoke",
+		color = Color3.new(0, 0, 0),
+		size = { { 0, 2.2 }, { 1, 4.5 } },
+		alpha = { { 0, 0.6 }, { 0.3, 0.15 }, { 1, 1 } },
+		life = { 1.2, 2 },
+		speed = { 1, 2.5 },
+		dir = Enum.NormalId.Front,
+		spread = 35,
+		rot = { 0, 360 },
+		spin = { -30, 30 },
+		light = 0,
+		lit = 0,
+		rate = 26,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+	curl.Enabled = true
 	ctx:during(0, 11, function(t)
 		-- (the dark's front: where the bulbs have gone out to, then on over the body)
 		local reach = 40
@@ -107,8 +152,18 @@ local function build(ctx)
 			e.Transparency = 1
 			ctx:tween(e, 0.4, { Transparency = 0 })
 			table.insert(eyes, e)
+			-- (each eye opens in a red bloom)
+			Vfx.Emit.burst(ctx:world(Vector3.new(x, 5.6, 14)), {
+				tex = "VfxGlow",
+				color = EYES,
+				size = { { 0, 0.4 }, { 0.3, 2.2 }, { 1, 1.6 } },
+				alpha = { { 0, 0.3 }, { 1, 1 } },
+				life = 0.7,
+				bright = 1.6,
+			}, 1)
 		end
 		Cinema.flash(Color3.fromRGB(60, 0, 0), 0.2, 0.3)
+		Vfx.Light.flash(ctx:world(Vector3.new(0, 5.6, 13.5)), EYES, 10, 2, 0.6)
 	end)
 	ctx:during(4.85, 11, function(t)
 		local z = 14 - math.min(8, (t - 4.85) * 1.6)
@@ -150,10 +205,71 @@ local function build(ctx)
 			end
 		end
 	end)
-	-- into the black: the body fades into the dark as it is dragged in; the tendrils go with it
+	-- each pull of the drag: the boards' dust kicked up at the clawing hands, splinters, a jolt of the screen
+	for k = 0, 4 do
+		ctx:at(YANK + 0.45 + k * 0.58 + (k % 2) * 0.07, function()
+			for _, name in ipairs({ "Left Arm", "Right Arm" }) do
+				local arm = victim and ctx:limb(victim, name)
+				if arm then
+					local hand = arm.Position - arm.CFrame.UpVector * 0.9
+					Vfx.Emit.burst(Vector3.new(hand.X, ctx.origin.Y + 0.2, hand.Z), {
+						{
+							{
+								tex = "VfxDust",
+								color = Color3.fromRGB(90, 76, 64),
+								size = { { 0, 0.5 }, { 1, 1.8 } },
+								alpha = { { 0, 0.5 }, { 1, 1 } },
+								life = { 0.5, 1 },
+								speed = { 2, 5 },
+								drag = 4,
+								spread = 80,
+								rot = { 0, 360 },
+								light = 0,
+								lit = 1,
+							},
+							5,
+						},
+						{
+							{
+								tex = "VfxChunk",
+								color = Color3.fromRGB(80, 60, 44),
+								size = 0.12,
+								life = { 0.4, 0.8 },
+								speed = { 4, 9 },
+								spread = 60,
+								accel = Vector3.new(0, -50, 0),
+								rot = { 0, 360 },
+								spin = { -300, 300 },
+								light = 0,
+								lit = 1,
+							},
+							4,
+						},
+					})
+				end
+			end
+			Vfx.Screen.shake(0.6 + k * 0.1, 0.2)
+		end)
+	end
+	-- into the black: the body fades into the dark as it is dragged in, black smoke coming off it; the tendrils go with it
 	ctx:at(9.4, function()
 		if victim then
 			ctx:fadeOut(victim, 1.2)
+			local torso = ctx:limb(victim, "Torso")
+			if torso then
+				Vfx.Emit.burst(torso.Position, {
+					tex = "VfxSmoke",
+					color = Color3.new(0, 0, 0),
+					size = { { 0, 1.5 }, { 1, 4 } },
+					alpha = { { 0, 0.3 }, { 1, 1 } },
+					life = { 1, 1.6 },
+					speed = { 1, 3 },
+					spread = 180,
+					rot = { 0, 360 },
+					light = 0,
+					lit = 0,
+				}, 14, Vector3.new(2, 1, 4))
+			end
 		end
 	end)
 	ctx:at(10.6, function()

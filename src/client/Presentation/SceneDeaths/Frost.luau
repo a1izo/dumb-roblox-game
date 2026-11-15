@@ -170,7 +170,37 @@ local function build(ctx)
 			}, 8)
 		end)
 	end
-	-- frozen solid: a white glint across them, a crack of the ice under the feet
+	-- (2026-11-15, every cutscene at the death scenes' level) the frost spreading out over the ice from under the boots
+	-- once the foot sticks, in slow pale rings and a crazing of cracks; glints pricking over the ice as it climbs them
+	ctx:at(2.4, function()
+		local feet = ctx:world(Vector3.new(0, 0.05, -0.3))
+		Vfx.Ground.mark(feet, Vector3.yAxis, "VfxCrack", 5, FROST, 9, { fadeIn = 1.2, transparency = 0.3 })
+		Vfx.Beams.wave(CFrame.new(feet), 0.5, 7, 1.6, { tex = "VfxRingBand", color = FROST, width = 0.7, bright = 1.4 })
+	end)
+	ctx:at(4.8, function()
+		local feet = ctx:world(Vector3.new(0, 0.06, -0.3))
+		Vfx.Ground.mark(feet, Vector3.yAxis, "VfxCrack", 9, ICE, 7, { fadeIn = 1.5, transparency = 0.45 })
+		Vfx.Beams.wave(CFrame.new(feet), 1, 12, 2, { tex = "VfxRingBand", color = FROST, width = 0.9, bright = 1.4 })
+	end)
+	local glints = { "Left Leg", "Right Leg", "Torso", "Left Arm", "Right Arm", "Head" }
+	for k = 0, 17 do
+		local t = 2.6 + k * 0.37
+		ctx:at(t, function()
+			local name = glints[(k * 5) % #glints + 1]
+			local span = CLIMB[name]
+			local limb = victim and ctx:limb(victim, name)
+			if limb and span and t >= span[1] then
+				local h = limb.Size / 2
+				local rng = Random.new(k * 13)
+				Vfx.Recipes.twinkle(
+					limb.CFrame * Vector3.new(rng:NextNumber(-h.X, h.X), rng:NextNumber(-h.Y, h.Y), -h.Z),
+					{ color = FROST, scale = 0.45 }
+				)
+			end
+		end)
+	end
+	-- frozen solid: a white glint across them, the ice under them cracking open across the lake with a jolt, a cloud
+	-- of powder and shards of frost thrown up
 	ctx:at(9.25, function()
 		local torso = victim and ctx:limb(victim, "Torso")
 		if torso then
@@ -181,6 +211,45 @@ local function build(ctx)
 			)
 		end
 		Cinema.flash(Color3.fromRGB(220, 236, 255), 0.25, 0.4)
+		local feet = ctx:world(Vector3.new(0, 0.07, -0.3))
+		Vfx.Ground.mark(feet, Vector3.yAxis, "VfxCrack", 18, Color3.new(1, 1, 1), 3, { transparency = 0.2 })
+		Vfx.Beams.wave(CFrame.new(feet), 1, 30, 1.2, { tex = "VfxRingBand", color = FROST, width = 2, bright = 2.2 })
+		Vfx.Screen.shake(1.2, 0.35)
+		Vfx.Emit.burst(feet, {
+			{
+				{
+					tex = "VfxSmoke",
+					grid = 8,
+					startRandom = true,
+					color = FROST,
+					size = { { 0, 1 }, { 1, 3.5 } },
+					alpha = { { 0, 0.4 }, { 1, 1 } },
+					life = { 1, 1.8 },
+					speed = { 4, 9 },
+					drag = 3,
+					spread = 85,
+					rot = { 0, 360 },
+					lit = 0.8,
+					light = 0,
+				},
+				14,
+			},
+			{
+				{
+					tex = "VfxSpike",
+					color = { { 0, Color3.new(1, 1, 1) }, { 1, ICE } },
+					size = { { 0, 0.5 }, { 1, 0.1 } },
+					squash = -1.2,
+					life = { 0.4, 0.8 },
+					speed = { 10, 20 },
+					spread = 70,
+					accel = Vector3.new(0, -40, 0),
+					face = "along",
+					bright = 1.6,
+				},
+				18,
+			},
+		})
 	end)
 
 	-- cameras

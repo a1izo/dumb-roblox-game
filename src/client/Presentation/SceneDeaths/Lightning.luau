@@ -146,6 +146,82 @@ local function build(ctx)
 		local trunk =
 			ctx:part({ size = Vector3.new(0.2, 0.2, 0.2), at = Vector3.new(-5, 7.5, -3), alpha = 1, cast = false })
 		Vfx.Recipes.flame(trunk, { kind = "fire", scale = 3.2, color = Color3.fromRGB(255, 150, 70) } :: any)
+		-- (2026-11-15, every cutscene at the death scenes' level) the blow itself: a white-blue hit and a column of
+		-- light through them, the earth scorched and thrown up round their feet, the lens punched; embers off the oak
+		Vfx.Recipes.impact(CFrame.new(hit - Vector3.new(0, 2, 0)), { color = ARC, scale = 1.2, shake = false })
+		Vfx.Recipes.pillar(
+			CFrame.new(ctx:world(Vector3.new(0, 0, 0))),
+			{ color = BOLT, height = 30, radius = 1.6, seconds = 0.6 }
+		)
+		local feet = ctx:world(Vector3.new(0, 0.05, 0))
+		Vfx.Ground.mark(feet, Vector3.yAxis, "VfxCrack", 7, Color3.fromRGB(30, 26, 24), 6, { transparency = 0.15 })
+		Vfx.Ground.debris(feet, 10, {
+			color = Color3.fromRGB(56, 50, 40),
+			material = Enum.Material.Ground,
+			size = 0.45,
+			speed = 22,
+			ring = 1.2,
+		})
+		Vfx.Screen.punch(-3, 0.35)
+		local embers = Vfx.Emit.make(trunk, {
+			tex = "VfxEmber",
+			color = {
+				{ 0, Color3.fromRGB(255, 236, 170) },
+				{ 0.5, Color3.fromRGB(255, 140, 50) },
+				{ 1, Color3.fromRGB(110, 26, 8) },
+			},
+			size = { { 0, 0.18 }, { 1, 0.03 } },
+			life = { 1.2, 2.2 },
+			speed = { 3, 6 },
+			spread = 30,
+			accel = Vector3.new(8, 3, 0),
+			drag = 0.6,
+			rate = 30,
+			bright = 2.2,
+			rot = { 0, 360 },
+			spin = { -140, 140 },
+		})
+		embers.Enabled = true
+	end)
+	-- down on the back in the mud: a splash of it
+	ctx:at(5.85, function()
+		local c = chest()
+		local floor = ctx:world(Vector3.new(c.X, 0.1, c.Z))
+		Vfx.Emit.burst(floor, {
+			{
+				{
+					tex = "VfxDust",
+					color = Color3.fromRGB(70, 64, 54),
+					size = { { 0, 0.8 }, { 1, 2.4 } },
+					alpha = { { 0, 0.45 }, { 1, 1 } },
+					life = { 0.6, 1.1 },
+					speed = { 2, 6 },
+					drag = 4,
+					spread = 85,
+					rot = { 0, 360 },
+					light = 0,
+					lit = 1,
+				},
+				8,
+			},
+			{
+				{
+					tex = "VfxStreak",
+					color = Color3.fromRGB(190, 200, 214),
+					size = { { 0, 0.1 }, { 1, 0.03 } },
+					squash = -2,
+					life = { 0.3, 0.6 },
+					speed = { 5, 11 },
+					spread = 70,
+					accel = Vector3.new(0, -50, 0),
+					face = "along",
+					lit = 0.7,
+					light = 0.4,
+				},
+				16,
+			},
+		})
+		Vfx.Screen.shake(0.9, 0.3)
 	end)
 	-- the frame burning out on the strike: a negative-white grade for a breath
 	ctx:grade(STRUCK, STRUCK + 0.22, { Saturation = -1, Contrast = 0.9, Brightness = 0.35 }, 0.02)
@@ -183,6 +259,20 @@ local function build(ctx)
 				accel = Vector3.new(3, 2, 0),
 				lit = 0.8,
 				rate = 8,
+			})
+			-- (and the last of the current: a few sparks still spitting off them)
+			Vfx.Emit.make(torso, {
+				tex = "VfxStreak",
+				color = { { 0, Color3.new(1, 1, 1) }, { 1, ARC } },
+				size = { { 0, 0.08 }, { 1, 0.02 } },
+				squash = -2,
+				life = { 0.2, 0.4 },
+				speed = { 4, 9 },
+				spread = 80,
+				accel = Vector3.new(0, -30, 0),
+				face = "along",
+				bright = 2.5,
+				rate = 6,
 			})
 		end
 	end)
