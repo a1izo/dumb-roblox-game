@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local Create = require(Shared:WaitForChild("Create"))
+local DeathLoadout = require(Shared:WaitForChild("DeathLoadout"))
 local TitleMotion = require(Shared:WaitForChild("TitleMotion"))
 local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
 local Mastery = require(Shared:WaitForChild("Progression"):WaitForChild("Mastery"))
@@ -76,6 +77,21 @@ function CosmeticsService.style(player: any, kind: string): string?
 	end
 	local item = equipped(player, data, kind)
 	return if item then item.style else nil
+end
+
+-- The custom deaths a player can write in the Manual: those in a slot of their death loadout that they own, in slot
+-- order (Shared/DeathLoadout). Bots and players without a profile have none.
+function CosmeticsService.deathLoadout(player: any): { Cosmetics.Item }
+	if typeof(player) ~= "Instance" then
+		return {}
+	end
+	local data = DataService.get(player)
+	if not data then
+		return {}
+	end
+	return DeathLoadout.usable(data.deathLoadout, function(item: Cosmetics.Item): boolean
+		return CosmeticsService.owns(player, item)
+	end)
 end
 
 -- Hands out the titles of the sets now complete. Returns the sets completed (a toast each).

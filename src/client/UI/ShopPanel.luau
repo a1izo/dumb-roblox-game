@@ -48,6 +48,7 @@ local Keys = require(script.Parent.Parent.Input.Keys)
 local Motion = require(script.Parent.Core.Motion)
 local Router = require(script.Parent.Core.Router)
 local Card = require(script.Parent.Shop.Card)
+local DeathSlots = require(script.Parent.Shop.DeathSlots)
 local WinCinema = require(script.Parent.Parent.Presentation.WinCinema)
 local YourLook = require(script.Parent.Shop.YourLook)
 
@@ -242,6 +243,9 @@ local function chipFor(profile, item: Cosmetics.Item): (string, string, { text: 
 		return "Yours",
 			"check",
 			if slot then { text = "Slot " .. slot, filled = true } else { text = "Owned", filled = false }
+	elseif owns(profile, item) and item.kind == "reason" then
+		-- (a custom death: the slot of Diavolo's four it is in)
+		return "Yours", "check", DeathSlots.chip(profile, item) or { text = "Owned", filled = false }
 	elseif owns(profile, item) then
 		-- (seats and win cutscenes are used, not worn; the free one is in use while nothing else of its kind is)
 		local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win"
@@ -355,8 +359,10 @@ local function showAction(profile, item: Cosmetics.Item?)
 	local scene = WinCinema.cutOf(item)
 	local hasPreview = scene ~= nil
 	local gap = T.space.s
-	local size = if hasPreview then UDim2.new(0.5, -gap / 2, 0, T.touch) else UDim2.new(1, 0, 0, T.touch)
-	local at = if hasPreview then UDim2.new(0.5, gap / 2, 0, 0) else UDim2.new()
+	-- (a custom death you own: its Preview gives up room to the four slot buttons)
+	local share = if item.kind == "reason" and owns(profile, item) then 0.34 else 0.5
+	local size = if hasPreview then UDim2.new(share, -gap / 2, 0, T.touch) else UDim2.new(1, 0, 0, T.touch)
+	local at = if hasPreview then UDim2.new(share, gap / 2, 0, 0) else UDim2.new()
 	local function press(text: string, action: string, variant: string)
 		Kit.button({
 			text = text,
@@ -398,6 +404,8 @@ local function showAction(profile, item: Cosmetics.Item?)
 	end
 	if owns(profile, item) and item.kind == "emote" then
 		wheelSlots(profile, item)
+	elseif owns(profile, item) and item.kind == "reason" then
+		actionNote.Text = DeathSlots.build(actionHolder, profile, item, if hasPreview then share else 0, gap)
 	elseif owns(profile, item) then
 		-- (seats and win cutscenes are used, not worn)
 		local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win"

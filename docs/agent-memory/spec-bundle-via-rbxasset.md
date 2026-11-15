@@ -30,4 +30,12 @@ Rebuild the bundle after every edit to a bundled file; delete a stale `dg_specs_
 content folder when done (it lives outside the repo). A negative control is cheap: bundle the OLD data (`git show
 HEAD:<file>` into a scratch folder) and the new rule must fail on it.
 
+**Specs that read `ReplicatedStorage.Shared` (2026-11-15):** a bundle is not in ReplicatedStorage, and the place's own Shared is
+older than the repo. Write the spec's text to a scratch file with `ReplicatedStorage:WaitForChild("Shared")` replaced by
+`script.Parent.Parent.Parent:WaitForChild("Shared")`, bundle the shared modules it needs (Config, Cosmetics, Rarity, Terms,
+TitleFonts, the module under test) beside `Server/Tests`, and run `rojo` from a folder under the repo (an aftman.toml must be
+above it, or `rojo` errors "no aftman.toml lists this tool"). `execute_luau` in the Edit datamodel (or a Play client for a
+lookup that needs workspace and tags) then runs it; delete the .rbxm from the content folder afterwards. 40 specs of
+[death-loadout-2026-11](death-loadout-2026-11.md) ran this way.
+
 Related: [[tokyo-crowd-2026-11]], [[studio-mcp]].

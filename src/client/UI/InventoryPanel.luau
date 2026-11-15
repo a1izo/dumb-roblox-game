@@ -16,6 +16,7 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local Kit = require(script.Parent.Kit)
 local Router = require(script.Parent.Core.Router)
 local Card = require(script.Parent.Shop.Card)
+local DeathSlots = require(script.Parent.Shop.DeathSlots)
 local YourLook = require(script.Parent.Shop.YourLook)
 local WinCinema = require(script.Parent.Parent.Presentation.WinCinema)
 
@@ -108,8 +109,11 @@ local function stateOf(profile, item): { text: string, filled: boolean }?
 		local at = table.find(EmoteWheel.slots(profile.emoteWheel), item.emote)
 		return if at then { text = "Slot " .. at, filled = true } else nil
 	end
+	if item.kind == "reason" then
+		return DeathSlots.chip(profile, item)
+	end
 	if worn(profile, item) then
-		local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win" or item.kind == "reason"
+		local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win"
 		return { text = if used then "In use" else "Worn", filled = true }
 	end
 	return nil
@@ -164,8 +168,28 @@ local function showAction(profile, item: Cosmetics.Item?)
 			else "Pick a wheel slot."
 		return
 	end
-	local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win" or item.kind == "reason"
 	local scene = WinCinema.cutOf(item)
+	if item.kind == "reason" then
+		-- a custom death: watch it, and put it in one of Diavolo's four slots (a click on its own slot takes it out)
+		local gap = T.space.s
+		if scene then
+			Kit.button({
+				text = "Preview",
+				variant = "secondary",
+				size = "m",
+				Size = UDim2.new(0.3, -gap / 2, 0, T.touch),
+				Parent = actionHolder,
+			}, function()
+				Router.close("inventory")
+				WinCinema.preview(scene, function()
+					Router.open("inventory")
+				end)
+			end)
+		end
+		actionNote.Text = DeathSlots.build(actionHolder, profile, item, if scene then 0.3 else 0, gap)
+		return
+	end
+	local used = item.kind == "seat" or item.kind == "chair" or item.kind == "win"
 	local hasPreview = scene ~= nil
 	local size = if hasPreview then UDim2.new(0.5, -T.space.s / 2, 0, T.touch) else UDim2.new(1, 0, 0, T.touch)
 	local at = if hasPreview then UDim2.new(0.5, T.space.s / 2, 0, 0) else UDim2.new()
@@ -191,11 +215,7 @@ local function showAction(profile, item: Cosmetics.Item?)
 	}, function()
 		ShopRequest:FireServer({ action = if on then "unequip" else "equip", itemId = item.id })
 	end)
-	if item.kind == "reason" then
-		actionNote.Text = if on
-			then string.format('You can write "%s" as a cause of death.', tostring(item.cause))
-			else "Pick it as a cause of death in the Manual."
-	elseif on then
+	if on then
 		actionNote.Text = if used then "You are using it." else "You are wearing it."
 	else
 		actionNote.Text = tostring(item.blurb or "")

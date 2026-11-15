@@ -18,6 +18,9 @@ the older death notes still list parts of the death system that were deleted.
 - Reference notes only for the nine sourced scenes: `art/refs/deaths/<style>.md`. God and Iron Man's are the owner's spec, not a
   watched clip; the six remade scenes and the three collapses have none.
 
+**2026-11-15 additions:** custom deaths are no longer worn in one slot; Diavolo equips four ([death-loadout-2026-11](death-loadout-2026-11.md)),
+and a death at the table now films a debug bot's body too ([death-cutscene-bot-victim](death-cutscene-bot-victim.md)).
+
 **What is gone (do not look for it):** the 14 custom deaths of `deaths.py` (5 removed in `4cec988c`, 6 turned into scene deaths in
 `6af353b6`, both 2026-11-11), `art/scripts/deaths_scenes.py` (deleted `915e90eb`, 2026-11-08), `art/scripts/fallen.py` and the
 five death styles (deleted `4cec988c`, the owner: "remove death styles completely"), `Presentation/Fallen` styles (only `bodyOf`

@@ -89,3 +89,5 @@
 - [Stills trap: absolute outdir](stills-trap-absolute-outdir.md) - a relative outdir of review_stills lands in C:/art; CPU renders stall at 960x540 on the volumetric book shot, use DG_SIZE=640x360 for the loop (2026-11-15)
 - [Ryuk is eight rigid parts](ryuk-is-eight-rigid-parts.md) - the Specter model has no joints (8 MeshParts, pivot at his toes), is in two scenes only, Materialize fades him per part (head last); options and costs in the 2026-11-14 findings
 - [Held camera and sides](held-camera-and-sides.md) - RoleDiavolo's non-POV cameras redone 2026-11-14: held() for a bent path with a spring aim; a raised arm hides the face on its side, a second subject hides on the line through them
+- [Bot victim has no body](death-cutscene-bot-victim.md) - 2026-11-15 "death animation doesn't play in a match": Fallen.bodyOf missed debug bots (negative ids), so Presenters/Death had nothing to film; repro probe, fix, what was not seen
+- [Death loadout](death-loadout-2026-11.md) - 2026-11-15 Diavolo equips four custom deaths (profile.deathLoadout, migration v10, ShopService deathSlot, Manual lists ps.deaths); per-name choice, plain causes stay; slot UI not seen in game
