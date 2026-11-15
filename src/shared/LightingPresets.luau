@@ -761,6 +761,23 @@ LightingPresets.scenes = {
 		tint = rgb(255, 238, 220),
 		bloom = 0.5,
 	}),
+	-- Death's Manual alone in the dark (Presentation/BookStage, set while its shot plays): the page and the ink lit, the
+	-- floor and the lid (near-black parts) staying black. The set stands far above the world, which Venues.at counts as the
+	-- lobby, so without this look the shot was lit by whatever look the camera had just left (the meeting's: ambient 0.03,
+	-- contrast 0.53) for its first two seconds and then blended into the lobby's over 3.5 s: a black frame under the grade.
+	-- The set's own lamp lights nothing (a point light of brightness 40, or a bulb right over the page, left the page black
+	-- while point lights lit the lobby's floor): the page is lit by the ambient light, which is why it is this high. Seen
+	-- in a play test 2026-11-15 (the owner's "manual yes"; docs/handoff/animation-audit-match-scenes-2026-11-14.md).
+	manual = scene({
+		ambient = rgb(176, 170, 164),
+		outdoorAmbient = rgb(176, 170, 164),
+		envDiffuse = 0.5,
+		envSpecular = 0.3,
+		saturation = -0.4,
+		contrast = 0.12,
+		tint = rgb(255, 246, 236),
+		bloom = 0.4,
+	}),
 	-- sans' battle screen: black, the victim lit flat by the scene's own lamps.
 	sans = scene({ ambient = rgb(0, 0, 0), outdoorAmbient = rgb(0, 0, 0), bloom = 0.2 }),
 } :: { [string]: Preset }

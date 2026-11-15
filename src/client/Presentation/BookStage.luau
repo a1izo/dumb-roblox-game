@@ -10,7 +10,6 @@
 -- A writing style (Diavolo's, from the shop: Presentation/Styles) changes the ink and how each line goes
 -- in; without one it is plain dark ink from a pen.
 
-local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
@@ -19,6 +18,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local Models = require(Shared:WaitForChild("Models"))
 
+local LightingController = require(script.Parent.Parent.World.LightingController)
 local CameraDirector = require(script.Parent.CameraDirector)
 local Stage = require(script.Parent.Stage)
 local Styles = require(script.Parent.Styles)
@@ -67,11 +67,11 @@ local function buildSet(stage: any, page: Vector3)
 	local lamp = block(set, Vector3.new(0.2, 0.2, 0.2), CFrame.new(page + Vector3.new(0.4, 3.2, -0.8)), dark)
 	lamp.Transparency = 1
 	lamp.CastShadow = false
-	-- (Each mood sets its own exposure: the lamp makes up for it, so the page reads in every phase.)
-	local exposure = math.clamp(Lighting.ExposureCompensation, -3, 3)
+	-- (The shot has its own look, exposure 0: LightingPresets.scenes.manual, set in play(). The lamp used to make up for
+	-- whatever exposure the phase's mood had, read from Lighting at build time.)
 	Create("PointLight", {
 		Range = 9,
-		Brightness = LIGHT * 1.6 * 2 ^ -exposure,
+		Brightness = LIGHT * 1.6,
 		Color = Color3.fromRGB(255, 240, 222),
 		Shadows = false,
 		Parent = lamp,
@@ -242,6 +242,10 @@ end
 -- `seconds`, in `style` (a writing style, or nil for plain ink). Returns a function that takes the set away
 -- (call it when the shot is over).
 function BookStage.play(token: number, lines: { Line }, seconds: number, style: string?): () -> ()
+	-- (lit by its own look, applied at once: the set stands far above the world, which counts as the lobby, so the shot
+	-- used to borrow the look the camera had left for its first two seconds and then blend into the lobby's over 3.5 s,
+	-- a black frame under the grade: LightingPresets.scenes.manual)
+	LightingController.scene("manual")
 	local stage = Stage.new()
 	local book = Models.grimoire()
 	ManualBook.pose(book, 1, 1)
@@ -279,6 +283,14 @@ function BookStage.play(token: number, lines: { Line }, seconds: number, style: 
 	end
 	return function()
 		stage:destroy()
+		-- (the world's look comes back once the caller has moved the camera on, in the same frame: the next look is read from
+		-- where the camera stands then, not from the set, so it is applied at once and never blended up from the lobby's.
+		-- Only if the look is still ours: a scene death may have taken over.)
+		task.defer(function()
+			if LightingController.currentScene() == "manual" then
+				LightingController.scene(nil)
+			end
+		end)
 	end
 end
 
