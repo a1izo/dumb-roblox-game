@@ -1421,11 +1421,22 @@ type Burst = {
 	light: number?,
 	direction: Enum.NormalId?,
 }
+-- (one burst light at a time: a dance's accents land on every beat, and a light each would flicker the room)
+local lastBurstLight = 0
+local function hotOf(sequence: ColorSequence): Color3
+	local c = sequence.Keypoints[1].Value
+	return c:Lerp(Color3.new(1, 1, 1), 0.55)
+end
+
 local function burst(at: Vector3, spec: Burst)
 	-- (the VFX kit's: specks that glow hot as they are born and shrink as they fly; streaks among them when they fly
-	-- fast; a star at the heart of a bright one)
+	-- fast; a star at the heart of a bright one. 2026-11-14, the user: "make the vfx of the emotes 100x better": every
+	-- burst now has a heart (a soft white-hot bloom that swells and is gone in a fifth of a second), throws its light on
+	-- what is round it, rings out when it is fast, and leaves a few slow embers drifting up after it: the layers the
+	-- references' hits have, on every emote that uses it)
 	local accel = Vector3.new(0, -(spec.gravity or 0), 0)
 	local spread = spec.spread or 60
+	local hot = hotOf(spec.color)
 	local list: { any } = {
 		{
 			{
@@ -1479,7 +1490,59 @@ local function burst(at: Vector3, spec: Burst)
 			1,
 		})
 	end
+	-- the heart: a bloom that swells fast and is gone
+	table.insert(list, {
+		{
+			tex = "VfxGlow",
+			color = { { 0, Color3.new(1, 1, 1) }, { 0.4, hot }, { 1, spec.color.Keypoints[1].Value } },
+			size = { { 0, spec.size * 1.5 }, { 0.3, spec.size * 6 }, { 1, spec.size * 7 } },
+			alpha = { { 0, 0.15 }, { 0.4, 0.55 }, { 1, 1 } },
+			life = 0.22,
+			speed = 0.01,
+			light = 1,
+			bright = 1.4,
+			z = 0.5,
+		},
+		1,
+	})
+	-- the afterglow: a few embers left drifting up, slow, after the rest has gone
+	if spec.count >= 4 then
+		table.insert(list, {
+			{
+				tex = "VfxEmber",
+				color = { { 0, hot }, { 1, spec.color.Keypoints[#spec.color.Keypoints].Value } },
+				size = { { 0, spec.size * 0.5 }, { 0.5, spec.size * 0.4 }, { 1, 0 } },
+				alpha = { { 0, 0.2 }, { 0.8, 0.4 }, { 1, 1 } },
+				life = { spec.life.Max * 1.6, spec.life.Max * 2.6 },
+				speed = { 0.4, 1.4 },
+				spread = 180,
+				accel = Vector3.new(0, 1.2, 0),
+				drag = 1.2,
+				light = 1,
+				bright = 1.1,
+			},
+			math.max(2, math.floor(spec.count / 4)),
+		})
+	end
 	Vfx.Emit.burst(at, list)
+	-- its light on the floor, the body and what stands near (one at a time)
+	local now = os.clock()
+	if spec.count >= 6 and (spec.light or 0.5) >= 0.5 and now - lastBurstLight > 0.12 then
+		lastBurstLight = now
+		Vfx.Light.flash(at, hot, 6 + spec.size * 14, 1.2 + (spec.light or 0.5), 0.28)
+	end
+	-- a ring for a fast one, turned to the lens
+	local camera = workspace.CurrentCamera
+	if spec.speed.Max >= 8 and spec.count >= 8 and camera then
+		local face = CFrame.lookAt(at, camera.CFrame.Position) * CFrame.Angles(math.rad(-90), 0, 0)
+		Vfx.Beams.wave(face, spec.size * 0.6, spec.size * 7, 0.3, {
+			tex = "VfxRingBand",
+			color = hot,
+			width = spec.size * 0.6,
+			light = 1,
+			bright = 1.3,
+		})
+	end
 end
 
 -- Bits of something solid thrown from a point (crumbs, shavings): broken chunks of its colour, lit by the scene,
@@ -1519,6 +1582,26 @@ local function pieces(at: Vector3, color: Color3, count: number, size: number, s
 				accel = Vector3.new(0, -26, 0),
 			},
 			math.ceil(count / 2),
+		},
+		{
+			-- (a little dust knocked off with them, of their own colour, hanging a moment)
+			{
+				tex = "VfxDust",
+				grid = 4,
+				mode = "OneShot",
+				color = color:Lerp(Color3.fromRGB(150, 148, 146), 0.5),
+				light = 0,
+				lit = 0.7,
+				size = { { 0, size * 1.2 }, { 1, size * 3.2 } },
+				alpha = { { 0, 0.35 }, { 0.6, 0.6 }, { 1, 1 } },
+				life = { 0.5, 0.8 },
+				speed = { speed * 0.15, speed * 0.35 },
+				spread = 80,
+				drag = 3,
+				rot = { 0, 360 },
+				spin = { -30, 30 },
+			},
+			math.max(2, math.ceil(count / 4)),
 		},
 	})
 end
@@ -3492,6 +3575,8 @@ end
 -- A small white glint (a catch of light), `count` sparks.
 local function glint(at: Vector3?, count: number?, size: number?)
 	if at then
+		-- (2026-11-14: the star that blooms and closes, turning, as anime draws a catch of light; then its sparks)
+		Vfx.Recipes.twinkle(at, { color = Color3.new(1, 1, 1), scale = (size or 0.28) / 0.28 * 0.55 })
 		burst(at, {
 			color = GLINT,
 			count = count or 4,
@@ -3958,6 +4043,7 @@ function EmoteFx.play(character: Model, clip: string, preview: boolean?, phase: 
 	end
 	local spec = if preview or (other and Settings.get("otherAuras") == false) then nil else auraFor(clip, rung)
 	if spec then
+		spec.own = mine(character)
 		table.insert(stops, Aura.start(character, spec))
 	end
 	if #stops == 0 then
@@ -4074,6 +4160,30 @@ function EmoteFx.wisp(character: Model)
 		spin = { -40, 40 },
 	})
 	emitter:Emit(8)
+	-- (2026-11-14: a pale ring rolls out over the floor from the feet, and a few motes lift off it: an emote begins and
+	-- ends on a beat you can see)
+	local floor = floorUnder(root.Position, character)
+	Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.08, 0)), 0.6, 4.2, 0.55, {
+		tex = "VfxRingBand",
+		color = Color3.fromRGB(214, 212, 218),
+		width = 0.35,
+		light = 0.6,
+		bright = 1,
+	})
+	Vfx.Emit.burst(CFrame.new(floor + Vector3.new(0, 0.2, 0)), {
+		tex = "VfxEmber",
+		color = Color3.fromRGB(236, 234, 240),
+		size = { { 0, 0.1 }, { 0.6, 0.07 }, { 1, 0 } },
+		alpha = { { 0, 0.3 }, { 1, 1 } },
+		life = { 0.8, 1.4 },
+		speed = { 1, 2.4 },
+		spread = 40,
+		accel = Vector3.new(0, 2, 0),
+		drag = 1.5,
+		light = 1,
+		bright = 1,
+		shape = Enum.ParticleEmitterShape.Disc,
+	}, 7, Vector3.new(3, 0.1, 3))
 	task.delay(1.7, function()
 		at:Destroy()
 	end)

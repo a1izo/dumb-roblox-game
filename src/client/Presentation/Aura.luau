@@ -31,10 +31,153 @@ export type Spec = {
 	level: number, -- 1 .. 3 (above)
 	scale: number?, -- its size (1 for a body)
 	ground: boolean?, -- its ground layer (from level 2; false: none, for one that floats or flies)
+	own: boolean?, -- this player's own body (the ignition shakes their screen)
 }
 
 local WHITE = Color3.new(1, 1, 1)
 local BLACK = Color3.new(0, 0, 0)
+
+-- The ignition (2026-11-14, the user: the emotes' effects "100x better"; it used to fade in): power coming up through
+-- the body at once. A white-hot flash at the chest; a shockwave of the aura's colour rolling out over the floor and
+-- a thinner one after it; a column of embers thrown up round the body; dust kicked out low from the feet; the light
+-- of it on everything near; on one's own screen a short hard shake and a punch of the lens. Bigger with the level.
+local function ignite(
+	character: Model,
+	torso: BasePart,
+	colour: Color3,
+	accent: Color3,
+	level: number,
+	k: number,
+	own: boolean
+)
+	local calm = Motion.isReduced()
+	local chest = torso.Position
+	local feet = (torso.CFrame * CFrame.new(0, -3, 0)).Position
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { character, workspace.CurrentCamera }
+	local hit = workspace:Raycast(chest + Vector3.new(0, 1, 0), Vector3.new(0, -12, 0), params)
+	local floor = if hit then hit.Position else feet
+	local g = 0.6 + 0.4 * level
+	Emit.burst(
+		chest,
+		{
+			{
+				{
+					tex = "VfxFlare",
+					color = WHITE,
+					size = { { 0, 1 * k }, { 0.15, 9 * g * k }, { 1, 0 } },
+					life = 0.35,
+					speed = 0.01,
+					rot = { 0, 360 },
+					light = 1,
+					bright = 2.2,
+				},
+				1,
+			},
+			{
+				{
+					tex = "VfxGlow",
+					color = { { 0, WHITE }, { 0.5, accent }, { 1, colour } },
+					size = { { 0, 2 * k }, { 0.3, 9 * g * k }, { 1, 11 * g * k } },
+					alpha = { { 0, 0.2 }, { 0.5, 0.6 }, { 1, 1 } },
+					life = 0.45,
+					speed = 0.01,
+					light = 1,
+					bright = 1.5,
+				},
+				1,
+			},
+		} :: any
+	)
+	Emit.burst(
+		CFrame.new(floor + Vector3.new(0, 0.2, 0)),
+		{
+			{
+				-- the column of embers thrown up round the body
+				{
+					tex = "VfxEmber",
+					color = { { 0, WHITE }, { 0.3, accent }, { 1, colour } },
+					size = { { 0, 0.22 * k }, { 0.6, 0.16 * k }, { 1, 0 } },
+					life = { 0.7, 1.3 },
+					speed = { 14 * k * g, 26 * k * g },
+					spread = 14,
+					drag = 2.2,
+					accel = Vector3.new(0, -6, 0),
+					light = 1,
+					bright = 2,
+					shape = Enum.ParticleEmitterShape.Disc,
+				},
+				math.floor(24 * g),
+			},
+			{
+				-- dust kicked out low from the feet
+				{
+					tex = "VfxDust",
+					grid = 4,
+					mode = "OneShot",
+					color = colour:Lerp(Color3.fromRGB(110, 108, 108), 0.7),
+					light = 0,
+					lit = 0.6,
+					size = { { 0, 1 * k }, { 1, 3 * k } },
+					alpha = { { 0, 0.3 }, { 0.6, 0.55 }, { 1, 1 } },
+					life = { 0.6, 1 },
+					speed = { 8 * k, 14 * k },
+					spread = { 86, 86 },
+					drag = 4,
+					rot = { 0, 360 },
+					spin = { -40, 40 },
+				},
+				math.floor(10 * g),
+			},
+		} :: any,
+		nil,
+		Vector3.new(2.4 * k, 0.1, 2.4 * k)
+	)
+	if not calm then
+		Beams.wave(CFrame.new(floor + Vector3.new(0, 0.12, 0)), 1 * k, 9 * g * k, 0.5, {
+			tex = "VfxRingBand",
+			color = accent,
+			width = 1.1 * k,
+			light = 1,
+			bright = 1.6,
+		})
+		Clock.after(0.12, function()
+			Beams.wave(CFrame.new(floor + Vector3.new(0, 0.14, 0)), 0.6 * k, 13 * g * k, 0.7, {
+				tex = "VfxRingBand",
+				color = colour,
+				width = 0.5 * k,
+				light = 1,
+				bright = 1.2,
+			})
+		end)
+	end
+	Vfx.Light.flash(chest, accent, 22 * k * g, 4 * g, 0.5)
+	if own and not calm then
+		Vfx.Screen.shake(0.9 * g, 0.3)
+		Vfx.Screen.punch(-3 * g, 0.25)
+	end
+end
+
+-- The release, as the aura goes: what is left of it drawn up off the body and blown out in a last ring of specks.
+local function release(torso: BasePart, colour: Color3, accent: Color3, k: number)
+	if not torso.Parent then
+		return
+	end
+	Emit.burst(torso.Position, {
+		tex = "VfxEmber",
+		color = { { 0, accent }, { 1, colour } },
+		size = { { 0, 0.16 * k }, { 1, 0 } },
+		alpha = { { 0, 0.2 }, { 1, 1 } },
+		life = { 0.6, 1.1 },
+		speed = { 3 * k, 7 * k },
+		spread = 180,
+		drag = 2.5,
+		accel = Vector3.new(0, 4, 0),
+		light = 1,
+		bright = 1.5,
+	}, 18, Vector3.new(1.6 * k, 2.2 * k, 1.2 * k))
+end
 
 local function partOf(character: Model, ...: string): BasePart?
 	for _, name in ipairs({ ... }) do
@@ -75,6 +218,7 @@ function Aura.start(character: Model, spec: Spec): () -> ()
 	local k = spec.scale or 1
 	local colour = spec.colour
 	local accent = spec.accent or colour:Lerp(WHITE, 0.55)
+	ignite(character, torso, colour, accent, level, k, spec.own == true)
 	local deep = colour:Lerp(BLACK, 0.55)
 	local made: { Instance } = {}
 	local emitters: { ParticleEmitter } = {}
@@ -409,6 +553,7 @@ function Aura.start(character: Model, spec: Spec): () -> ()
 		for _, item in ipairs(emitters) do
 			item.Enabled = false
 		end
+		release(torso, colour, accent, k)
 		local from = light.Brightness
 		Clock.tween(0.4, Vfx.Ease.outQuad, function(u)
 			light.Brightness = from * (1 - u)
