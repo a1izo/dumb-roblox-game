@@ -173,7 +173,7 @@ def _rubble(s, rng, x, z, reach, count):
         s.obox(STONE, (x + math.cos(a) * d, h * rng.uniform(0.18, 0.42), z + math.sin(a) * d), (w, h, dp), ux, uy, uz)
 
 
-def _column(s, rng, x, z, yaw, drums=4):
+def _column(s, rng, x, z, yaw, drums=4, reach=10.0):
     """A column down: its stump still standing on its plinth, broken off ragged; its drums lying where they fell,
     in a line that has come apart, each rolled a little out of true and half sunk."""
     r = rng.uniform(1.15, 1.45)
@@ -191,6 +191,9 @@ def _column(s, rng, x, z, yaw, drums=4):
     along = r + rng.uniform(1.6, 2.6)
     for k in range(drums):
         length = rng.uniform(2.0, 3.2)
+        # (the drums stay inside the ground the ruin was given: past it, a drum would lie on whatever stands there)
+        if along + length + 1.0 > reach:
+            break
         side = rng.uniform(-0.9, 0.9) * (1 + 0.4 * k)
         cx, cz = x + dx * (along + length / 2) - dz * side, z + dz * (along + length / 2) + dx * side
         turn = math.radians(yaw + rng.uniform(-16, 16) * (1 + 0.5 * k))
@@ -252,7 +255,7 @@ def ruins(s, taken):
     stood = 0
     STOOD.clear()
     for x, z, yaw, kind in RUINS:
-        reach = 8.5 if kind in ("colonnade", "wall") else 6.0
+        reach = {"column": 10.0, "colonnade": 12.0, "wall": 8.5}.get(kind, 6.0)
         # (the spot wanted, or the nearest clear ground round it: rings out to 30 studs)
         spot = None
         for ring in range(0, 6):
@@ -268,12 +271,12 @@ def ruins(s, taken):
             continue
         x, z = spot
         if kind == "column":
-            _column(s, rng, x, z, yaw)
+            _column(s, rng, x, z, yaw, reach=reach)
         elif kind == "colonnade":
             # two columns of one row: one down along the row, its neighbour only a stump
-            _column(s, rng, x, z, yaw, drums=rng.randint(3, 5))
+            _column(s, rng, x, z, yaw, drums=rng.randint(3, 5), reach=reach)
             dx, dz = math.cos(math.radians(yaw + 90)), math.sin(math.radians(yaw + 90))
-            _column(s, rng, x + dx * 6.5, z + dz * 6.5, yaw + rng.uniform(150, 210), drums=1)
+            _column(s, rng, x + dx * 6.5, z + dz * 6.5, yaw + rng.uniform(150, 210), drums=1, reach=reach - 6.5)
         elif kind == "wall":
             _wall(s, rng, x, z, yaw)
         else:

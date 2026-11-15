@@ -239,6 +239,10 @@ def quiet_places():
 
     out = [g2.ccw(poly) for name, poly in P.footprints().items()
            if name in ("throne rock", "tusks", "arch") or name.startswith("junk")]
+    # (and the garden of the dead, both its halves, as the user's pictures drew it: the pond garden by the spawn and
+    # the great tree's hill of flowers with its columns; the hummocks would lift its flowers off the ground it was laid on)
+    for c, r in (((66.0, 86.0), 46.0), ((-2.0, -104.0), 66.0)):
+        out.append(g2.ccw(P.circle(c, r, 24)))
     # (and the wreckage dressing.ruins stood: ash drifts up to it, never over it)
     return out + [g2.ccw(P.circle((x, z), reach * 0.8, 12)) for x, z, reach in dressing.STOOD]
 
@@ -372,44 +376,72 @@ def build(s):
     return count
 
 
-BACK_STEP = 8.0  # the backing sheet's grid
-BACK_UNDER = 0.45  # how far under the lowest of the relief over each cell it lies
+BACK_STEP = 22.0  # the backing sheet's grid (176 and 440 are whole numbers of it)
+BACK_REACH = 440.0  # (a square) out to here: past the relief's edge, under the far plain's first stretch
+BACK_UNDER = 0.45  # how far under the lowest of the ground over each corner's neighbourhood it lies
 
 
 def _backing(s, field, hole_polys, hole_boxes):
-    """A plain sheet of ash under the relief over the basin (2026-11-12, the user: "small line or cracks where you can
-    see below"): the relief is many meshes (a tile for each surface) and Roblox opens one-pixel slits along their joins
-    (mesher.seal says why); the lobby floats over a bright sky, so each slit showed as a bright line. Now what shows
-    in a slit is this sheet. One mesh, a coarse grid, each corner under the lowest relief round it; left out over the
-    holes (the rift, the chasms)."""
-    n = int(round(2 * INNER / BACK_STEP))
+    """A plain sheet of ash under the whole relief (2026-11-12, the user: "small line or cracks where you can see
+    below"; 2026-11-14: "still not fixed"): the relief is many meshes (a tile for each surface) and Roblox opens
+    one-pixel slits along their joins (mesher.seal says why); the lobby floats over a bright sky, so each slit showed
+    as a bright line. Now what shows in a slit is this sheet.
+
+    The first sheet stopped at INNER (176), while the relief runs on to REACH (424): every join out there, and the long
+    straight edge where the relief meets the far plain (its corners every 8 studs against the plain's every 250: they
+    can never meet without a slit), still had the sky under it. This one runs past REACH, under the plain's first
+    stretch too, and is cut round each hole along the hole's own outline (it used to leave out whole cells near one).
+    One mesh, a coarse grid; every corner under the lowest ground round it."""
+    n = int(round(2 * BACK_REACH / BACK_STEP))
     low = {}
 
-    def corner(i, j):
-        if (i, j) not in low:
-            x, z = -INNER + i * BACK_STEP, -INNER + j * BACK_STEP
-            low[(i, j)] = min(field.height(x + dx, z + dz) for dx in (-BACK_STEP, -BACK_STEP / 2, 0.0, BACK_STEP / 2,
-                                                                         BACK_STEP)
-                              for dz in (-BACK_STEP, -BACK_STEP / 2, 0.0, BACK_STEP / 2, BACK_STEP)) - BACK_UNDER
-        return low[(i, j)]
+    def under(x, z):
+        key = (round(x, 3), round(z, 3))
+        if key not in low:
+            h = BACK_STEP
+            low[key] = min(field.height(x + dx, z + dz) for dx in (-h, -h / 2, 0.0, h / 2, h)
+                           for dz in (-h, -h / 2, 0.0, h / 2, h)) - BACK_UNDER
+        return low[key]
 
+    # (each hole grown 1.5 studs out from its middle: the sheet's edge stays back from a rim, never in a throat's view)
+    def grown(poly):
+        cx = sum(q[0] for q in poly) / len(poly)
+        cz = sum(q[1] for q in poly) / len(poly)
+        out = []
+        for x, z in poly:
+            d = math.hypot(x - cx, z - cz) or 1.0
+            out.append((x + (x - cx) / d * 1.5, z + (z - cz) / d * 1.5))
+        return g2.ccw(out)
+
+    hole_polys = [grown(h) for h in hole_polys]
+    hole_boxes = [g2.bbox(h) for h in hole_polys]
     verts, faces, uvs, normals, index = [], [], [], [], {}
+
+    def vert(p):
+        key = (round(p[0], 3), round(p[1], 3))
+        if key not in index:
+            index[key] = len(verts)
+            verts.append((p[0], under(p[0], p[1]), p[1]))
+            normals.append((0.0, 1.0, 0.0))
+        return index[key]
+
     for i in range(n):
         for j in range(n):
-            x0, z0 = -INNER + i * BACK_STEP, -INNER + j * BACK_STEP
+            x0, z0 = -BACK_REACH + i * BACK_STEP, -BACK_REACH + j * BACK_STEP
             box = (x0, z0, x0 + BACK_STEP, z0 + BACK_STEP)
-            if any(g2.bbox_overlap(box, hb) for hb in hole_boxes):
-                continue
-            ids = []
-            for ci, cj in ((i, j), (i, j + 1), (i + 1, j + 1), (i + 1, j)):
-                if (ci, cj) not in index:
-                    index[(ci, cj)] = len(verts)
-                    verts.append((-INNER + ci * BACK_STEP, corner(ci, cj), -INNER + cj * BACK_STEP))
-                    normals.append((0.0, 1.0, 0.0))
-                ids.append(index[(ci, cj)])
-            for tri in ((ids[0], ids[1], ids[2]), (ids[0], ids[2], ids[3])):
-                faces.append(tri)
-                uvs.append(tuple((verts[k][0], -verts[k][2]) for k in tri))
+            pieces = [[(x0, z0), (x0, z0 + BACK_STEP), (x0 + BACK_STEP, z0 + BACK_STEP), (x0 + BACK_STEP, z0)]]
+            for hp, hb in zip(hole_polys, hole_boxes):
+                if g2.bbox_overlap(box, hb):
+                    pieces = [piece for q in pieces for piece in g2.subtract(g2.ccw(q), hp)]
+            for piece in pieces:
+                if abs(g2.area(piece)) < 0.02:
+                    continue
+                tris = _fan(piece) if g2.is_convex(piece) else g2.triangulate(g2.ccw(piece))
+                for tri in tris:
+                    ids = [vert(p) for p in g2.cw(tri)]
+                    if len(set(ids)) == 3:
+                        faces.append(tuple(ids))
+                        uvs.append(tuple((verts[k][0], -verts[k][2]) for k in ids))
     s.mesh("RealmAsh", verts, faces, uvs, normals, ground=True)
     return len(faces)
 
