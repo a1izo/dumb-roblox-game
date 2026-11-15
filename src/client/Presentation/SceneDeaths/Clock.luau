@@ -463,8 +463,8 @@ local function build(ctx)
 		return CFrame.lookAt(
 			Vector3.new(0.1, 52 - 18 * u, 0.2),
 			Vector3.new(0, 0, 0),
-			-- (XII at the top of the picture: seen in the place, the opposite up turned it upside down)
-			Vector3.new(-math.sin(a), 0, math.cos(a))
+			-- (XII at the top of the picture)
+			Vector3.new(math.sin(a), 0, -math.cos(a))
 		),
 			40
 	end)

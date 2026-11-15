@@ -744,6 +744,9 @@ LightingPresets.scenes = {
 		ambient = rgb(120, 120, 126),
 		outdoorAmbient = rgb(140, 140, 146),
 		envDiffuse = 0.6,
+		-- (the clock's brass is polished metal: where the void sky had not loaded, seen in the place 2026-11-15, it
+		-- mirrored Roblox's blue default sky and read as blue; only a little sky in its shine)
+		envSpecular = 0.08,
 		density = 0.36,
 		haze = 2.0,
 		atmosphereColor = rgb(150, 150, 156),
