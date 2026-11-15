@@ -23,3 +23,9 @@ then never knows the import is newer). Bump it with every sealing change.
 
 Not seen in the engine yet (2026-11-15: the user's Roblox and Studio were open, no harness pictures possible).
 Related: [[lobby-hummocks-and-ruins]], [[lobby-ground-relief]], [[mesh-triangle-limit]].
+
+2026-11-15 evening, SEEN in the place: the lobby's remaining crack was a bright arc round the bowl's rim. (1) the
+backing sheet's holes were all grown 1.5 out (right for the rift and chasms, wrong for the bowl: ground.py grows the
+bowl's hole a stud INWARD now); (2) the bowl's risers face in, so from outside a riser draws nothing and the hollow
+under its terrace showed the sky (landmarks.bowl lays a stone floor under the whole bowl). Checked gone, Lobby v55.
+Look for one-sided risers and walls seen from behind wherever a crack shows as a thin bright line at a step.
