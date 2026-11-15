@@ -131,6 +131,10 @@ def bowl(s, g):
     fy = P.bowl_floor_y()
     floor = P.circle(c, P.BOWL_FLOOR_R, 48)
     city.up_face(s, "RuinFlag", floor, fy)
+    # (a floor of stone under the whole bowl, under the terraces too: the terraces' risers face in, so from outside the
+    # bowl a riser is seen from behind, which draws nothing, and the hollow under its terrace showed the sky as a
+    # bright arc round the rim; seen in the place 2026-11-15. Now that hollow has a floor.)
+    city.up_face(s, "RuinStone", P.circle(c, P.BOWL_R + 0.4, 64), fy - 0.08)
     s.zone("plaza", floor, fy, name="the bowl")
     s.collider((c[0], fy - 0.6, c[1]), (P.BOWL_R * 2.0, 1.2, P.BOWL_R * 2.0), 0.0, True, "RuinFlag")
     # A worn ring of dark stone round the dish, and another at the floor's edge.
