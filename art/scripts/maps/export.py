@@ -174,9 +174,10 @@ def mesh_digest(scene, carried=()):
         smooth = sum(len(p.faces) for p in pieces if getattr(p, "smooth", False))
         h.update(f"{mat}:{tris}:{corners.hexdigest()}:{matlib.tile_size(mat)}{f':s{smooth}' if smooth else ''};".encode())
     h.update(f"chunk:{scene.chunk};prefix:{scene.prefix};surfaces:{scanlib.REVISION}".encode())
-    # (the lips mesher.seal grows under the joins between meshes are made at finish, after this: their size stands
-    # in for them, so a change to the sealing re-versions every venue)
-    h.update(b"seal:0.22:0.22;")
+    # (the lips mesher.seal grows under the joins between meshes are made at finish, after this: their size and the
+    # sealing's revision stand in for them, so a change to the sealing re-versions every venue. Revision 2,
+    # 2026-11-15: floors are sealed at the foot of every wall too)
+    h.update(b"seal:0.22:0.22:r2;")
     for name in carried:
         path = os.path.join(common.TEXTURES, name + ".png")
         if os.path.exists(path):

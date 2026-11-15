@@ -592,7 +592,8 @@ class Scene(LayoutMixin):
                 names.append(name)
                 planned.append((name, chunk, mat))
         self.sealed = seal(planned)
-        print(f"[maps] {self.venue}: {self.sealed} joins between meshes sealed (+{self.sealed * 2} triangles)")
+        print(f"[maps] {self.venue}: {self.sealed} joins between meshes sealed, {getattr(seal, 'feet', 0)} of them a "
+              f"floor at a wall's foot (+{self.sealed * 2} triangles)")
         for name, chunk, mat in planned:
             build_mesh(name, chunk, mat, collection)
         return names
@@ -632,6 +633,10 @@ def seal(planned):
     neighbour (SEAL_OUT out, SEAL_DOWN behind the surface), in its own material; what shows in the slit is the lip.
     A height field cut into tiles (Piece.ground) has thousands of such joins and lays one backing sheet under itself
     instead.
+    2026-11-15 (the user: the cracks in the maps' floors were "still not fixed"): a join between two floors in one
+    plane was all that was sealed. A floor also meets the foot of every wall standing on it, at a right angle, and
+    the two are separate meshes just the same: the same slit opens along the corner. So a floor's edge that lies along
+    the bottom edge of an upright face at the floor's own height grows the same lip, out under the wall (`_wall_feet`).
     Returns how many lips were made."""
     def key(p):
         return (round(p[0], 3), round(p[1], 3), round(p[2], 3))
@@ -663,6 +668,8 @@ def seal(planned):
         for e in edges:
             owners.setdefault(e, []).append(m)
     count = 0
+    lips = [None] * len(planned)
+    sealed = set()  # (m, ka, kb) edges given a lip by the joins in one plane
     for m, (name, pieces, mat) in enumerate(planned):
         tile = matlib.tile_size(mat)
         lip = None
@@ -695,9 +702,87 @@ def seal(planned):
                 lip.faces.append((base + i, base + j, base + k))
                 lip.uvs.append((uv[i], uv[j], uv[k]))
             count += 1
-        if lip is not None:
-            lip.centre = pieces[0].centre
-            pieces.append(lip)
+            sealed.add((m, ka, kb))
+        lips[m] = lip
+    feet = _wall_feet(planned, borders, owners, lips, sealed)
+    for m, (name, pieces, mat) in enumerate(planned):
+        if lips[m] is not None:
+            lips[m].centre = pieces[0].centre
+            pieces.append(lips[m])
+    seal.feet = feet
+    return count + feet
+
+
+def _line(a, b):
+    """The line a segment lies on, as a key (its direction one way round, the foot of the perpendicular from the
+    origin), and where along that line the segment runs (lo, hi)."""
+    d = sub(b, a)
+    length = math.sqrt(dot(d, d))
+    if length < 1e-4:
+        return None, 0.0, 0.0
+    d = scale(d, 1 / length)
+    for c in d:
+        if abs(c) > 1e-6:
+            if c < 0:
+                d = scale(d, -1)
+            break
+    ta, tb = dot(a, d), dot(b, d)
+    foot = sub(a, scale(d, ta))
+    key = (round(d[0], 3), round(d[1], 3), round(d[2], 3), round(foot[0], 2), round(foot[1], 2), round(foot[2], 2))
+    return key, min(ta, tb), max(ta, tb)
+
+
+def _wall_feet(planned, borders, owners, lips, sealed):
+    """Lips under the corners where a floor meets the foot of a wall (seal: why). The bottom edge of every upright
+    face is indexed by its line; a floor's border edge (facing up, opaque, not already sealed in its own plane) that
+    overlaps one on the same line grows a lip out under the wall. Returns how many."""
+    walls = {}
+    for name, pieces, mat in planned:
+        if not _sealable(mat):
+            continue  # (glass, water and alpha sheets: a lip behind them would be seen through them)
+        for piece in pieces:
+            for face in piece.faces:
+                pts = [piece.verts[i] for i in face]
+                n = cross(sub(pts[1], pts[0]), sub(pts[2], pts[0]))
+                length = math.sqrt(dot(n, n))
+                if length < 1e-9 or abs(n[1] / length) > 0.15:
+                    continue
+                low = min(q[1] for q in pts)
+                for i in range(3):
+                    a, b = pts[i], pts[(i + 1) % 3]
+                    if abs(a[1] - low) < 1e-3 and abs(b[1] - low) < 1e-3:
+                        key, lo, hi = _line(a, b)
+                        if key is not None:
+                            walls.setdefault(key, []).append((lo, hi))
+    count = 0
+    for m, (name, pieces, mat) in enumerate(planned):
+        tile = matlib.tile_size(mat)
+        for (ka, kb), (a, b, n, ground) in borders[m].items():
+            if ground or n[1] < 0.9 or (m, ka, kb) in sealed:
+                continue
+            key, lo, hi = _line(a, b)
+            spans = walls.get(key) if key is not None else None
+            if not spans or not any(min(hi, h) - max(lo, l) > 0.05 for l, h in spans):
+                continue
+            along = sub(b, a)
+            out = cross(along, n)
+            length = math.sqrt(dot(out, out))
+            if length < 1e-9:
+                continue
+            out = scale(out, SEAL_OUT / length)
+            down = scale(n, -SEAL_DOWN)
+            a2, b2 = add(add(a, out), down), add(add(b, out), down)
+            if lips[m] is None:
+                lips[m] = Piece()
+            lip = lips[m]
+            base = len(lip.verts)
+            quad = [a, a2, b2, b]
+            lip.verts.extend(quad)
+            uv = planar_uvs(quad, tile)
+            for i, j, k in ((0, 1, 2), (0, 2, 3)):
+                lip.faces.append((base + i, base + j, base + k))
+                lip.uvs.append((uv[i], uv[j], uv[k]))
+            count += 1
     return count
 
 
