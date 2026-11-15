@@ -269,3 +269,37 @@ Nothing in this list is hard (an hour or two), but it is Luau in a scene the own
 2. May I do option 1b (a head that turns, a mane and skirt that follow), a Luau change, no import?
 3. Is a full rig wanted at all, given how little he is on screen? If yes, 2b's one-cube test first, with the owner's yes
    for the Studio import.
+
+## 9. Option 1b built (the owner chose "head turn, no import", 2026-11-14)
+
+No model change, no import, no version bump. Luau and the shot data only:
+
+- **`src/client/Presentation/SpecterPose.luau`** (new): `SpecterPose.new(model)` finds the pieces (`Specter_Face`,
+  `_Hair`, `_Glow`, `_Glow2` for the head; `_Collar` the mane; `_Gear` the gear) and works out the neck, the shoulders and
+  the hips from the face piece's middle and size (offsets read off the exported model: the face piece's middle at
+  (0.156, -0.889, 6.999) in Blender, the neck at (0, -0.70, 6.45), the shoulders at (0, -0.2, 6.0), the hips at
+  (0, 0.12, 3.9)). `SpecterPose.apply(pose, pitch, yaw, roll)` sets the head pieces' CFrames each frame as a turn about
+  the neck (pitch + looks down, yaw + turns to his left, roll + tilts to his left; kept to yaw 25, 15 down, 10 up and roll
+  10 degrees), and lets the mane (0.2 s) and the gear (0.3 s) trail the body's own turning by the difference, never more
+  than 5 degrees (the gear carries the wrist bracelets). It does nothing when a piece is missing (the hand-built
+  stand-in), turns the frame half way round if the model came in facing +z, and does not depend on call order against
+  `PivotTo` (each call sets the pieces from the pivot as it is then).
+- **The neck was checked in Blender** on the exported FBX (`DeathsGambitModels_Core.fbx`): the four head pieces turned
+  about the neck point with the same maths at yaw plus and minus 25, nod 15 down and 10 up, roll 10 and a mix, from the
+  front and the side: the jaw and chin stay over the mane and the stapled collar, no gap shows at the neck, the hair turns
+  with the head. Past those angles the chin starts to leave the collar, which is why `SpecterPose` stops there.
+- **`ShotPlayer.luau`:** a prop whose shot data has a `head` track gets a `SpecterPose` and its angles each frame
+  (`sampleAngles`).
+- **`shot.py`:** `Prop.look(t, pitch, yaw, roll)` keys the head (exported as `head = { t, r }`, thinned; a Retime warps it
+  with the path).
+- **RoleDiavolo:** drawn in turned away and tipped back, the face comes round to the room as the head fills in (12.8 to
+  13.3), it turns 21 degrees and bends 11 down to look at Diavolo and nods and flicks with his heaves (a beat after each),
+  then snaps back to the lens at 14.95 and stares to the end, as Diavolo goes back to his books.
+- **The Oculus deal (`EyesDeal.luau`):** a small clock job drives the same pose from `HEAD_KEYS` (turned away while he forms,
+  round to the room as the head fills in, bent down 13 degrees to look at you as he leans over you, up to the lens as he
+  comes apart, with a slow sway so it is never still) and stops when he is destroyed. Nothing else in that scene was
+  touched: its cameras and its lean about his toes are as they were (section 7 stays for the owner's word).
+- **Not seen in the game** (no Studio was connected). What to look at first: the head turning without leaving the neck, the
+  head parts and the eye glows turning together, nothing flickering as the parts are set after `PivotTo`, the mane and the
+  skirt trailing a little. If a piece does not turn, the cause is a part name (the stand-in has none) or the part
+  not being a child of the model; `SpecterPose.new` returns nil silently then.
