@@ -153,7 +153,7 @@ local function build(ctx)
 			end
 			letterAt = p
 			if letter then
-				letter.CFrame = ctx:world(p)
+				letter.CFrame = CFrame.new(ctx:world(p))
 					* CFrame.Angles(math.sin(spin * 1.5) * 0.9, spin, math.cos(spin * 1.2) * 0.7)
 			end
 		end)
