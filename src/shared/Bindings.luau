@@ -68,8 +68,6 @@ Bindings.ACTIONS = {
 	action("zoomIn", "Zoom in", "camera", { "I" }, {}),
 	action("zoomOut", "Zoom out", "camera", { "O" }, {}),
 	action("shiftLock", "Shift lock", "camera", { "LeftShift", "RightShift" }, {}),
-	-- (the lobby's photo mode, 2026-11-14: World/PhotoMode)
-	action("photoMode", "Photo mode (lobby)", "world", { "P" }, {}),
 	action("quickChat", "Emote wheel", "world", { "Q" }, { "DPadLeft" }),
 	action("note", "Notes", "world", { "N" }, { "DPadRight" }),
 	-- (one key for each role's power, the owner's call of 2026-10-28: the Manual, the blackout, the arrest)
@@ -98,7 +96,7 @@ Bindings.ACTIONS = {
 -- How Settings > Controls groups the actions (every action is in exactly one; the specs check it).
 Bindings.SECTIONS = {
 	{ title = "Moving", ids = { "moveForward", "moveBack", "moveLeft", "moveRight", "move", "jump" } },
-	{ title = "The camera", ids = { "turnLeft", "turnRight", "look", "zoomIn", "zoomOut", "shiftLock", "photoMode" } },
+	{ title = "The camera", ids = { "turnLeft", "turnRight", "look", "zoomIn", "zoomOut", "shiftLock" } },
 	{
 		title = "The case",
 		ids = {
