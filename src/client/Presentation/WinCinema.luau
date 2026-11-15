@@ -1110,6 +1110,276 @@ ACTS.glow = function(refs, event)
 	end
 end
 
+-- The VFX kit on a cut's beat (2026-11-15, the user: every cutscene at the death scenes' level of effects): `kind` (FX
+-- below) at `place` (the star's floor frame) or on a part, prop or the star's body part (`on`, moved by `offset`), its up
+-- along `face` (a floor-frame direction; the floor's up when not given), in `color`, `scale` big, over `seconds`.
+local FX: { [string]: (refs: Refs, at: CFrame, event: any, color: Color3, s: number) -> () } = {}
+local WHITE = Color3.new(1, 1, 1)
+
+-- a hit: a white star, a burst of its colour, spikes and sparks flung off (Recipes.impact)
+FX.impact = function(_, at, event, color, s)
+	Vfx.Recipes.impact(at, {
+		color = color,
+		scale = s,
+		ground = event.ground == true,
+		shake = false,
+		flash = false,
+		spikes = event.spikes ~= false,
+	})
+end
+
+-- a glint: a star that blooms and closes
+FX.glint = function(_, at, _, color, s)
+	Vfx.Recipes.twinkle(at.Position, { color = color, scale = s })
+end
+
+-- a column of light out of the floor
+FX.pillar = function(_, at, event, color, s)
+	Vfx.Recipes.pillar(at, {
+		color = color,
+		height = (event.height or 12) * s,
+		radius = (event.radius or 1.2) * s,
+		seconds = event.seconds or 1.2,
+	})
+end
+
+-- a shockwave: a ring of light growing flat round `at`'s up, thinning as it goes
+FX.wave = function(_, at, event, color, s)
+	Vfx.Beams.wave(at, (event.from or 0.4) * s, (event.to or 9) * s, event.seconds or 0.7, {
+		tex = "VfxRingBand",
+		color = color,
+		width = (event.width or 1.4) * s,
+		bright = event.bright or 2.4,
+		light = 1,
+	})
+end
+
+-- lightning from `at` to `to` (floor frame), and its light on the set
+FX.bolt = function(refs, at, event, color, s)
+	local to = (refs.origin * CFrame.new(vec(event.to))).Position
+	local seconds = event.seconds or 0.22
+	Vfx.Beams.bolt(at.Position, to, seconds, {
+		color = color,
+		width = (event.width or 0.9) * s,
+		bright = event.bright or 3,
+		jag = event.jag,
+		pieces = event.pieces or 10,
+		rate = 22,
+	})
+	Vfx.Light.flash(at.Position:Lerp(to, 0.5), color, event.range or 60 * s, event.brightness or 3, seconds + 0.2)
+end
+
+-- light thrown on the set, falling away
+FX.light = function(_, at, event, color, s)
+	Vfx.Light.flash(at.Position, color, event.range or 16 * s, event.brightness or 4, event.seconds or 0.4)
+end
+
+-- hot sparks flung out of a point, falling, a glow where they left
+FX.sparks = function(_, at, event, color, s)
+	local hot = color:Lerp(WHITE, 0.65)
+	Vfx.Emit.burst(at, {
+		{
+			{
+				tex = "VfxStreak",
+				color = { { 0, WHITE }, { 0.3, hot }, { 1, color } },
+				size = { { 0, 0.2 * s }, { 1, 0.03 * s } },
+				squash = -2,
+				life = { 0.25, 0.7 },
+				speed = { 12 * s, 28 * s },
+				drag = 3,
+				accel = Vector3.new(0, -42, 0),
+				spread = event.spread or 75,
+				face = "along",
+				bright = 2.2,
+				light = 1,
+				z = 1,
+			},
+			event.count or 22,
+		},
+		{
+			{
+				tex = "VfxGlow",
+				color = color,
+				size = { { 0, 1.2 * s }, { 0.2, 2.4 * s }, { 1, 2.8 * s } },
+				alpha = { { 0, 0.25 }, { 1, 1 } },
+				life = 0.28,
+				bright = 1.2,
+				z = 0.5,
+			},
+			1,
+		},
+	})
+	Vfx.Light.flash(at.Position, color, 10 * s, 2.5, 0.25)
+end
+
+-- a soft bloom of light that swells and fades over `seconds` (a fire flaring, a page catching)
+FX.bloom = function(_, at, event, color, s)
+	Vfx.Emit.burst(at, {
+		tex = "VfxGlow",
+		color = color,
+		size = { { 0, 1.5 * s }, { 0.3, (event.size or 6) * s }, { 1, (event.size or 6) * 1.2 * s } },
+		alpha = { { 0, 0.6 }, { 0.25, 0.2 }, { 1, 1 } },
+		life = event.seconds or 0.9,
+		bright = event.bright or 1.2,
+		z = 0.5,
+	}, 1)
+end
+
+-- a ring of light facing the camera, opening (a power landing, a vow)
+FX.ring = function(_, at, event, color, s)
+	Vfx.Emit.burst(at, {
+		tex = "VfxRing",
+		color = { { 0, WHITE }, { 0.3, color }, { 1, color } },
+		size = { { 0, 0.5 * s }, { 1, (event.size or 9) * s } },
+		alpha = { { 0, 0 }, { 0.6, 0.35 }, { 1, 1 } },
+		life = event.seconds or 0.45,
+		bright = 2,
+		z = 2,
+	}, 1)
+end
+
+-- puffs of dust or smoke kicked out along the floor
+FX.dust = function(_, at, event, color, s)
+	Vfx.Emit.burst(at, {
+		tex = "VfxDust",
+		color = color,
+		size = { { 0, 0.8 * s }, { 1, 2.6 * s } },
+		alpha = { { 0, 0.55 }, { 1, 1 } },
+		life = { 0.6, 1.2 },
+		speed = { 3 * s, 7 * s },
+		drag = 4,
+		spread = event.spread or 85,
+		rot = { 0, 360 },
+		spin = { -40, 40 },
+		light = 0,
+		lit = 1,
+	}, event.count or 10)
+end
+
+-- particles held over a box for `seconds`: "embers" rising off a fire, "motes" of dust drifting in a light, "ash"
+-- falling, "drizzle" of sparks off a burning edge
+local HELD = {
+	embers = function(color: Color3, s: number)
+		return {
+			tex = "VfxEmber",
+			color = { { 0, Color3.fromRGB(255, 236, 170) }, { 0.45, color }, { 1, Color3.fromRGB(110, 26, 8) } },
+			size = { { 0, 0.16 * s }, { 1, 0.02 * s } },
+			life = { 1.2, 2.4 },
+			speed = { 1.5, 4.5 },
+			spread = 25,
+			accel = Vector3.new(0.8, 3, 0),
+			drag = 0.6,
+			rate = 30,
+			bright = 2.2,
+			rot = { 0, 360 },
+			spin = { -140, 140 },
+		}
+	end,
+	motes = function(color: Color3, s: number)
+		return {
+			tex = "VfxGlow",
+			color = color,
+			size = { { 0, 0 }, { 0.2, 0.09 * s }, { 0.8, 0.07 * s }, { 1, 0 } },
+			life = { 3, 5 },
+			speed = { 0.05, 0.3 },
+			spread = 180,
+			accel = Vector3.new(0.05, 0.04, 0),
+			rate = 14,
+			bright = 0.9,
+			light = 0.6,
+		}
+	end,
+	ash = function(color: Color3, s: number)
+		return {
+			tex = "VfxAsh",
+			color = color,
+			size = { { 0, 0.18 * s }, { 1, 0.1 * s } },
+			life = { 2.5, 4 },
+			speed = { 0.4, 1.2 },
+			spread = 180,
+			accel = Vector3.new(0.4, -1.2, 0),
+			rate = 18,
+			light = 0,
+			lit = 1,
+			rot = { 0, 360 },
+			spin = { -90, 90 },
+		}
+	end,
+	drizzle = function(color: Color3, s: number)
+		return {
+			tex = "VfxStreak",
+			color = { { 0, WHITE }, { 0.4, color }, { 1, color } },
+			size = { { 0, 0.12 * s }, { 1, 0.02 * s } },
+			squash = -1.6,
+			life = { 0.3, 0.6 },
+			speed = { 2, 6 },
+			spread = 40,
+			accel = Vector3.new(0, -30, 0),
+			face = "along",
+			rate = 24,
+			bright = 2,
+		}
+	end,
+}
+
+for kind, make in pairs(HELD) do
+	FX[kind] = function(refs, at, event, color, s)
+		local box = vec(event.box or { 1, 0.2, 1 })
+		local holder = Vfx.Emit.point(at, box)
+		local spec = make(color, s)
+		spec.rate = (event.rate or spec.rate) :: number
+		spec.shape = Enum.ParticleEmitterShape.Box
+		local _, stop = Vfx.Emit.hold(holder, spec)
+		local over = false
+		local function finish()
+			if over then
+				return
+			end
+			over = true
+			stop()
+			Vfx.Clock.after(Vfx.Emit.longest(spec) + 0.4, function()
+				holder:Destroy()
+			end)
+		end
+		Vfx.Clock.after(event.seconds or 2, finish)
+		table.insert(refs.cleanups, function()
+			finish()
+			holder:Destroy()
+		end)
+	end
+end
+
+ACTS.fx = function(refs, event)
+	local fx = FX[event.kind]
+	if not fx then
+		return
+	end
+	local at: CFrame
+	local name = event.on
+	local target = if name
+		then refs.parts[name] or refs.props[name] or (if refs.star then refs.star:FindFirstChild(name) else nil)
+		else nil
+	if target then
+		local pos = if target:IsA("Model") then target:GetPivot().Position else (target :: BasePart).Position
+		at = refs.origin.Rotation + pos + refs.origin:VectorToWorldSpace(vec(event.offset or { 0, 0, 0 }))
+	elseif event.place then
+		at = refs.origin * CFrame.new(vec(event.place))
+	else
+		return
+	end
+	if event.face then
+		local up = refs.origin:VectorToWorldSpace(vec(event.face)).Unit
+		if math.abs(up.Y) < 0.98 then
+			at = CFrame.lookAt(at.Position, at.Position + up) * CFrame.Angles(-math.pi / 2, 0, 0)
+		end
+	end
+	-- (an effect that fails is dropped with a warning; it never ends the cutscene, as a failing step does)
+	local ok, err = pcall(fx, refs, at, event, rgb(event.color, Color3.fromRGB(255, 170, 80)), event.scale or 1)
+	if not ok then
+		warn("[DeathsGambit] win cutscene fx " .. tostring(event.kind) .. ": " .. tostring(err))
+	end
+end
+
 -- The death scenes' own (Shared/Cinema/DeathCuts) ------------------------------------------------------------------
 
 -- Death's Manual, open in the dark, the lines written in it ("$name": the star's name), as a death in a case opens: it

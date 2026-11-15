@@ -32,8 +32,34 @@ local ACTS = {
 	fling = true,
 	text = true,
 	scorch = true,
+	fx = true,
 }
-local NAMELESS = { pages = true, cityOut = true, snap = true, glow = true, scorch = true }
+local NAMELESS = { pages = true, cityOut = true, snap = true, glow = true, scorch = true, fx = true }
+-- (an "fx" event's kinds: WinCinema's FX; it plays at a `place` or on something on the set or the star's body)
+local FX_KINDS = {
+	impact = true,
+	glint = true,
+	pillar = true,
+	wave = true,
+	bolt = true,
+	light = true,
+	sparks = true,
+	bloom = true,
+	ring = true,
+	dust = true,
+	embers = true,
+	motes = true,
+	ash = true,
+	drizzle = true,
+}
+local BODY = {
+	Head = true,
+	Torso = true,
+	["Right Arm"] = true,
+	["Left Arm"] = true,
+	["Right Leg"] = true,
+	["Left Leg"] = true,
+}
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
@@ -92,6 +118,18 @@ return function(t)
 										.. tostring(target)
 								)
 							end
+						end
+					end
+					if event.act == "fx" then
+						if not FX_KINDS[event.kind] then
+							error(name .. ": an unknown effect " .. tostring(event.kind))
+						end
+						local on = event.on
+						if not (vec(event.place) or (on and (named[on] or BODY[on]))) then
+							error(name .. ": an effect at nothing: " .. tostring(event.kind) .. " " .. tostring(on))
+						end
+						if event.kind == "bolt" then
+							expect(vec(event.to)).to.equal(true)
 						end
 					end
 					if event.act == "snap" or event.act == "scorch" then

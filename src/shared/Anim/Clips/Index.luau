@@ -196,6 +196,6 @@ return {
 	workFingerprint = { part = 10, length = 1.6, loop = true },
 	workForensics = { part = 10, length = 2.4, loop = true },
 	workPhone = { part = 10, length = 3, loop = true },
-	write = { part = 10, length = 2.4, loop = true },
-	writeAir = { part = 10, length = 3, loop = false },
+	write = { part = 11, length = 2.4, loop = true },
+	writeAir = { part = 11, length = 3, loop = false },
 }

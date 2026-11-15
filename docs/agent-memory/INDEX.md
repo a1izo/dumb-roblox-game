@@ -83,3 +83,4 @@
 - [Studio MCP play-test traps](studio-mcp-play-test-traps.md) - require gives module copies, screen_capture needs Studio in front (15 fps otherwise); with both handled the Debug cues and stills work, recipe in the match-scenes audit (2026-11-14)
 - [Capture disturbs the camera](studio-capture-disturbs-camera.md) - a screen_capture seems to pull a scripted camera back to the player's (4 of 4 runs): log numbers and take stills in separate runs (2026-11-14)
 - [Manual stage dark frames](manual-stage-dark-frames.md) - the Manual shot was black: its far-off set (venue "lobby") got the wrong look for 5 s and its lamp lights nothing; fixed 2026-11-15 with a "manual" scene look (ambient-lit), unverified in-game until the Rojo sync
+- [Win cutscene fx](win-cutscene-fx.md) - 2026-11-15 the eight win cuts re-acted (Tool 1 passes, endings held 1.6 s+) and a WinCuts "fx" act playing the VFX kit from plain data (kinds, on/place/offset)
