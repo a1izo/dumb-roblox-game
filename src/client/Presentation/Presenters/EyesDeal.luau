@@ -20,6 +20,7 @@ local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local Materialize = require(script.Parent.Parent.Materialize)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
+local SpecterPose = require(script.Parent.Parent.SpecterPose)
 local StageLight = require(script.Parent.Parent.StageLight)
 local Vfx = require(script.Parent.Parent.Vfx)
 
@@ -45,6 +46,37 @@ local function summon(body: Model): Model
 	specter:PivotTo(specter:GetPivot() + Vector3.new(0, ground.Y - (box.Position.Y - extent.Y / 2), 0))
 	specter.Parent = workspace.CurrentCamera
 	return specter
+end
+
+-- Where its head looks, by seconds since it began to be drawn in: { t, pitch (+ down), yaw (+ to its left, towards you) }.
+-- Turned away and tipped back while it forms (its head is the last of it in, about 1.2 s), round to the room as the head
+-- fills in, bent down to look at you as it leans over you, and up again to stare at the lens as it comes apart.
+local HEAD_KEYS = {
+	{ 0, -4, -14 },
+	{ 1.2, -3, -12 },
+	{ 2, 3, 0 },
+	{ 2.2, 3, 0 },
+	{ 3.4, 13, 8 },
+	{ 5.4, 13, 9 },
+	{ 6, 4, 1 },
+	{ 7.2, 3, 1 },
+}
+
+local function headAt(t: number): (number, number)
+	local keys = HEAD_KEYS
+	local pitch, yaw = keys[#keys][2], keys[#keys][3]
+	for k = 2, #keys do
+		local a, b = keys[k - 1], keys[k]
+		if t <= b[1] then
+			local u = math.clamp((t - a[1]) / math.max(1e-6, b[1] - a[1]), 0, 1)
+			u = u * u * (3 - 2 * u)
+			pitch = a[2] + (b[2] - a[2]) * u
+			yaw = a[3] + (b[3] - a[3]) * u
+			break
+		end
+	end
+	-- (never quite still: a slow sway of the head)
+	return pitch + 1.5 * math.sin(t * 0.8 + 1), yaw + 2.5 * math.sin(t * 1.1)
 end
 
 -- Its eyes, lit before the rest of it: two red glints high in the dark.
@@ -152,6 +184,20 @@ return function(cue)
 
 	-- 1. Your face, the world draining red; behind you it is drawn together out of smoke, its eyes first.
 	local specter = summon(body)
+	-- (its head turns, and its mane and skirt trail it: SpecterPose, no new model)
+	local pose = SpecterPose.new(specter)
+	local stopHead = function() end
+	if pose then
+		local began = Vfx.Clock.now()
+		stopHead = Vfx.Clock.every(function(_, now)
+			if not specter.Parent then
+				return false
+			end
+			local pitch, yaw = headAt(now - began)
+			SpecterPose.apply(pose, pitch, yaw, 0)
+			return true
+		end)
+	end
 	-- (from in front, a little low, looking up past your face to where its head will be)
 	local pivot = body:GetPivot()
 	local headY = (body:FindFirstChild("Head") :: BasePart).Position.Y
@@ -232,6 +278,7 @@ return function(cue)
 	Cinema.letterbox(false)
 	CameraDirector.release(token)
 	Mixer.duck("eyes", false)
+	stopHead()
 	if specter.Parent then
 		specter:Destroy()
 	end

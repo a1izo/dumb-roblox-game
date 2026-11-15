@@ -294,6 +294,33 @@ for _k, _t in enumerate(_beats):
          lean=7.0 + 6.0 * max(_u, 0.0) + (2.8 if _up else -1.6) * _calm * _rng.uniform(0.6, 1.25),
          turn=-6.0 * max(_u, 0.0) + 3.0 * math.sin(_k * 0.55), roll=3.2 * math.sin(2 * math.pi * 0.4 * (_t - FORMED)),
          rise=0.5 + 0.12 * math.sin(2 * math.pi * 0.55 * (_t - FORMED)) + (0.1 if _up else -0.05) * _calm)
+# His head, turned from the neck by the game (client/Presentation/SpecterPose; the owner chose it, 2026-11-14: "head turn,
+# no import"). Pitch + looks down, yaw + turns to his left, which is towards Diavolo (he stands at +x of him); the game
+# keeps it to what the neck hides (yaw 25, 15 down, 10 up, roll 10). Drawn in turned away and tipped back, the face comes
+# round to the room as the head fills in (12.8 to 13.3), it turns and bends to look down at Diavolo and nods with the
+# heaves, then snaps back to the lens to stare as Diavolo goes back to his books: what the hidden camera does not see.
+GAZE = [(COMES, -4.0, -16.0, 6.0), (COMES + 1.2, -3.0, -12.0, 4.0), (FORMED - 0.7, 2.0, 0.0, 0.0),
+        (FORMED - 0.3, 3.0, 0.0, 0.0), (FORMED + 0.3, 10.0, 18.0, -4.0), (FORMED + 1.0, 11.0, 21.0, -4.0)]
+LENS_AT = FORMED + 1.35  # (14.95: back to the lens)
+
+
+def _gaze(t):
+    """The waypoints above, straight between them (the nods are keyed on top)."""
+    for (t0, *a), (t1, *b) in zip(GAZE, GAZE[1:]):
+        if t0 <= t <= t1:
+            u = (t - t0) / (t1 - t0)
+            return [x + (y - x) * u for x, y in zip(a, b)]
+    return list(GAZE[-1][1:])
+
+
+for _t0, _pitch, _yaw, _roll in GAZE:
+    singer.look(_t0, _pitch, _yaw, _roll)
+for _k, _t in enumerate(_beats):  # (a nod and a flick of the head a beat after each heave, while he looks down at him)
+    if GAZE[-2][0] - 0.1 < _t < LENS_AT - 0.2:
+        _p, _y, _r = _gaze(_t + 0.08)
+        singer.look(_t + 0.08, _p + (3.5 if _k % 2 == 0 else -1.2), _y + (1.2 if _k % 2 == 0 else -1.0), _r)
+singer.look(LENS_AT, 3.0, 2.0, 2.0, "snap")
+singer.look(STUDY + 0.25, 3.5, 1.0, 2.0)
 # (a long drawn-out materialize: it starts on the bite, as the owner asked on 2026-10-28, and the head and eyes, the last
 # to be drawn in, come in on the cut to F)
 shot.event(COMES, "materialize", model="Specter", dur=round(FORMED - COMES, 3), r=200, g=30, b=45)
