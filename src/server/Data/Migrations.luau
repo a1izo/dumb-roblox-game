@@ -9,7 +9,7 @@
 
 local Migrations = {}
 
-Migrations.CURRENT = 9
+Migrations.CURRENT = 10
 
 -- Internal role ids; they never change even though the displayed names do.
 local ROLE_IDS = { "Kira", "Follower", "L", "Watari", "TaskForce" }
@@ -127,6 +127,8 @@ function Migrations.defaults(startingCoins: number)
 		shopTurned = { day = -1, cards = {} },
 		-- The emote wheel's four clip ids, "" for an empty slot; empty = never changed (Shared/EmoteWheel).
 		emoteWheel = {},
+		-- Diavolo's death loadout: four custom death ids, "" for an empty slot; empty = none (Shared/DeathLoadout).
+		deathLoadout = {},
 		-- The player's own control bindings, by platform then action (Shared/Bindings); empty = the defaults.
 		keybinds = {},
 		-- The stance (an owned emote item that can be one), "" for none (Shared/Cosmetics `stance`).
@@ -310,6 +312,23 @@ local STEPS: { [number]: (any) -> () } = {
 					data.equipped[slot] = nil
 				end
 			end
+		end
+	end,
+	-- v9 -> v10 (2026-11-15, the owner's call): Diavolo equips four custom deaths and picks among them when he writes
+	-- a name, not one worn death. The one a player wore moves to the first slot of the loadout.
+	[9] = function(data)
+		local equipped = data.equipped
+		if type(equipped) ~= "table" then
+			return
+		end
+		local worn = equipped.reason
+		equipped.reason = nil
+		if
+			type(worn) == "string"
+			and worn ~= ""
+			and (type(data.deathLoadout) ~= "table" or #data.deathLoadout == 0)
+		then
+			data.deathLoadout = { worn, "", "", "" }
 		end
 	end,
 }

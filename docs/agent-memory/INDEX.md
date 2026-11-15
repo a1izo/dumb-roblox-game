@@ -96,3 +96,5 @@
 - [Real briefing play test](studio-real-briefing-play-test.md) - forceRole + startMatch plays a role's real briefing in the Studio MCP; the logger, sampling an actor's body per frame, reopening Studio onto the place from its start page
 - [Walks and endings](cutscene-walks-and-endings.md) - RoleAce's Butler walk and ending measured in the game (constant speed, dead stop, pivot; a held stare) and the fixes; the [end] lint
 
+- [Bot victim has no body](death-cutscene-bot-victim.md) - 2026-11-15 "death animation doesn't play in a match": Fallen.bodyOf missed debug bots (negative ids), so Presenters/Death had nothing to film; repro probe, fix, what was not seen
+- [Death loadout](death-loadout-2026-11.md) - 2026-11-15 Diavolo equips four custom deaths (profile.deathLoadout, migration v10, ShopService deathSlot, Manual lists ps.deaths); per-name choice, plain causes stay; slot UI not seen in game

@@ -155,6 +155,33 @@ return function(t)
 			fresh.emoteWheel = {}
 			expect(#Migrations.migrate(fresh, START).emoteWheel).to.equal(0)
 		end)
+		it("moves the one worn custom death to the first death slot at v10", function()
+			local old = v1Profile()
+			old.v = 9
+			old.owned.reason_heart = true
+			old.equipped.reason = "reason_heart"
+			local data = Migrations.migrate(old, START)
+			expect(table.concat(data.deathLoadout, ",")).to.equal("reason_heart,,,")
+			expect(data.equipped.reason).to.equal(nil)
+			expect(data.owned.reason_heart).to.equal(true)
+		end)
+		it("gives a profile with no custom death worn an empty loadout", function()
+			local old = v1Profile()
+			old.v = 9
+			local data = Migrations.migrate(old, START)
+			expect(#data.deathLoadout).to.equal(0)
+			expect(data.equipped.reason).to.equal(nil)
+			expect(#Migrations.defaults(START).deathLoadout).to.equal(0)
+		end)
+		it("keeps a death loadout that already exists when the old slot is still set", function()
+			local old = v1Profile()
+			old.v = 9
+			old.equipped.reason = "reason_frost"
+			old.deathLoadout = { "reason_heart", "", "", "" }
+			local data = Migrations.migrate(old, START)
+			expect(table.concat(data.deathLoadout, ",")).to.equal("reason_heart,,,")
+			expect(data.equipped.reason).to.equal(nil)
+		end)
 		it("changes nothing when run twice", function()
 			local once = Migrations.migrate(v1Profile(), START)
 			once.coins = 777

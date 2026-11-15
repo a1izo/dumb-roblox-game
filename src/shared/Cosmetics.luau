@@ -9,8 +9,9 @@
 --           game signal, a death, an arrest or the Eyes, so it is never played in a match), seat (how you sit
 --           at the war table for a meeting: `clip`, Shared/Seating), chair (what your place at the table
 --           becomes, for everyone: `model`), win (a win cutscene: `side`, `cut`; worn in its side's `slot`),
---           reason (a custom death: `cause` is what Diavolo can write as the cause of death once it is worn, and
---           `style` the effect that plays on the body as it falls, Presentation/CustomDeaths)
+--           reason (a custom death: `cause` is what Diavolo can write as the cause of death once it is in one of his
+--           four death slots (Shared/DeathLoadout, saved as `deathLoadout`, not in `equipped`), and `style` the scene
+--           or effect that plays as the body falls, Presentation/SceneDeaths)
 --   rarity  common, rare, epic, legendary, godhood (shown as Scrawl, Penned, Sealed, Condemned, Godhood:
 --           Shared/Rarity)
 --   source  shop (always for sale), rotation (for sale on days it is featured), free (everyone's), vip
@@ -332,8 +333,9 @@ Cosmetics.ITEMS = {
 		color = Color3.fromRGB(255, 236, 190),
 	},
 
-	-- Custom deaths (2026-10-25): a cause of death of your own to write in the Manual. Worn, it joins the three plain
-	-- causes when you write; the death plays its own effect on the body as it falls, and the cause is read out.
+	-- Custom deaths (2026-10-25): a cause of death of your own to write in the Manual. Put in one of Diavolo's four death
+	-- slots (2026-11-15), it joins the three plain causes when he writes; the death plays its own scene as the body
+	-- falls, and the cause is read out.
 	{
 		id = "reason_heart",
 		kind = "reason",

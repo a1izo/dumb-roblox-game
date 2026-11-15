@@ -1,7 +1,8 @@
 -- The cosmetic shop: buy with coins earned in matches, then equip in the lobby. Items from
 -- the daily rotation can only be bought while they are featured; VIP and earned items
 -- cannot be bought at all. An emote is not worn: a bought one goes on the emote wheel's first
--- empty slot (EmoteService). It also keeps what the shop needs to remember for browsing
+-- empty slot (EmoteService), and so is a custom death: it goes in the first empty slot of Diavolo's four
+-- (Shared/DeathLoadout), and the slot buttons move it. It also keeps what the shop needs to remember for browsing
 -- (Shared/ShopBrowse): the new cards already looked at, and the wishlist, announced on arriving
 -- when a wished card is in Today's hand. And Fate's draw (Shared/Fate): a card of the week's deck
 -- not owned yet, for Fate.PRICE coins, told to the client (Net "Fate") so the shop can turn it over.
@@ -10,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
+local DeathLoadout = require(Shared:WaitForChild("DeathLoadout"))
 local Fate = require(Shared:WaitForChild("Fate"))
 local Net = require(Shared:WaitForChild("Net"))
 local ShopBrowse = require(Shared:WaitForChild("ShopBrowse"))
@@ -233,6 +235,16 @@ local function onRequest(player: Player, payload)
 					else "Bought " .. item.name .. ".",
 				"good"
 			)
+		elseif item.kind == "reason" then
+			local loadout, slot = DeathLoadout.place(data.deathLoadout, item.id)
+			data.deathLoadout = loadout
+			Match.notify(
+				player,
+				if slot
+					then string.format("Bought %s. Added to death slot %d.", item.name, slot)
+					else "Bought " .. item.name .. ".",
+				"good"
+			)
 		else
 			data.equipped[Cosmetics.slotOf(item)] = item.id
 			Match.notify(player, "Bought and equipped " .. item.name .. ".", "good")
@@ -243,11 +255,37 @@ local function onRequest(player: Player, payload)
 		if item.kind == "emote" or not CosmeticsService.owns(player, item) then
 			return
 		end
-		data.equipped[Cosmetics.slotOf(item)] = item.id
+		if item.kind == "reason" then
+			-- (a death takes the first empty slot of the four; the slot buttons put one in another)
+			local loadout, slot = DeathLoadout.place(data.deathLoadout, item.id)
+			data.deathLoadout = loadout
+			if not slot then
+				Match.notify(player, "All four death slots are full. Pick a slot.", "bad")
+				return
+			end
+		else
+			data.equipped[Cosmetics.slotOf(item)] = item.id
+		end
+	elseif action == "deathSlot" then
+		-- A custom death into one of Diavolo's four slots (payload.slot, 1 to 4), or out of its slot (payload.clear).
+		if item.kind ~= "reason" or not CosmeticsService.owns(player, item) then
+			return
+		end
+		if payload.clear == true then
+			data.deathLoadout = DeathLoadout.remove(data.deathLoadout, item.id)
+		elseif type(payload.slot) == "number" then
+			data.deathLoadout = DeathLoadout.set(data.deathLoadout, payload.slot, item.id)
+		else
+			return
+		end
 	elseif action == "unequip" then
-		local slot = Cosmetics.slotOf(item)
-		if data.equipped[slot] == item.id then
-			data.equipped[slot] = nil
+		if item.kind == "reason" then
+			data.deathLoadout = DeathLoadout.remove(data.deathLoadout, item.id)
+		else
+			local slot = Cosmetics.slotOf(item)
+			if data.equipped[slot] == item.id then
+				data.equipped[slot] = nil
+			end
 		end
 	elseif action == "stance" then
 		-- An emote that can be a stance becomes yours (picked again: none).

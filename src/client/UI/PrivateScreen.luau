@@ -37,7 +37,7 @@ local heldNoteButton: TextButton
 
 local cause = Config.DEATH_CAUSES[1]
 local picked: number? = nil
-local wornReason: () -> Cosmetics.Item?
+local deathsEquipped: () -> { { cause: string, name: string } }
 local coverBand: (Instance) -> ()
 
 -- Your Manual's cover at the top of its window (the owner, 2026-10-25: covers had no meaning): the book in your
@@ -131,12 +131,19 @@ function coverBand(parent: Instance)
 	fillCover()
 end
 
--- The custom death this player wears (Cosmetics kind "reason"), or nil.
-function wornReason(): Cosmetics.Item?
-	local profile = ClientState.profile
-	local id = if profile and profile.equipped then profile.equipped.reason else nil
-	local item = Cosmetics.byId(id)
-	return if item and item.kind == "reason" then item else nil
+-- The custom deaths Diavolo can write (his four slots, as the server counted them when the match began: the Manual
+-- lists what the server will accept, Shared/DeathLoadout), in slot order.
+function deathsEquipped(): { { cause: string, name: string } }
+	local list = {}
+	local sent = ClientState.private.deaths
+	if type(sent) == "table" then
+		for _, entry in ipairs(sent) do
+			if type(entry) == "table" and type(entry.cause) == "string" then
+				table.insert(list, { cause = entry.cause, name = tostring(entry.name or entry.cause) })
+			end
+		end
+	end
+	return list
 end
 
 -- Seconds until the Manual opens again (0: it is open).
@@ -160,16 +167,18 @@ local function refresh()
 		end
 	end
 	renderLearned(learned, picked, ready)
-	-- (the custom death you wear first, then the three plain causes: Inventory > Custom deaths)
+	-- (your equipped custom deaths first, in slot order, then the three plain causes: Inventory > Custom deaths)
 	local options = {}
-	local worn = wornReason()
-	if worn then
-		table.insert(options, { id = worn.cause, text = worn.cause, sub = "Your custom death" })
+	local allowed = {}
+	for _, death in ipairs(deathsEquipped()) do
+		table.insert(options, { id = death.cause, text = death.cause, sub = "Your custom death" })
+		allowed[death.cause] = true
 	end
 	for _, name in ipairs(Config.DEATH_CAUSES) do
 		table.insert(options, { id = name, text = name })
+		allowed[name] = true
 	end
-	if not table.find(Config.DEATH_CAUSES, cause) and not (worn and worn.cause == cause) then
+	if not allowed[cause] then
 		cause = Config.DEATH_CAUSES[1]
 	end
 	renderCauses(options, cause, ready)
@@ -252,7 +261,7 @@ local function build()
 		end
 	end)
 	Kit.heading({ text = "Cause of death", LayoutOrder = 5, Parent = list })
-	-- (two rows, a third when a custom death is worn)
+	-- (two columns: a row for every two causes, up to seven with four custom deaths equipped)
 	local causes = Kit.frame({
 		Name = "Causes",
 		Size = UDim2.new(1, 0, 0, 104),

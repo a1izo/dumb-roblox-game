@@ -16,6 +16,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Causes = require(Shared:WaitForChild("Anim"):WaitForChild("Causes"))
 local Config = require(Shared:WaitForChild("Config"))
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
+local DeathLoadout = require(Shared:WaitForChild("DeathLoadout"))
 local NameUtil = require(Shared:WaitForChild("NameUtil"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
@@ -303,16 +304,9 @@ local function onWrite(player: Player, payload)
 	if #typed == 0 then
 		return
 	end
-	local cause = "Heart attack"
-	-- (one of the three plain causes, or the custom death the writer wears)
-	local worn = Cosmetics.reason(CosmeticsService.style(player, "reason"))
-	if type(payload.cause) == "string" then
-		if table.find(Config.DEATH_CAUSES, payload.cause) then
-			cause = payload.cause
-		elseif worn and payload.cause == worn.cause then
-			cause = worn.cause
-		end
-	end
+	-- (one of the three plain causes, or one of the custom deaths in the writer's loadout that they own: the choice is
+	-- made per name, and anything else is a heart attack, Shared/DeathLoadout)
+	local cause = DeathLoadout.resolve(CosmeticsService.deathLoadout(player), Config.DEATH_CAUSES, payload.cause)
 	startWriting(ps, typed, cause)
 end
 
@@ -355,6 +349,14 @@ end
 
 function DeathNoteService.onMatchStart()
 	pending = {}
+	-- The custom deaths each player can write: their loadout, owned (the Manual lists these; onWrite checks again).
+	for _, ps in ipairs(Match.list) do
+		local deaths = {}
+		for _, item in ipairs(CosmeticsService.deathLoadout(ps.player)) do
+			table.insert(deaths, { cause = item.cause, name = item.name })
+		end
+		ps.deaths = deaths
+	end
 end
 
 function DeathNoteService.onMatchEnd()

@@ -89,6 +89,9 @@ local function newState(player: Player)
 		-- Diavolo: when the Manual can be written in again (server time), and a writing in progress.
 		writeReadyAt = 0,
 		writing = nil,
+		-- Diavolo: the custom deaths in his loadout he may write, { cause, name } in slot order, taken when the match
+		-- starts (DeathNoteService.onMatchStart; the shop is closed in a case, so it stays what the Manual shows).
+		deaths = {},
 		-- Muerto: the Oculus deal ({ lifeLeft = seconds of free roam }) and the sabotage cooldown.
 		eyes = nil,
 		sabotageReadyAt = 0,
@@ -490,6 +493,7 @@ function Match.privateState(ps)
 	if ps.role == "Kira" then
 		payload.writeReadyAt = ps.writeReadyAt
 		payload.writing = ps.writing ~= nil
+		payload.deaths = ps.deaths
 	elseif ps.role == "Follower" then
 		payload.canDeal = ps.eyes == nil
 		payload.sabotageReadyAt = ps.sabotageReadyAt
