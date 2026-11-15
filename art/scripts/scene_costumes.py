@@ -73,7 +73,7 @@ def main():
     centres = {}
     for key in ("SceneHelmet", "SceneVest", "SceneRifle", "SceneCyborgHead", "SceneMurasama", "SceneRedBlade",
                 "SceneWarlordHelm", "SceneWarlordPlate", "SceneGauntlet", "SceneSpear", "SceneWheelchair",
-                "SceneArcReactor", "Smartphone"):
+                "SceneArcReactor", "Smartphone", "SceneWristwatch"):
         centre, size = measure(key)
         centres[key] = centre
         sizes[key] = round(max(size), 4)
@@ -88,6 +88,8 @@ def main():
     worn("warlordPlate", "SceneWarlordPlate", "Torso", "his chest plate and pauldrons")
     worn("gauntlet", "SceneGauntlet", "Right Arm", "the victim's gauntlet over the right hand")
     worn("arcReactor", "SceneArcReactor", "Torso", "the light in the victim's chest (Core 37; nothing before it)")
+    worn("wristwatch", "SceneWristwatch", "Left Arm",
+         "the watch on the left wrist in Their time ran out (Core 40; nothing before it)")
 
     # the blades: the grip in the fist (the arm's end), the blade out ahead of the fist along the hand's front (-Z)
     for name, key, length in (("murasama", "SceneMurasama", 3.4), ("redBlade", "SceneRedBlade", 2.8)):

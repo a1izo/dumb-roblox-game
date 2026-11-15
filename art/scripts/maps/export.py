@@ -28,7 +28,7 @@ CALIBRATION = {"_O": (0, 0, 0), "_X": (64, 0, 0), "_Y": (0, 64, 0)}
 # Bumped whenever a props export changes in a way the game depends on. The FBX carries a marker
 # mesh DeathsGambit<Kind>_Version_<n>, and the game uses only the newest import of each kind. (The maps'
 # versions come from their mesh digests, see next_version.)
-VERSION = {"ModelsCore": 39, "ModelsTokyo": 24, "ModelsAgency": 18, "ModelsCampus": 16, "ModelsLobby": 23,
+VERSION = {"ModelsCore": 40, "ModelsTokyo": 24, "ModelsAgency": 18, "ModelsCampus": 16, "ModelsLobby": 23,
            "ModelsMeeting": 6, "ModelsFx": 3}
 
 VERSIONS_LUAU = os.path.join(common.ROOT, "src", "shared", "ImportVersions.luau")
@@ -176,8 +176,9 @@ def mesh_digest(scene, carried=()):
     h.update(f"chunk:{scene.chunk};prefix:{scene.prefix};surfaces:{scanlib.REVISION}".encode())
     # (the lips mesher.seal grows under the joins between meshes are made at finish, after this: their size and the
     # sealing's revision stand in for them, so a change to the sealing re-versions every venue. Revision 2,
-    # 2026-11-15: floors are sealed at the foot of every wall too)
-    h.update(b"seal:0.22:0.22:r2;")
+    # 2026-11-15: floors are sealed at the foot of every wall too. Revision 3, the same day: joins found along their
+    # line (T-junctions), and a floor's edge on the top of an upright face sealed down and in)
+    h.update(b"seal:0.22:0.22:r3;")
     for name in carried:
         path = os.path.join(common.TEXTURES, name + ".png")
         if os.path.exists(path):

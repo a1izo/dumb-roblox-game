@@ -30,6 +30,7 @@ local LocomotionController = require(script.Parent.Parent.Anim.LocomotionControl
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
 local Responsive = require(script.Parent.Parent.UI.Core.Responsive)
 local Governor = require(script.Parent.Governor)
+local Away = require(script.Parent.Away)
 
 local Crowd = {}
 
@@ -353,6 +354,8 @@ local function liven(number: number, rig: Rig, speed: number, standing: boolean,
 	end
 end
 
+local parked = false
+
 local function draw(dt: number)
 	local current = map()
 	local started = if current then current:GetAttribute("SyncEpoch") else nil
@@ -362,6 +365,18 @@ local function draw(dt: number)
 		end
 		return
 	end
+	-- (2026-11-15) a cutscene far off: nobody in the street is in sight, so none is posed or moved until the camera
+	-- comes back (the bodies are hidden once, not rebuilt: they come back where the snapshots have them)
+	if Away.now() then
+		if not parked then
+			parked = true
+			for _, rig in pairs(rigs) do
+				setDrawn(rig, false)
+			end
+		end
+		return
+	end
+	parked = false
 	local clock = os.clock()
 	if #snapshots == 0 or clock - heardAt > STALE then
 		for _, rig in pairs(rigs) do
@@ -477,6 +492,7 @@ local function draw(dt: number)
 end
 
 function Crowd.init()
+	Away.setMap(Venues.MAP)
 	folder = Create("Folder", { Name = "DeathsGambitCrowd", Parent = workspace }) :: Folder
 	Net.unreliable("MapSync").OnClientEvent:Connect(onSnapshot)
 	-- A new map starts with an empty street.

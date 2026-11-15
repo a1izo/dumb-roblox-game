@@ -23,6 +23,7 @@ local Cinema = require(script.Parent.Cinema)
 local Stage = require(script.Parent.Stage)
 local Vfx = require(script.Parent.Vfx)
 local LightingController = require(script.Parent.Parent.World.LightingController)
+local Governor = require(script.Parent.Parent.World.Governor)
 local Sets = require(script.Sets)
 local Costumes = require(script.Costumes) :: any
 local Cast = require(script.Cast)
@@ -161,7 +162,8 @@ function Ctx:light(at: Vector3, color: Color3, range: number, brightness: number
 	light.Color = color
 	light.Range = range
 	light.Brightness = brightness
-	light.Shadows = shadows == true
+	-- (no shadows from it on Low graphics or once the governor has cut shadows: the maps' lamps do the same)
+	light.Shadows = shadows == true and not Governor.low("shadows")
 	light.Parent = p
 	return light
 end

@@ -120,6 +120,113 @@ function Splat.screen(layer: GuiObject, options: Options): Frame
 	return holder
 end
 
+-- A splat landed on a surface in the world (2026-11-15, the user: "add more blood splatters to the cutscene that have
+-- them"): the drawn splat as a decal lying on the floor or a wall at `at` (its face along `normal`), `size` studs
+-- across, thrown on in a few frames a hair past its size, then spreading a little more as it soaks in; it stays
+-- (in `parent`, the scene's folder, so it goes with the scene) unless `hold` says when to fade it.
+function Splat.ground(
+	parent: Instance,
+	at: Vector3,
+	normal: Vector3,
+	size: number,
+	options: {
+		image: number?,
+		seed: number?,
+		turn: number?,
+		alpha: number?,
+		spread: number?,
+		hold: number?,
+	}?
+): BasePart
+	local o = options or {}
+	local rng = Random.new(o.seed or math.random(1, 100000))
+	local up = normal.Unit
+	local side = up:Cross(if math.abs(up.Y) < 0.95 then Vector3.yAxis else Vector3.xAxis).Unit
+	local look = side:Cross(up)
+	local pad = Instance.new("Part")
+	pad.Name = "BloodSplat"
+	pad.Anchored = true
+	pad.CanCollide = false
+	pad.CanQuery = false
+	pad.CanTouch = false
+	pad.CastShadow = false
+	pad.Transparency = 1
+	pad.Size = Vector3.new(size * 0.55, 0.02, size * 0.55)
+	pad.CFrame = CFrame.fromMatrix(at + up * (0.02 + rng:NextNumber(0, 0.01)), side, up, -look)
+		* CFrame.Angles(0, math.rad(o.turn or rng:NextNumber(0, 360)), 0)
+	local decal = Instance.new("Decal")
+	decal.Face = Enum.NormalId.Top
+	local which = o.image or rng:NextInteger(1, #Splat.IMAGES)
+	decal.Texture = picture(Splat.IMAGES[which], NAMES[which])
+	decal.Transparency = 0.6
+	decal.Parent = pad
+	pad.Parent = parent
+	local solid = o.alpha or 0.05
+	TweenService:Create(pad, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		Size = Vector3.new(size * 1.04, 0.02, size * 1.04),
+	}):Play()
+	TweenService:Create(decal, TweenInfo.new(0.08), { Transparency = solid }):Play()
+	-- (soaking in: it creeps out a little further over the next seconds)
+	task.delay(0.1, function()
+		if pad.Parent then
+			local grow = 1 + (o.spread or 0.12)
+			TweenService:Create(pad, TweenInfo.new(2.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+				Size = Vector3.new(size * grow, 0.02, size * grow),
+			}):Play()
+		end
+	end)
+	if o.hold then
+		task.delay(o.hold, function()
+			if pad.Parent then
+				TweenService:Create(decal, TweenInfo.new(0.8), { Transparency = 1 }):Play()
+				task.delay(0.85, function()
+					pad:Destroy()
+				end)
+			end
+		end)
+	end
+	return pad
+end
+
+-- Blood running off `part` (a hand, a wound) at its point `offset`: a drop every `every` seconds from t0 to t1 (scene
+-- clock via `during`), each a dark bead falling under gravity (slowed by `slow` in a slow motion).
+function Splat.drips(
+	ctx: any,
+	part: () -> BasePart?,
+	offset: Vector3,
+	t0: number,
+	t1: number,
+	every: number,
+	slow: number?
+)
+	local next = t0
+	ctx:during(t0, t1, function(t)
+		if t < next then
+			return
+		end
+		next = t + every * (0.7 + math.random() * 0.6)
+		local p = part()
+		if not p then
+			return
+		end
+		local k = slow or 1
+		Vfx.Emit.burst((p.CFrame * CFrame.new(offset)).Position, {
+			tex = "VfxEmber",
+			color = { { 0, Color3.fromRGB(140, 6, 14) }, { 1, Color3.fromRGB(70, 0, 6) } },
+			size = { { 0, 0.07 }, { 0.3, 0.12 }, { 1, 0.09 } },
+			squash = -1.4,
+			face = "along",
+			life = { 0.6 / k, 0.9 / k },
+			speed = { 0.2 * k, 0.8 * k },
+			spread = 15,
+			dir = Enum.NormalId.Bottom,
+			accel = Vector3.new(0, -40 * k * k, 0),
+			light = 0,
+			lit = 0.7,
+		}, 1)
+	end)
+end
+
 -- Drops thrown from a wound at `at` (world) the way `dir` points: dark, heavy, falling fast; a few hang in the air as
 -- a fine mist. `amount` scales how many (1: a cut).
 function Splat.spray(at: Vector3, dir: Vector3, amount: number?)

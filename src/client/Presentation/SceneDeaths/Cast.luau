@@ -19,7 +19,15 @@ export type Costume = {
 	skin: { [string]: Color3 }?,
 	-- for a dressed player: which of their own accessory slots to empty first
 	clear: { string }?,
+	-- face accessories worn one over another: how far out each one's mesh is grown (by a word of its name), so the
+	-- head never shows through the face and the next layer never through the last (default FACE_LIFT)
+	lift: { [string]: number }?,
 }
+
+-- (2026-11-15, the user: "fix Snakes head glitching": the marketplace face sat on the head's own surface, so the head
+-- broke through it in patches and the plain face under it showed; a face accessory now stands a little proud of the
+-- head, on a head with no face of its own)
+local FACE_LIFT = 1.035
 
 local PURPLE = Color3.fromRGB(104, 84, 128)
 local PALE = Color3.fromRGB(234, 206, 182)
@@ -50,6 +58,8 @@ Cast.COSTUMES = {
 		shirt = 12463194829,
 		pants = 12463202877,
 		accessories = { HatAccessory = { 137173363080914 }, FaceAccessory = { 111744462200963, 74484209898344 } },
+		-- (the face, then the eyepatch and its strap over it)
+		lift = { face = 1.035, eyepatch = 1.075 },
 		clear = {
 			"HatAccessory",
 			"FaceAccessory",
@@ -135,6 +145,10 @@ local function describe(spec: Costume, base: HumanoidDescription?): HumanoidDesc
 			d:SetAccessories({}, true)
 		end)
 	end
+	-- (a face accessory is made for the classic head: a player's own head goes for it)
+	if spec.accessories and spec.accessories.FaceAccessory then
+		d.Head = 0
+	end
 	for slot, ids in pairs(spec.accessories or {}) do
 		local list = {}
 		local had = (d :: any)[slot]
@@ -157,7 +171,39 @@ local function describe(spec: Costume, base: HumanoidDescription?): HumanoidDesc
 	return d
 end
 
-local function make(description: HumanoidDescription): Model?
+-- A costume with a face accessory: no face decal under it, and each face mesh grown out from the head a little (the
+-- costume's `lift` by a word of the accessory's name, else FACE_LIFT) so nothing under it breaks through.
+local function fitFace(model: Model, spec: Costume)
+	local head = model:FindFirstChild("Head")
+	if not head or not (spec.accessories and spec.accessories.FaceAccessory) then
+		return
+	end
+	for _, item in ipairs(head:GetChildren()) do
+		if item:IsA("Decal") then
+			item:Destroy()
+		end
+	end
+	for _, accessory in ipairs(model:GetChildren()) do
+		if accessory:IsA("Accessory") and accessory.AccessoryType == Enum.AccessoryType.Face then
+			local lift = FACE_LIFT
+			local name = string.lower(accessory.Name)
+			for word, value in pairs(spec.lift or {}) do
+				if string.find(name, string.lower(word), 1, true) then
+					lift = math.max(lift, value)
+				end
+			end
+			local handle = accessory:FindFirstChild("Handle")
+			local mesh = handle and handle:FindFirstChildOfClass("SpecialMesh")
+			if mesh then
+				mesh.Scale *= lift
+			elseif handle and handle:IsA("MeshPart") then
+				handle.Size *= lift
+			end
+		end
+	end
+end
+
+local function make(description: HumanoidDescription, spec: Costume): Model?
 	local ok, model = pcall(function()
 		return Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R6)
 	end)
@@ -169,6 +215,7 @@ local function make(description: HumanoidDescription): Model?
 			item:Destroy()
 		end
 	end
+	fitFace(model, spec)
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	if humanoid then
 		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
@@ -186,7 +233,7 @@ local function load(key: string)
 		return
 	end
 	loading[key] = true
-	local model = make(describe(spec))
+	local model = make(describe(spec), spec)
 	if model then
 		model.Name = "Cast_" .. key
 	end
@@ -220,7 +267,7 @@ function Cast.dressed(userId: number, key: string): Model?
 	local ok, base = pcall(function()
 		return Players:GetHumanoidDescriptionFromUserId(math.max(1, userId))
 	end)
-	local model = make(describe(spec, if ok then base else nil))
+	local model = make(describe(spec, if ok then base else nil), spec)
 	if model then
 		model.Name = "Cast_" .. key .. "_" .. tostring(userId)
 	end

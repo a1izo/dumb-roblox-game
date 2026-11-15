@@ -374,6 +374,11 @@ local function build(ctx)
 		return look, fov
 	end
 	ctx:camera(0, LENGTH, eyes)
+	-- (2026-11-15) the hand up from the wound in the slow motion: blood running off the fingers, falling slow
+	Splat.drips(ctx, function()
+		local arm = arms[1]
+		return arm and arm.PrimaryPart
+	end, Vector3.new(0, -0.95, 0), 8.9, 11.4, 0.45, 0.35)
 
 	-- the arms in the eyes' frame: both on the floor pushing up; after that only the right one (2026-11-12, the user:
 	-- "when walking, only the right hand should be visible")
@@ -529,9 +534,21 @@ local function build(ctx)
 			})
 		end
 	end
+	-- (2026-11-15, the user: "add more blood splatters": each hit also throws drops up past the lens from the chest)
+	local function spurt(amount: number)
+		local cam = workspace.CurrentCamera.CFrame
+		local from = (cam * CFrame.new(0.15, -1.3, -1.2)).Position
+		Splat.spray(
+			from,
+			(cam.UpVector * 0.9 - cam.LookVector * 0.5 + cam.RightVector * (math.random() - 0.5)).Unit,
+			amount
+		)
+	end
 	ctx:at(SHOT, function()
 		fire(1.6, true)
 		hit(1.2, { 0.14, 0.78, 0.46, 2.6 })
+		Splat.screen(lens, { at = Vector2.new(0.82, 0.16), size = 0.2, image = 2, seed = 61, hold = 2.2, fade = 0.8 })
+		spurt(0.9)
 		Cinema.flash(Color3.fromRGB(255, 236, 200), 0.75, 0.25)
 		Cinema.still(Color3.fromRGB(255, 200, 160), 0.12)
 		bleed(0.75)
@@ -596,14 +613,22 @@ local function build(ctx)
 		if i > 1 then
 			ctx:at(t, function()
 				fire(1, false)
-				-- (a splat on the second, fifth, eighth and last rounds, each at another edge)
+				-- (a splat on every round, each at another edge: the big ones on the second, fifth, eighth and last,
+				-- smaller ones between; 2026-11-15, the user: "add more blood splatters")
 				local where = ({
 					[2] = { 0.9, 0.24, 0.26 },
+					[3] = { 0.62, 0.1, 0.15, 0.55 },
+					[4] = { 0.24, 0.62, 0.17, 0.55 },
 					[5] = { 0.08, 0.3, 0.3 },
+					[6] = { 0.95, 0.56, 0.19, 0.55 },
+					[7] = { 0.46, 0.06, 0.14, 0.5 },
 					[8] = { 0.82, 0.8, 0.34 },
+					[9] = { 0.12, 0.9, 0.2, 0.55 },
+					[10] = { 0.7, 0.4, 0.15, 0.5 },
 					[11] = { 0.3, 0.9, 0.28 },
 				})[i]
 				hit(0.8, where)
+				spurt(0.45)
 				bleed(math.min(1, 0.75 + i * 0.03))
 			end)
 		end
@@ -683,6 +708,12 @@ local function build(ctx)
 			{ 0.36, 0.88, 0.68, 0.3, 1, 1 },
 			{ 0.47, 0.5, 0.14, 0.26, 2, 0 },
 			{ 0.55, 0.16, 0.16, 0.32, 4, 1 },
+			-- (2026-11-15, more: fine spray and small drops thrown on after the heavy ones, in the gaps)
+			{ 0.08, 0.92, 0.36, 0.2, 2, 0 },
+			{ 0.24, 0.42, 0.9, 0.18, 4, 1 },
+			{ 0.41, 0.66, 0.22, 0.16, 2, 0 },
+			{ 0.63, 0.28, 0.5, 0.22, 1, 1 },
+			{ 0.7, 0.95, 0.12, 0.14, 2, 0 },
 		}) do
 			ctx:atNow(DARK + spec[1], function()
 				Splat.screen(layer, {

@@ -188,7 +188,8 @@ def chip(s):
     s.box("BlackTrim", W(0, 5.6, h0 - 0.75), (8.0, 0.2, 0.2))
     # the desk under its lamp (the victim stands behind it, the chip bag on it: the scene's), the chair pushed back
     s.prop("Desk", ox, oz - 2.6, 180.0)
-    s.prop("OfficeChair", ox + 1.8, oz + 1.8, 200.0)
+    # (pushed well back to the right: the victim staggers 2.7 studs back from the desk before falling)
+    s.prop("OfficeChair", ox + 4.3, oz + 2.4, 210.0)
     s.prop("Bookshelf", ox - hx + 1.2, oz + 4.0, 90.0)
     s.prop("Bookshelf", ox - hx + 1.2, oz - 2.0, 90.0)
     s.prop("Bookshelf", ox + hx - 1.2, oz + 4.0, -90.0)
@@ -198,39 +199,130 @@ def chip(s):
 # Their time ran out -----------------------------------------------------------------------------------------------
 
 
+# The clock's Roman numerals, stroke by stroke (glyph space: x across, y up from the baseline, CAP high): each stroke
+# a quad, each serif a slab, all raised off the dial at slightly different heights so no two lie in one plane.
+CAP = 5.0
+THICK, THIN, SERIF_H, SERIF_OUT = 0.78, 0.3, 0.2, 0.4
+GLYPH_W = {"I": THICK + 2 * SERIF_OUT, "V": 3.3, "X": 3.3}
+GLYPH_GAP = 0.32
+
+
+def _glyph(ch):
+    """[(points [(x, y)], height)] of one letter, centred on x = 0."""
+    H, T, t, sh, so = CAP, THICK, THIN, SERIF_H, SERIF_OUT
+    out = []
+
+    def slab(x0, x1, y0, y1, h):
+        out.append(([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], h))
+
+    if ch == "I":
+        slab(-T / 2, T / 2, 0, H, 0.1)
+        slab(-T / 2 - so, T / 2 + so, 0, sh, 0.13)
+        slab(-T / 2 - so, T / 2 + so, H - sh, H, 0.13)
+    elif ch == "V":
+        out.append(([(-1.25, H), (-1.25 + T, H), (0.22, 0.0), (-0.36, 0.0)], 0.1))
+        out.append(([(1.25 - t, H), (1.25, H), (0.36, 0.0), (0.1, 0.0)], 0.115))
+        slab(-1.65, -1.25 + T + so * 0.6, H - sh, H, 0.13)
+        slab(1.25 - t - so * 0.8, 1.65, H - sh, H, 0.135)
+    elif ch == "X":
+        out.append(([(-1.25, H), (-1.25 + T, H), (1.25, 0.0), (1.25 - T, 0.0)], 0.1))
+        out.append(([(1.25 - t, H), (1.25, H), (-1.25 + t, 0.0), (-1.25, 0.0)], 0.115))
+        slab(-1.65, -1.25 + T + so * 0.6, H - sh, H, 0.13)
+        slab(1.25 - t - so * 0.8, 1.65, H - sh, H, 0.135)
+        slab(-1.65, -1.25 + t + so * 0.8, 0, sh, 0.13)
+        slab(1.25 - T - so * 0.6, 1.65, 0, sh, 0.135)
+    return out
+
+
+def _numeral(s, W, text, a, rc, mat="BlackTrim"):
+    """A numeral laid on the dial at angle `a` (clockwise from 12, which is at -Z), its middle at radius rc, read
+    with its top toward the rim."""
+    d = (math.sin(a), -math.cos(a))
+    tv = (math.cos(a), math.sin(a))
+    width = sum(GLYPH_W[c] for c in text) + GLYPH_GAP * (len(text) - 1)
+    x = -width / 2
+    for ch in text:
+        cx = x + GLYPH_W[ch] / 2
+        for pts, h in _glyph(ch):
+            ring = []
+            for gx, gy in pts:
+                u, v = cx + gx, gy - CAP / 2
+                ring.append((d[0] * rc + tv[0] * u + d[0] * v, d[1] * rc + tv[1] * u + d[1] * v))
+            top = [W(px, h, pz) for px, pz in ring]
+            parts.poly(s, mat, top, (0, 1, 0))
+            n = len(ring)
+            mx = sum(p[0] for p in ring) / n
+            mz = sum(p[1] for p in ring) / n
+            for i in range(n):
+                (x0, z0), (x1, z1) = ring[i], ring[(i + 1) % n]
+                ex, ez = (x0 + x1) / 2 - mx, (z0 + z1) / 2 - mz
+                parts.poly(s, mat, [W(x0, -0.02, z0), W(x1, -0.02, z1), W(x1, h, z1), W(x0, h, z0)], (ex, 0, ez))
+        x += GLYPH_W[ch] + GLYPH_GAP
+
+
+def _ring_line(s, W, mat, r_in, r_out, h, seg):
+    """A flat band on the dial, raised h (its outside up, across the top, its inside down)."""
+    s.lathe(mat, W(0, -0.02, 0), [(r_out, 0.0), (r_out, h + 0.02), (r_in, h + 0.02), (r_in, 0.0)], seg,
+            caps=(False, False))
+
+
 def clock(s):
+    """The colossal clock (remade 2026-11-15, the user: "make the clock more high quality ... and make it better
+    altogether"): a cream enamel dial in a moulded brass bezel; a railroad minute track; a raised chapter ring with
+    Roman numerals cut in serif strokes (IIII for four, as old clocks have it); engraved circles and twelve brass
+    lozenges inside it; a brass rosette on the dial, the arbor, and over the hands a broad brass boss with a flat top:
+    the victim stands on it, so the hands (the scene's, Clock.luau) sweep round under their feet. Gears hang in the fog."""
     ox, oz = P.CLOCK
     W = at(P.CLOCK)
-    R = 34.0
-    # the face: a great disc of pale stone lying in the void, a brass rim, the minute marks and twelve numerals
-    s.lathe("MarbleWhite", W(0, -4.0, 0), [(R + 2.0, 0.0), (R + 2.0, 3.6), (R, 4.0), (0.0, 4.0)], 60)
-    s.lathe("Brass", W(0, -0.1, 0), [(R + 2.4, 0.0), (R + 2.4, 0.9), (R + 0.4, 0.9), (R + 0.4, 0.4)], 60,
-            caps=(False, False))
+    R, SEG = 34.0, 144
+    # the dial plate, and the bezel round it: a thick moulded brass ring (a cove, a bead, a fillet) rising over it
+    s.lathe("DialEnamel", W(0, -4.0, 0), [(R + 0.6, 0.0), (R + 0.6, 3.9), (R + 0.4, 4.0), (0.0, 4.0)], SEG)
+    s.lathe("Brass", W(0, 0.0, 0), [(R + 3.2, -4.6), (R + 3.5, -3.6), (R + 3.5, -1.6), (R + 3.1, -1.0),
+                                    (R + 3.1, -0.3), (R + 2.8, 0.15), (R + 2.5, 0.55), (R + 2.4, 1.05), (R + 2.0, 1.42),
+                                    (R + 1.4, 1.42), (R + 1.0, 1.12), (R + 0.7, 0.62), (R + 0.4, 0.22), (R + 0.2, -0.05)],
+            SEG, caps=(False, False))
+    s.lathe("Brass", W(0, 0.0, 0), [(R + 3.2, -4.6), (R - 2.0, -4.6)], SEG, caps=(False, False))
+    # the minute track: two lines, sixty ticks between (each fifth long and broad, running in past the inner line)
+    r1, r2 = R - 1.3, R - 3.5
+    _ring_line(s, W, "BlackTrim", r1, r1 + 0.16, 0.05, SEG)
+    _ring_line(s, W, "BlackTrim", r2 - 0.16, r2, 0.05, SEG)
     for k in range(60):
         a = math.tau * k / 60
-        long = k % 5 == 0
-        r0 = R - (3.8 if long else 2.0)
-        x, z = math.sin(a) * (r0 + R - 0.8) / 2, -math.cos(a) * (r0 + R - 0.8) / 2
-        s.box("BlackTrim", W(x, 0.03, z), (0.5 if long else 0.22, 0.06, (R - 0.8 - r0)), -math.degrees(a))
+        five = k % 5 == 0
+        inner = r2 - (0.9 if five else 0.0)
+        mid = (inner + r1) / 2
+        s.box("BlackTrim", W(math.sin(a) * mid, 0.03, -math.cos(a) * mid),
+              (0.5 if five else 0.16, 0.1, r1 - inner), -math.degrees(a))
+    # the chapter ring: the numerals' band, a hair raised, edged with a line both sides
+    c_out, c_in = R - 4.6, R - 11.8
+    _ring_line(s, W, "DialEnamelDeep", c_in, c_out, 0.03, SEG)
+    _ring_line(s, W, "BlackTrim", c_out - 0.12, c_out, 0.07, SEG)
+    _ring_line(s, W, "BlackTrim", c_in, c_in + 0.12, 0.07, SEG)
+    names = {1: "I", 2: "II", 3: "III", 4: "IIII", 5: "V", 6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI",
+             12: "XII"}
     for k in range(12):
-        a = math.tau * k / 12
-        x, z = math.sin(a) * (R - 7.5), -math.cos(a) * (R - 7.5)
-        # (a numeral as a cluster of strokes: I, V and X in bars, roughly as the hour's)
-        n = k if k else 12
-        strokes = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X",
-                   11: "XI", 12: "XII"}[n]
-        width = 1.1 * len(strokes)
-        for j, ch in enumerate(strokes):
-            u = -width / 2 + 1.1 * (j + 0.5)
-            px, pz = x + math.cos(a) * u, z + math.sin(a) * u
-            if ch == "I":
-                s.box("BlackTrim", W(px, 0.04, pz), (0.32, 0.08, 3.0), -math.degrees(a))
-            else:
-                for sgn in (-1, 1):
-                    ang = -math.degrees(a) + sgn * (14 if ch == "V" else 30)
-                    s.box("BlackTrim", W(px, 0.04, pz), (0.3, 0.08, 3.1), ang)
-    # the hub the hands turn on
-    s.lathe("Brass", W(0, 0.0, 0), [(1.8, 0.0), (1.8, 0.5), (1.0, 0.8), (0.4, 1.4), (0.0, 1.5)], 24)
+        _numeral(s, W, names[k or 12], math.tau * k / 12, (c_in + c_out) / 2)
+    # inside it: two engraved circles, and twelve brass lozenges between them pointing to the hours
+    _ring_line(s, W, "Engrave", 15.6, 15.72, 0.02, SEG)
+    _ring_line(s, W, "Engrave", 8.4, 8.5, 0.02, 96)
+    for k in range(12):
+        a = math.tau * k / 12 + math.tau / 24
+        cx, cz = math.sin(a) * 12.0, -math.cos(a) * 12.0
+        d, tv = (math.sin(a), -math.cos(a)), (math.cos(a), math.sin(a))
+        pts = [(cx + d[0] * 1.3, cz + d[1] * 1.3), (cx + tv[0] * 0.42, cz + tv[1] * 0.42),
+               (cx - d[0] * 1.3, cz - d[1] * 1.3), (cx - tv[0] * 0.42, cz - tv[1] * 0.42)]
+        parts.poly(s, "Brass", [W(x, 0.06, z) for x, z in pts], (0, 1, 0))
+        for i in range(4):
+            (x0, z0), (x1, z1) = pts[i], pts[(i + 1) % 4]
+            parts.poly(s, "Brass", [W(x0, -0.02, z0), W(x1, -0.02, z1), W(x1, 0.06, z1), W(x0, 0.06, z0)],
+                       ((x0 + x1) / 2 - cx, 0, (z0 + z1) / 2 - cz))
+    # the rosette on the dial, the arbor up through the hands, and the boss over them: flat on top at 2.38 (the victim
+    # stands there, Clock.luau's BOSS), a moulded edge down to the arbor
+    s.lathe("Brass", W(0, -0.02, 0), [(3.4, 0.0), (3.4, 0.1), (3.0, 0.2), (2.0, 0.24), (1.3, 0.26)], 96,
+            caps=(False, False))
+    s.lathe("Steel", W(0, 0.0, 0), [(1.15, 0.0), (1.15, 1.75)], 48, caps=(False, False))
+    s.lathe("Brass", W(0, 0.0, 0), [(1.15, 1.7), (2.6, 1.76), (3.5, 1.9), (3.95, 2.06), (4.05, 2.2), (3.95, 2.3),
+                                    (3.6, 2.36), (3.3, 2.38), (0.0, 2.38)], 96)
     # gears hanging in the fog round it, at all heights
     rng = random.Random(1501)
     for k in range(16):

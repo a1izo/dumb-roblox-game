@@ -30,6 +30,7 @@ local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local LightingController = require(script.Parent.LightingController)
 local Shelter = require(script.Parent.Shelter)
+local Away = require(script.Parent.Away)
 local Lightning = require(script.Parent.Lightning)
 local Governor = require(script.Parent.Governor)
 
@@ -743,10 +744,24 @@ local function stepGust(now: number)
 	gust = gust * gust * (3 - 2 * gust)
 end
 
+local away = false
+
 local function step()
 	local origin, originY = cameraOrigin()
 	if not origin then
 		return
+	end
+	-- (2026-11-15) a cutscene far off: the weather round the body is out of sight; it is taken off the camera and
+	-- left alone until the camera comes back (the scenes bring their own rain)
+	if Away.now() then
+		if not away then
+			away = true
+			container.Parent = nil
+		end
+		return
+	elseif away then
+		away = false
+		container.Parent = workspace.CurrentCamera
 	end
 	-- Ground looked at from much higher or lower (a stair, a roof, a camera above the map) or in other weather
 	-- (the margin from the rooms) is looked at again, all of it (2026-10-15: cells kept what they had seen from
@@ -896,7 +911,9 @@ function RainController.init()
 		end
 	end)
 	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-		container.Parent = workspace.CurrentCamera
+		if not away then
+			container.Parent = workspace.CurrentCamera
+		end
 	end)
 	local pending = false
 	local function soon()

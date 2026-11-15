@@ -485,33 +485,41 @@ sn.build()
 # =====================================================================================================================
 # and I.. am.. (18 s; ironman.md)
 
-ONE_KNEE = dict(rHip=J((88, 0, 6), (0, 0.4, 0)), lHip=J((-70, 0, -4), (0, 0.15, 0.3)))
+# On one knee, the R6 way (2026-11-15, the user: "dont make thanos do a split ... make him KNEEL": the old pose swung
+# the front thigh straight out ahead and the back one 70 degrees behind, and with no knee joint that is a split). The
+# front leg is the raised knee's shin, near upright, stood in front of the body (slid up and forward: the thigh is inside
+# the torso); the back leg goes down and back from the hip to its knee on the floor. Both are set against the body's
+# lean `pitch` so they hold their place in the world as it bows.
+def one_knee(pitch):
+    return dict(rHip=J((6.0 - pitch, 0, 5), (0, 0.45, -0.9)), lHip=J((-46.0 - pitch, 0, -4), (0, 0.1, 0.12)))
+
+
 FIST_UP = reach(1, (0.55, 1.2, -1.1), direction=(-0.1, 0.8, -0.55))
 iv = Motion("sceneIronVictim", 18.0, note="On one knee before the warlord; the gauntlet raised and filled with the "
             "stones; the look up, the line, the snap; staggering back, sat against the wall, gone.", floor=True)
 IV_HIPS = (0.0, 0.0)
-floor_key(iv, 0.0, "smooth", -6, 0, 0, IV_HIPS, ONE_KNEE, dict(neck=(-6, 0, 0), rShoulder=J((20, 0, 10)),
+floor_key(iv, 0.0, "smooth", -6, 0, 0, IV_HIPS, one_knee(-6), dict(neck=(-6, 0, 0), rShoulder=J((20, 0, 10)),
                                                                lShoulder=J((10, 0, -16))))
-floor_key(iv, 2.0, "sine", -4, 0, 0, IV_HIPS, ONE_KNEE, dict(neck=(-4, 0, 0), rShoulder=J((60, 0, 10)),
+floor_key(iv, 2.0, "sine", -4, 0, 0, IV_HIPS, one_knee(-4), dict(neck=(-4, 0, 0), rShoulder=J((60, 0, 10)),
                                                              lShoulder=J((10, 0, -16))))
-floor_key(iv, 3.4, "out", -2, 0, 0, IV_HIPS, ONE_KNEE, dict(neck=(8, 4, 0), rShoulder=FIST_UP, lShoulder=J((10, 0, -16))))
+floor_key(iv, 3.4, "out", -2, 0, 0, IV_HIPS, one_knee(-2), dict(neck=(8, 4, 0), rShoulder=FIST_UP, lShoulder=J((10, 0, -16))))
 # 5.0-8.5 looking up at the warlord, the gauntlet raised and straining, the line said slowly: "And I..." (a breath,
 # the chin up), "am..." (the jaw set, the fist squeezed higher)
-floor_key(iv, 5.0, "smooth", -3, 4, 0, IV_HIPS, ONE_KNEE, dict(neck=(14, 8, 2), rShoulder=FIST_UP,
+floor_key(iv, 5.0, "smooth", -3, 4, 0, IV_HIPS, one_knee(-3), dict(neck=(14, 8, 2), rShoulder=FIST_UP,
                                                                lShoulder=J((14, 0, -18))))
-floor_key(iv, 6.3, "smooth", -1, 3, 1, IV_HIPS, ONE_KNEE, dict(neck=(18, 6, 0), rShoulder=FIST_UP,
+floor_key(iv, 6.3, "smooth", -1, 3, 1, IV_HIPS, one_knee(-1), dict(neck=(18, 6, 0), rShoulder=FIST_UP,
                                                                lShoulder=J((16, 0, -20))))
-floor_key(iv, 7.4, "out", -4, 5, 0, IV_HIPS, ONE_KNEE, dict(neck=(10, 8, 3), rShoulder=FIST_UP,
+floor_key(iv, 7.4, "out", -4, 5, 0, IV_HIPS, one_knee(-4), dict(neck=(10, 8, 3), rShoulder=FIST_UP,
                                                             lShoulder=J((18, 0, -22))))
-floor_key(iv, 8.4, "smooth", -2, 4, 0, IV_HIPS, ONE_KNEE, dict(neck=(14, 6, 0), rShoulder=FIST_UP,
+floor_key(iv, 8.4, "smooth", -2, 4, 0, IV_HIPS, one_knee(-2), dict(neck=(14, 6, 0), rShoulder=FIST_UP,
                                                                lShoulder=J((16, 0, -20))))
 shiver(iv, 3.4, 8.5, {"rShoulder": (0.7, 0.4, 0.7)}, amount=1.0, hz=4.5, seed=6)  # the strain of the stones
 strike(iv, 8.6, dict(rShoulder=FIST_UP), dict(rShoulder=reach(1, (0.6, 1.3, -1.0), direction=(-0.1, 0.85, -0.5)),
                                               neck=J((14, 6, 0))), antic=0.06, travel=0.03, over=0.4, settle=0.2)
 BURNT = J((8, 0, 22), (0, 0.04, 0))
-floor_key(iv, 10.0, "sine", -2, 0, 0, IV_HIPS, ONE_KNEE, dict(neck=(6, 0, 0), rShoulder=J((90, 0, 30)),
+floor_key(iv, 10.0, "sine", -2, 0, 0, IV_HIPS, one_knee(-2), dict(neck=(6, 0, 0), rShoulder=J((90, 0, 30)),
                                                               lShoulder=J((10, 0, -16))))
-floor_key(iv, 12.9, "linear", -4, 0, 0, IV_HIPS, ONE_KNEE, dict(neck=(-4, 0, 0), rShoulder=BURNT,
+floor_key(iv, 12.9, "sine", -4, 0, 0, IV_HIPS, one_knee(-4), dict(neck=(-4, 0, 0), rShoulder=BURNT,
                                                                 lShoulder=J((20, 0, -20))))
 IV_SIT = (0.0, 1.4)
 ARM_HELD = J((62, 0, 26), (0, 0.06, -0.1))  # (the left hand across to the burnt arm)
@@ -564,17 +572,18 @@ body_key(ik, 11.0, "sine", 9, 0, 0, drop=0.08, neck=(-30, 0, 0), rShoulder=J((40
          lShoulder=J((40, 0, -10)))
 stand(ik, 0.0, 11.0, Feet(stance=0.25))
 # (2026-11-14, the user: "thanos should kneel not fall over": he sat down and leant back, which read as falling. He
-# goes down onto one knee, slowly, a hand on the raised knee, the head bowing as the ash takes him.)
+# goes down onto one knee, slowly, a hand on the raised knee, the head bowing as the ash takes him. 2026-11-15:
+# the knee itself redone, one_knee: it was a split.)
 floor_key(ik, 11.6, "smooth", 6, 0, 0, (0.0, 0.1), crouch_legs(36, 0.28),
           dict(neck=(-26, 0, 0), rShoulder=J((30, 0, 16)), lShoulder=J((30, 0, -14))))
-floor_key(ik, 12.3, "in", -6, 0, 0, (0.0, 0.0), ONE_KNEE,
-          dict(neck=(-22, 0, 0), rShoulder=J((62, 0, -8)), lShoulder=J((24, 0, -16))))
-floor_key(ik, 12.65, "out", -12, 0, 0, (0.0, 0.0), ONE_KNEE,
-          dict(neck=(-34, 0, 0), rShoulder=J((58, 0, -8)), lShoulder=J((16, 0, -12))))
-floor_key(ik, 14.0, "sine", -9, -3, 0, (0.0, 0.0), ONE_KNEE,
-          dict(neck=(-30, -8, 0), rShoulder=J((56, 0, -7)), lShoulder=J((14, 0, -11))))
-floor_key(ik, 18.0, "linear", -14, 0, 0, (0.0, 0.0), ONE_KNEE,
-          dict(neck=(-40, 0, 0), rShoulder=J((54, 0, -6)), lShoulder=J((12, 0, -10))))
+floor_key(ik, 12.3, "in", -6, 0, 0, (0.0, 0.0), one_knee(-6),
+          dict(neck=(-22, 0, 0), rShoulder=J((40, 0, -16)), lShoulder=J((24, 0, -16))))
+floor_key(ik, 12.65, "out", -12, 0, 0, (0.0, 0.0), one_knee(-12),
+          dict(neck=(-34, 0, 0), rShoulder=J((42, 0, -18)), lShoulder=J((16, 0, -12))))
+floor_key(ik, 14.0, "sine", -9, -3, 0, (0.0, 0.0), one_knee(-9),
+          dict(neck=(-30, -8, 0), rShoulder=J((40, 0, -17)), lShoulder=J((14, 0, -11))))
+floor_key(ik, 18.0, "linear", -14, 0, 0, (0.0, 0.0), one_knee(-14),
+          dict(neck=(-40, 0, 0), rShoulder=J((43, 0, -18)), lShoulder=J((12, 0, -10))))
 alive(ik, amount=0.5, seed=21)
 soft(ik, head=2.6, arms=2.2)
 ik.build()
@@ -785,7 +794,9 @@ lv.build()
 BAG_R = reach(1, (0.5, -0.05, -1.25), direction=(0.1, -0.5, -0.85))
 HELD_R = reach(1, (0.35, 0.55, -0.8), direction=(0.0, 0.5, -0.85))
 SWEEP_R = J((118, 0, 78))
-CHIP_HIPS = (0.0, 0.55)
+# (2026-11-15, the user: the body went through the desk: the fall onto the face reaches 3.3 ahead of the knees, so the
+# stagger back carries them 2.7 studs from the desk first, four steps, before the knees go)
+CHIP_HIPS = (0.0, 2.75)
 
 cv = Motion("sceneChipVictim", 11.0, note="Choked on a potato chip: the chip, the flourish, the bite, the crunch, "
             "choking, down.", floor=True)
@@ -809,13 +820,14 @@ strike(cv, 5.0, body(7, yaw=-6, neck=J((15, 4, -2)), rShoulder=MOUTH_R, lShoulde
        body(-12, drop=0.08, neck=J((10, 0, 0)), rShoulder=THROAT_R, lShoulder=THROAT_L),
        antic=0.05, travel=0.06, over=0.2, settle=0.3)
 # staggering back, a hand out
-body_key(cv, 5.9, "smooth", -18, roll=-4, hips=(0, 0.25), drop=0.12, neck=(-2, -8, 0), rShoulder=THROAT_R,
+body_key(cv, 5.9, "smooth", -18, roll=-4, hips=(0, 0.95), drop=0.12, neck=(-2, -8, 0), rShoulder=THROAT_R,
          lShoulder=THROAT_L)
-body_key(cv, 6.7, "smooth", -14, roll=5, hips=(0.1, 0.5), drop=0.14, neck=(6, 10, 0), rShoulder=THROAT_R,
+body_key(cv, 6.7, "smooth", -14, roll=5, hips=(0.1, 2.0), drop=0.14, neck=(6, 10, 0), rShoulder=THROAT_R,
          lShoulder=reach(-1, (-0.3, 0.6, -1.4), direction=(-0.1, 0.2, -1.0)))
 body_key(cv, 7.4, "in", -26, roll=2, hips=CHIP_HIPS, drop=0.2, neck=(-10, 4, 0), rShoulder=THROAT_R,
          lShoulder=reach(-1, (-0.25, 0.4, -1.35), direction=(-0.1, 0.0, -1.0)))
-stand(cv, 0.0, 7.7, Feet(steps=[(5.4, 5.8, 1, -0.4), (6.0, 6.45, -1, -0.5), (6.8, 7.2, 1, -0.15)]))
+stand(cv, 0.0, 7.7, Feet(steps=[(5.4, 5.8, 1, -1.1), (5.9, 6.35, -1, -1.6), (6.4, 6.85, 1, -2.35),
+                                (6.95, 7.3, -1, -2.7)]))
 floor_key(cv, 7.95, "in", -32, 0, 2, CHIP_HIPS, dict(rHip=J((40, 0, 2)), lHip=J((40, 0, -2))),
           dict(neck=(-18, 0, 0), rShoulder=THROAT_R, lShoulder=J((70, 0, -8))))
 floor_key(cv, 8.1, "in", -34, 0, 2, CHIP_HIPS,

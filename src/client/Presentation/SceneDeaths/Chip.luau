@@ -349,10 +349,11 @@ local function build(ctx)
 		local shake = Vector3.new(math.sin(t * 7) * 0.08, math.sin(t * 9) * 0.06, 0)
 		return CFrame.lookAt(Vector3.new(4.2, 3.8, -3.4) + shake, c + Vector3.new(0, 0.6, 0)), 40
 	end)
-	-- 7.7 high over the floor beside the desk: the knees, the fall, still
+	-- 7.7 high over the floor beside the desk: the knees, the fall, still (2026-11-15: they fall 2.7 back from the desk
+	-- now, clear of it, so the shot looks there)
 	ctx:camera(7.7, 11, function(t)
 		local u = math.clamp((t - 7.7) / 3.3, 0, 1)
-		return CFrame.lookAt(Vector3.new(2.5, 8.5 + 1.5 * u, -1.5), Vector3.new(0, 0.6, 1.2)), 42 - 4 * u
+		return CFrame.lookAt(Vector3.new(2.5, 8.5 + 1.5 * u, -0.6), Vector3.new(0, 0.6, 2.0)), 42 - 4 * u
 	end)
 	ctx:grade(0, nil, { Saturation = -0.25, Contrast = 0.2, TintColor = Color3.fromRGB(250, 236, 220) }, 0.1)
 end

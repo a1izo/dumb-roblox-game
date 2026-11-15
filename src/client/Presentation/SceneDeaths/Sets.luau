@@ -14,6 +14,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local SceneMaterials = require(Shared:WaitForChild("SceneMaterials"))
 local Data = require(Shared:WaitForChild("Scenes")) :: any
+local Governor = require(script.Parent.Parent.Parent.World.Governor)
 
 local Sets = {}
 
@@ -174,7 +175,7 @@ function Sets.build(scene: string, origin: CFrame, parent: Instance): Folder?
 		light.Color = rgb(spec.color)
 		light.Range = spec.range
 		light.Brightness = spec.brightness
-		light.Shadows = spec.shadows == true
+		light.Shadows = spec.shadows == true and not Governor.low("shadows")
 		light.Parent = anchor
 		anchor.Parent = folder
 	end

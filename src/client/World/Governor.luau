@@ -26,9 +26,13 @@ function Governor.step(): number
 	return forced or state.step
 end
 
+-- Older names some callers use for a cut (2026-11-15: the VFX kit, the emotes and the auras asked for "emoteFx",
+-- which is no cut at all, so the governor never thinned an effect; they mean the particles cut).
+local ALIAS = { emoteFx = "particles" }
+
 -- True when the governor itself has cut `what`: "particles", "glow", "shadows", "crowd" or "prints".
 function Governor.cut(what: string): boolean
-	return GovernorRules.cut(Governor.step(), what)
+	return GovernorRules.cut(Governor.step(), ALIAS[what] or what)
 end
 
 -- True when `what` should be lightened: the Low graphics setting, or a cut of the governor's.

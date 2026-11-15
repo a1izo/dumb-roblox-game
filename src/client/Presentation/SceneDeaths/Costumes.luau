@@ -103,6 +103,13 @@ return {
 		mount = "Torso",
 		at = { { p = { 0, 0.45, -0.045 } } },
 	},
+	-- the watch on the left wrist in Their time ran out (Core 40; nothing before it)
+	wristwatch = {
+		model = "SceneWristwatch",
+		size = 1.2553,
+		mount = "Left Arm",
+		at = { { p = { 0, -0.68, -0.078 } } },
+	},
 	-- the gauntlet's six stone sockets (five knuckles, the back of the hand), from its pivot
 	gauntletSockets = {
 		{ 0.36, -0.395, -0.57 },

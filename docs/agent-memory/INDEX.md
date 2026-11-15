@@ -89,3 +89,7 @@
 - [Stills trap: absolute outdir](stills-trap-absolute-outdir.md) - a relative outdir of review_stills lands in C:/art; CPU renders stall at 960x540 on the volumetric book shot, use DG_SIZE=640x360 for the loop (2026-11-15)
 - [Ryuk is eight rigid parts](ryuk-is-eight-rigid-parts.md) - the Specter model has no joints (8 MeshParts, pivot at his toes), is in two scenes only, Materialize fades him per part (head last); options and costs in the 2026-11-14 findings
 - [Held camera and sides](held-camera-and-sides.md) - RoleDiavolo's non-POV cameras redone 2026-11-14: held() for a bent path with a spring aim; a raised arm hides the face on its side, a second subject hides on the line through them
+- [Crack seal r3](crack-seal-r3.md) - 2026-11-15: joins matched along their line (T-junctions), step noses sealed down-and-in; bump the seal revision in export.mesh_digest or venues keep their old version
+- [R6 one knee](r6-one-knee.md) - the user rejected a split for a kneel (Thanos): the raised leg is an upright shin in front, the down leg to its knee; scene_actors.one_knee(pitch)
+- [Clock scene](clock-scene-2026-11-15.md) - Their time ran out remade: enamel dial with serif numerals, the victim on the boss over the hands, hands/pendulum/wristwatch Core 40, the world holds between ticks
+- [Cutscene lag](cutscene-lag-2026-11-15.md) - the governor never cut effects ("emoteFx" is no cut), Emit's quick frame watch, World/Away parks crowd and rain in far-off cutscenes, scene lamps follow the shadow cut

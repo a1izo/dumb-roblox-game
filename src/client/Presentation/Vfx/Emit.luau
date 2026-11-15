@@ -201,11 +201,26 @@ end
 -- The share of the particles asked for that are made: all on a computer, fewer on a phone or tablet, fewer still
 -- in Low quality mode or once the governor has cut effects (2026-11-11: most players come from phones). Every
 -- effect's rate and burst passes through it, the scene deaths' too.
+-- (2026-11-15, the user: "fix the lag esp during cutscenes": the governor waits six slow seconds before a cut and a
+-- cutscene is over in ten, so the kit keeps its own quick watch on the frame rate too: running under 40 frames a
+-- second for about a second, every new burst and emitter makes fewer particles; under 26, fewer still. It eases back as
+-- the frames come back.)
+local pace = 60
+game:GetService("RunService").Heartbeat:Connect(function(dt)
+	if dt > 0 and dt < 1 then
+		pace += (1 / dt - pace) * math.min(1, dt * 1.2)
+	end
+end)
+
+local function pressure(): number
+	return if pace < 26 then 0.45 elseif pace < 40 then 0.7 else 1
+end
+
 function Emit.share(): number
 	if Governor.low("emoteFx") then
-		return 0.4
+		return 0.4 * pressure()
 	end
-	return if Device.touch() then 0.6 else 1
+	return (if Device.touch() then 0.6 else 1) * pressure()
 end
 
 function Emit.burst(at: CFrame | Vector3, spec: Spec | { any }, count: number?, size: Vector3?): Part

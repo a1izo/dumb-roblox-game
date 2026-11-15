@@ -510,3 +510,169 @@ def scene_arc_reactor():
         parts.append(mk.cylinder("Bolt", 0.016, 0.02, (c * 0.325, y(0.04), z0 + sn * 0.325), rot=(90, 0, 0),
                                  mat=steel, verts=6))
     return parts, [], {"pieces": {"Light": props.piece(light, bake=False)}}
+
+
+# Their time ran out: the colossal clock's hands, its pendulum, and the victim's wristwatch (2026-11-15, the user:
+# "make the clock more high quality in the their time ran out cutscene and make it better altogether"; the hands were
+# plain boxes). Each hand lies flat (thickness along Z), its arbor at the origin, pointing to -Y (the model's front);
+# CLOCK_HANDS gives each one's reach and tail, which Clock.luau holds too.
+CLOCK_HANDS = {
+    # name: (length to the tip, tail behind the arbor)
+    "SceneClockHourHand": (21.0, 4.2),
+    "SceneClockMinuteHand": (31.0, 5.2),
+    "SceneClockSecondHand": (32.5, 8.0),
+}
+
+
+def _clock_hand(prefix, mat, boss_mat, length, tail, half0, half1, moon_at, moon_r, moon_hole, tip_half, weight_r,
+                thick):
+    """A blued steel Breguet hand: a tapering shaft from a round boss on the arbor to a hollow moon, a leaf tip on past it
+    to a point, a short tail with a round counterweight. Every piece a little thicker than the one it overlaps, so no
+    two faces lie in one plane."""
+    t = thick
+    parts = []
+    s_end = moon_at - (moon_r + moon_hole) / 2
+    shaft = [(-half0 * 0.8, tail - weight_r), (-half0, 0.0), (-half1, -s_end), (half1, -s_end), (half0, 0.0),
+             (half0 * 0.8, tail - weight_r)]
+    obj = mk.extrude_shape(prefix + "Shaft", shaft, t, mat=mat)
+    mk.add_bevel(obj, min(0.05, half1 * 0.3), 2)
+    parts.append(obj)
+    t2 = t / 2 + 0.012
+    parts.append(mk.lathe(prefix + "Moon", [(moon_hole, -t2), (moon_r, -t2), (moon_r, t2), (moon_hole, t2),
+                                            (moon_hole, -t2)], loc=(0, -moon_at, 0), mat=mat, segments=48,
+                          caps=False))
+    # the leaf tip: from the middle of the moon's band, widening past it, to the point
+    s0 = moon_at + (moon_r + moon_hole) / 2
+    s1 = moon_at + moon_r + (length - moon_at - moon_r) * 0.28
+    tip = [(-tip_half * 0.55, -s0), (-tip_half, -s1), (0.0, -length), (tip_half, -s1), (tip_half * 0.55, -s0)]
+    obj = mk.extrude_shape(prefix + "Tip", tip, t, mat=mat)
+    mk.add_bevel(obj, min(0.05, tip_half * 0.2), 2)
+    parts.append(obj)
+    parts.append(mk.cylinder(prefix + "Weight", weight_r, t + 0.03, (0, tail - weight_r, 0), mat=mat, verts=32,
+                             bevel=0.03))
+    # the boss on the arbor: brass, with its screw
+    parts.append(mk.cylinder(prefix + "Boss", max(half0 * 1.9, 1.0), t + 0.08, (0, 0, 0), mat=boss_mat, verts=40,
+                             bevel=0.04))
+    parts.append(mk.cylinder(prefix + "Screw", 0.42, t + 0.16, (0, 0, 0), mat=mat, verts=16, bevel=0.03))
+    return parts
+
+
+def _clock_mats():
+    blue = pk.metal("CK_Blued", (14, 18, 34), (40, 56, 104), rough=0.22, metallic=0.95, scale=22)
+    brass = pk.metal("CK_Brass", (134, 98, 42), (210, 172, 96), rough=0.28, metallic=0.95, scale=26)
+    return blue, brass
+
+
+@prop("SceneClockHourHand", pivot="centre", material="Metal", collide=False, texture=128)
+def scene_clock_hour_hand():
+    """The colossal clock's hour hand: short and broad, blued steel, a hollow moon two thirds out."""
+    blue, brass = _clock_mats()
+    length, tail = CLOCK_HANDS["SceneClockHourHand"]
+    return _clock_hand("Hour", blue, brass, length, tail, half0=0.95, half1=0.62, moon_at=13.6, moon_r=2.5,
+                       moon_hole=1.55, tip_half=0.95, weight_r=1.3, thick=0.26), []
+
+
+@prop("SceneClockMinuteHand", pivot="centre", material="Metal", collide=False, texture=128)
+def scene_clock_minute_hand():
+    """The minute hand: long and slender, blued steel, its moon far out, a needle tip into the minute track."""
+    blue, brass = _clock_mats()
+    length, tail = CLOCK_HANDS["SceneClockMinuteHand"]
+    return _clock_hand("Minute", blue, brass, length, tail, half0=0.7, half1=0.4, moon_at=23.2, moon_r=1.85,
+                       moon_hole=1.15, tip_half=0.62, weight_r=1.1, thick=0.24), []
+
+
+@prop("SceneClockSecondHand", pivot="centre", material="Metal", collide=False, texture=128)
+def scene_clock_second_hand():
+    """The second hand: a thin red lacquered needle to the edge of the dial, a lozenge near its end, and a long tail to
+    a hollow round counterweight."""
+    red = pk.metal("CK_Red", (110, 12, 18), (176, 30, 38), rough=0.3, metallic=0.35, scale=22)
+    _, brass = _clock_mats()
+    length, tail = CLOCK_HANDS["SceneClockSecondHand"]
+    t = 0.16
+    parts = []
+    needle = [(-0.24, tail - 1.6), (-0.3, 0.0), (-0.1, -length + 2.5), (0.0, -length), (0.1, -length + 2.5),
+              (0.3, 0.0), (0.24, tail - 1.6)]
+    obj = mk.extrude_shape("SecondNeedle", needle, t, mat=red)
+    mk.add_bevel(obj, 0.03, 2)
+    parts.append(obj)
+    lozenge = [(0.0, -length + 7.2), (-0.55, -length + 5.6), (0.0, -length + 4.0), (0.55, -length + 5.6)]
+    obj = mk.extrude_shape("SecondLozenge", lozenge, t + 0.03, mat=red)
+    mk.add_bevel(obj, 0.04, 2)
+    parts.append(obj)
+    t2 = t / 2 + 0.02
+    parts.append(mk.lathe("SecondWeight", [(0.8, -t2), (1.5, -t2), (1.5, t2), (0.8, t2), (0.8, -t2)],
+                          loc=(0, tail - 1.5, 0), mat=red, segments=40, caps=False))
+    parts.append(mk.cylinder("SecondBoss", 0.85, t + 0.1, (0, 0, 0), mat=brass, verts=32, bevel=0.03))
+    parts.append(mk.cylinder("SecondScrew", 0.34, t + 0.18, (0, 0, 0), mat=red, verts=16, bevel=0.03))
+    return parts, []
+
+
+@prop("SceneClockPendulum", pivot="centre", material="Metal", collide=False, texture=256)
+def scene_clock_pendulum():
+    """A colossal gridiron pendulum hanging in the void: its suspension block at the top (z +33.5, where it swings), five
+    rods of steel and brass in a row held by brass bars, down to a great brass lens bob with a beaded rim and a sunburst
+    boss, front to -Y."""
+    _, brass = _clock_mats()
+    steel = pk.metal("CK_Steel", (90, 94, 102), (160, 166, 176), rough=0.3, metallic=0.9, scale=26)
+    dark = pk.metal("CK_Dark", (30, 28, 26), (66, 60, 52), rough=0.4, metallic=0.85, scale=26)
+    top, bob = 33.5, -27.0
+    parts = [pk.rounded("Block", (2.2, 1.4, 1.8), (0, 0, top - 0.6), brass, r=0.14),
+             mk.cylinder("Pin", 0.32, 2.2, (0, 0, top - 0.3), rot=(90, 0, 0), mat=steel, verts=16, bevel=0.03)]
+    for k, x in enumerate((-0.9, -0.45, 0.0, 0.45, 0.9)):
+        parts.append(mk.cylinder("Rod", 0.13, top - 1.2 - (bob + 3.0), (x, 0, (top - 1.2 + bob + 3.0) / 2),
+                                 mat=steel if k % 2 == 0 else brass, verts=10))
+    for z in (top - 2.0, 18.0, 2.0, -14.0, bob + 3.4):
+        parts.append(pk.rounded("Bar", (2.6, 0.7, 0.55), (0, 0, z), brass, r=0.1))
+        for x in (-1.05, 1.05):
+            parts.append(mk.cylinder("Bolt", 0.14, 0.82, (x, 0, z), rot=(90, 0, 0), mat=dark, verts=8))
+    lens = mk.lathe("Bob", [(0.0, -1.0), (2.2, -0.86), (4.2, -0.5), (5.6, -0.08), (5.6, 0.08), (4.2, 0.5),
+                            (2.2, 0.86), (0.0, 1.0)], mat=brass, segments=64)
+    lens.rotation_euler = (math.radians(90), 0, 0)
+    lens.location = (0, 0, bob)
+    parts.append(lens)
+    parts.append(mk.torus("Rim", 5.62, 0.22, (0, 0, bob), rot=(90, 0, 0), mat=brass, major_segments=64,
+                          minor_segments=10))
+    for side in (-1, 1):
+        parts.append(mk.torus("Ring", 3.3, 0.1, (0, side * 0.62, bob), rot=(90, 0, 0), mat=dark, major_segments=48,
+                              minor_segments=6))
+        parts.append(mk.cylinder("Boss", 1.5, 0.3, (0, side * 0.9, bob), rot=(90, 0, 0), mat=dark, verts=32,
+                                 bevel=0.06))
+        for k in range(16):
+            a = 2 * math.pi * k / 16
+            parts.append(mk.box("Ray", (0.16, 0.08, 1.2), (math.cos(a) * 2.3, side * 0.78, bob + math.sin(a) * 2.3),
+                                rot=(0, -math.degrees(a) + 90, 0), mat=brass, bevel=0.02))
+    return parts, []
+
+
+@prop("SceneWristwatch", pivot="centre", material="Metal", collide=False, texture=256)
+def scene_wristwatch():
+    """The victim's wristwatch on the left wrist (built round an R6 arm: 1 x 1 x 2, its middle at the origin, the
+    wrist low on it), the face on the arm's front (-Y: what the eyes see when the wrist comes up to look at it,
+    scene_actors WRIST_L): a leather strap round the arm, a steel case, a cream dial with twelve markers and two hands,
+    the crown at three."""
+    steel = pk.metal("WW_Steel", (120, 124, 130), (196, 200, 206), rough=0.22, metallic=0.95, scale=40)
+    leather = mk.noisy("WW_Strap", srgb(38, 24, 16), srgb(70, 46, 30), scale=60, roughness=0.7, kind="leather")
+    dial = pk.paint("WW_Dial", (226, 218, 196), rough=0.4, wear=4)
+    ink = pk.paint("WW_Ink", (24, 24, 28), rough=0.4, wear=2)
+    z = -0.68
+    parts = [mk.box("StrapF", (1.08, 0.05, 0.26), (0, -0.525, z), mat=leather, bevel=0.01),
+             mk.box("StrapB", (1.08, 0.05, 0.26), (0, 0.525, z), mat=leather, bevel=0.01),
+             mk.box("StrapI", (0.05, 1.08, 0.26), (-0.525, 0, z), mat=leather, bevel=0.01),
+             mk.box("StrapO", (0.05, 1.08, 0.26), (0.525, 0, z), mat=leather, bevel=0.01),
+             mk.cylinder("Case", 0.36, 0.14, (0, -0.6, z), rot=(90, 0, 0), mat=steel, verts=32, bevel=0.025),
+             mk.torus("Bezel", 0.33, 0.035, (0, -0.675, z), rot=(90, 0, 0), mat=steel, major_segments=32,
+                      minor_segments=6),
+             mk.cylinder("Dial", 0.3, 0.02, (0, -0.668, z), rot=(90, 0, 0), mat=dial, verts=32),
+             mk.cylinder("Crown", 0.06, 0.1, (0.4, -0.6, z), rot=(0, 90, 0), mat=steel, verts=10)]
+    for k in range(12):
+        a = 2 * math.pi * k / 12
+        long = k % 3 == 0
+        parts.append(mk.box("Mark", (0.03 if long else 0.018, 0.012, 0.07 if long else 0.045),
+                            (math.sin(a) * 0.23, -0.68, z + math.cos(a) * 0.23), rot=(0, -math.degrees(a), 0),
+                            mat=ink))
+    # the hands at ten to two
+    for length, w, a in ((0.15, 0.03, -60.0), (0.22, 0.02, 60.0)):
+        r = math.radians(a)
+        parts.append(mk.box("Hand", (w, 0.012, length), (math.sin(r) * length / 2, -0.684, z + math.cos(r) * length / 2),
+                            rot=(0, -a, 0), mat=ink))
+    return parts, []

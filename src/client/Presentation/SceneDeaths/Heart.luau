@@ -15,6 +15,14 @@ local RED = Color3.fromRGB(230, 34, 48)
 local DEEP = Color3.fromRGB(150, 10, 24)
 local LAMP = Color3.fromRGB(255, 214, 160)
 local BEAT1, BEAT2, CRACK = 4.5, 5.75, 6.6
+-- Where the victim stands: back from the parapet (inner face z -2.15, its pillar's -1.85) far enough that the fall
+-- onto the face lands clear of the stone (the clip reaches 3.05 ahead of the feet; 2026-11-15, the user: the body went
+-- through the wall).
+local STAND = Vector3.new(0, 0, 1.7)
+-- the letter's way down: carried up over the parapet by the wind, then falling to the canal
+local OVER = Vector3.new(1.3, 4.7, -4.3)
+local WATER = Vector3.new(1.6, -15.8, -7.5)
+local LETTER_UP, LETTER_DOWN = 0.9, 2.6
 
 local function smooth(u: number): number
 	u = math.clamp(u, 0, 1)
@@ -63,7 +71,7 @@ local function build(ctx)
 	end
 
 	local victim =
-		ctx:actor(ctx.victim or "figure", CFrame.lookAt(Vector3.zero, Vector3.new(0, 0, -6)), "sceneHeartVictim")
+		ctx:actor(ctx.victim or "figure", CFrame.lookAt(STAND, STAND + Vector3.new(0, 0, -6)), "sceneHeartVictim")
 	local function at(limb: string, fallback: Vector3): Vector3
 		local p = victim and ctx:limb(victim, limb)
 		return if p then ctx.origin:PointToObjectSpace(p.Position) else fallback
@@ -111,7 +119,9 @@ local function build(ctx)
 			end
 		end
 	end
-	-- the letter let go on the second beat: it flutters down over the parapet into the canal
+	-- the letter let go on the second beat: a gust lifts it up and out over the parapet (never through the stone), then
+	-- it flutters down into the canal; `letterAt` is where it is (the shot at 7.4 follows it down)
+	local letterAt: Vector3? = nil
 	ctx:at(BEAT2 + 0.05, function()
 		if not letter then
 			return
@@ -122,15 +132,29 @@ local function build(ctx)
 			end
 		end
 		letter.Anchored = true
-		local from = letter.CFrame
-		local fall = ctx:world(Vector3.new(1.6, -15.8, -7.5))
-		ctx:during(BEAT2 + 0.05, BEAT2 + 4.5, function(t)
-			local u = (t - BEAT2 - 0.05) / 4.45
-			local swing = math.sin(u * 14) * (1 - u) * 1.4
-			local p = from.Position:Lerp(fall, u) + Vector3.new(swing, 0, math.cos(u * 11) * 0.6)
-			p = Vector3.new(p.X, from.Position.Y + (fall.Y - from.Position.Y) * (u ^ 1.6), p.Z)
+		local from = ctx.origin:PointToObjectSpace(letter.Position)
+		local t0 = BEAT2 + 0.05
+		ctx:during(t0, t0 + LETTER_UP + LETTER_DOWN, function(t)
+			local p: Vector3
+			local spin: number
+			if t < t0 + LETTER_UP then
+				-- up and out: fast at first, slowing over the water (higher than the parapet's top the whole way)
+				local u = (t - t0) / LETTER_UP
+				local e = 1 - (1 - u) ^ 2
+				p = from:Lerp(OVER, e) + Vector3.new(0, math.sin(e * math.pi) * 0.8, 0)
+				spin = e * 2
+			else
+				-- down: falling faster as it goes, rocking side to side as paper does
+				local u = (t - t0 - LETTER_UP) / LETTER_DOWN
+				local swing = math.sin(u * 13) * (1 - 0.6 * u) * 1.3
+				p = OVER:Lerp(WATER, u) + Vector3.new(swing, 0, math.cos(u * 10) * 0.5)
+				p = Vector3.new(p.X, OVER.Y + (WATER.Y - OVER.Y) * (u ^ 1.35), p.Z)
+				spin = 2 + u * 6
+			end
+			letterAt = p
 			if letter then
-				letter.CFrame = CFrame.new(p) * CFrame.Angles(math.sin(u * 9) * 0.9, u * 6, math.cos(u * 7) * 0.7)
+				letter.CFrame = ctx:world(p)
+					* CFrame.Angles(math.sin(spin * 1.5) * 0.9, spin, math.cos(spin * 1.2) * 0.7)
 			end
 		end)
 	end)
@@ -334,7 +358,7 @@ local function build(ctx)
 	-- 0.0 over the water: the bridge in the rain, the lamp, the figure at the parapet reading; a slow push
 	ctx:camera(0, 2.6, function(t)
 		local u = t / 2.6
-		return CFrame.lookAt(Vector3.new(-12 + 2 * u, 2.6, -16 + 3 * u), Vector3.new(0, 3.8, 0)), 40 - 4 * u
+		return CFrame.lookAt(Vector3.new(-12 + 2 * u, 2.6, -16 + 3 * u), STAND + Vector3.new(0, 3.8, 0)), 40 - 4 * u
 	end)
 	-- 2.6 over the shoulder, down onto the letter
 	ctx:camera(2.6, 4.35, function(t)
@@ -354,20 +378,22 @@ local function build(ctx)
 		local c = chest()
 		return CFrame.lookAt(c + Vector3.new(0.6 - 0.4 * u, 0.4, -2.5 + 0.5 * u), c + Vector3.new(0, 0.3, 0)), 34
 	end)
-	-- 7.4 the letter falling down to the black water; the figure doubled over above, out of focus
+	-- 7.4 the letter falling down to the black water, followed down from out over the canal; the bridge's face and the
+	-- figure above it behind
 	ctx:camera(7.4, 8.6, function(t)
 		local u = (t - 7.4) / 1.2
-		return CFrame.lookAt(Vector3.new(4.5, -6 - 4 * u, -12), Vector3.new(1.4, -10 - 4 * u, -7.5)), 40
+		local p = letterAt or WATER:Lerp(OVER, 0.5)
+		return CFrame.lookAt(p + Vector3.new(3.2 - 0.6 * u, -1.6 - 0.8 * u, -5.2), p + Vector3.new(0, 0.6, 0)), 40
 	end)
 	-- 8.6 from the side, low on the wet stones: the knees, over onto the face
 	ctx:camera(8.6, 10.2, function(t)
 		local u = (t - 8.6) / 1.6
-		return CFrame.lookAt(Vector3.new(5.5 - u, 1.6, 0.8), Vector3.new(0, 1.4 - 0.6 * u, 0.4)), 40
+		return CFrame.lookAt(STAND + Vector3.new(5.5 - u, 1.6, 0.8), STAND + Vector3.new(0, 1.4 - 0.6 * u, 0.4)), 40
 	end)
 	-- 10.2 high over the body, the rain falling past the lens toward it; rising; the lamp going out
 	ctx:camera(10.2, 12, function(t)
 		local u = (t - 10.2) / 1.8
-		return CFrame.lookAt(Vector3.new(0.6, 10 + 6 * u, 1.2), Vector3.new(0, 0, 0.6)), 44
+		return CFrame.lookAt(STAND + Vector3.new(0.6, 10 + 6 * u, 0.3), STAND + Vector3.new(0, 0, -0.35)), 44
 	end)
 	ctx:grade(0, nil, { Saturation = -0.4, Contrast = 0.16, TintColor = Color3.fromRGB(210, 222, 240) }, 0.1)
 end

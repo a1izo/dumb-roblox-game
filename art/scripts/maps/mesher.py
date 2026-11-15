@@ -667,6 +667,39 @@ def seal(planned):
     for m, edges in enumerate(borders):
         for e in edges:
             owners.setdefault(e, []).append(m)
+    # (2026-11-15, the cracks "still" there: a join was only found where the two meshes' border edges were the same
+    # edge, end for end. Where a long edge of one meets several short ones of the other along it (a T-junction: a
+    # big slab beside tiles, a kerb, a run of steps) nothing matched and nothing was sealed. Border edges are now also
+    # indexed by the line they lie on, and a join is any overlap of two of them running opposite ways.)
+    on_line = {}  # line key -> [(mesh, lo, hi, direction sign, normal, ground)]
+    for m, edges in enumerate(borders):
+        for (ka, kb), (a, b, n, ground) in edges.items():
+            lk, lo, hi = _line(a, b)
+            if lk is not None:
+                d = sub(b, a)
+                sign = 1 if dot(d, (lk[0], lk[1], lk[2])) > 0 else -1
+                on_line.setdefault(lk, []).append((m, lo, hi, sign, n, ground))
+
+    def partner(m, a, b, n, ground, ka, kb):
+        """The first other mesh whose border runs the other way along (part of) this edge, in the same plane."""
+        for m2 in owners.get((kb, ka), ()):
+            theirs = borders[m2][(kb, ka)]
+            # (two tiles of a height field are backed by a sheet of their own instead: lobby/ground.py)
+            if m2 != m and dot(theirs[2], n) > 0.9 and not (ground and theirs[3]):
+                return m2
+        lk, lo, hi = _line(a, b)
+        if lk is None:
+            return None
+        d = sub(b, a)
+        sign = 1 if dot(d, (lk[0], lk[1], lk[2])) > 0 else -1
+        best = None
+        for m2, lo2, hi2, sign2, n2, ground2 in on_line.get(lk, ()):
+            if m2 == m or sign2 == sign or dot(n2, n) <= 0.9 or (ground and ground2):
+                continue
+            if min(hi, hi2) - max(lo, lo2) > 0.05 and (best is None or m2 > best):
+                best = m2
+        return best
+
     count = 0
     lips = [None] * len(planned)
     sealed = set()  # (m, ka, kb) edges given a lip by the joins in one plane
@@ -674,14 +707,8 @@ def seal(planned):
         tile = matlib.tile_size(mat)
         lip = None
         for (ka, kb), (a, b, n, ground) in borders[m].items():
-            # the neighbour's border runs the other way along the same edge
-            other = None
-            for m2 in owners.get((kb, ka), ()):
-                theirs = borders[m2][(kb, ka)]
-                # (two tiles of a height field are backed by a sheet of their own instead: lobby/ground.py)
-                if m2 != m and dot(theirs[2], n) > 0.9 and not (ground and theirs[3]):
-                    other = m2
-                    break
+            # the neighbour's border runs the other way along the same edge (or along part of it)
+            other = partner(m, a, b, n, ground, ka, kb)
             if other is None or other < m:
                 continue  # (one lip a join: the earlier mesh's)
             along = sub(b, a)
@@ -737,6 +764,7 @@ def _wall_feet(planned, borders, owners, lips, sealed):
     face is indexed by its line; a floor's border edge (facing up, opaque, not already sealed in its own plane) that
     overlaps one on the same line grows a lip out under the wall. Returns how many."""
     walls = {}
+    tops = {}  # (2026-11-15) the TOP edges of upright faces: a riser's, a kerb's, a platform's side
     for name, pieces, mat in planned:
         if not _sealable(mat):
             continue  # (glass, water and alpha sheets: a lip behind them would be seen through them)
@@ -748,12 +776,17 @@ def _wall_feet(planned, borders, owners, lips, sealed):
                 if length < 1e-9 or abs(n[1] / length) > 0.15:
                     continue
                 low = min(q[1] for q in pts)
+                high = max(q[1] for q in pts)
                 for i in range(3):
                     a, b = pts[i], pts[(i + 1) % 3]
                     if abs(a[1] - low) < 1e-3 and abs(b[1] - low) < 1e-3:
                         key, lo, hi = _line(a, b)
                         if key is not None:
                             walls.setdefault(key, []).append((lo, hi))
+                    if abs(a[1] - high) < 1e-3 and abs(b[1] - high) < 1e-3:
+                        key, lo, hi = _line(a, b)
+                        if key is not None:
+                            tops.setdefault(key, []).append((lo, hi))
     count = 0
     for m, (name, pieces, mat) in enumerate(planned):
         tile = matlib.tile_size(mat)
@@ -762,15 +795,22 @@ def _wall_feet(planned, borders, owners, lips, sealed):
                 continue
             key, lo, hi = _line(a, b)
             spans = walls.get(key) if key is not None else None
+            inward = False
             if not spans or not any(min(hi, h) - max(lo, l) > 0.05 for l, h in spans):
-                continue
+                # (not at a wall's foot: maybe the nose of a step, the edge of a kerb or a platform, where the floor's
+                # edge runs along the top of an upright face below it; the slit there looks into the hollow under
+                # the floor, so the lip goes down and IN, under the floor and behind that face, never out over it)
+                spans = tops.get(key) if key is not None else None
+                if not spans or not any(min(hi, h) - max(lo, l) > 0.05 for l, h in spans):
+                    continue
+                inward = True
             along = sub(b, a)
             out = cross(along, n)
             length = math.sqrt(dot(out, out))
             if length < 1e-9:
                 continue
-            out = scale(out, SEAL_OUT / length)
-            down = scale(n, -SEAL_DOWN)
+            out = scale(out, (-0.12 if inward else SEAL_OUT) / length)
+            down = scale(n, -(0.3 if inward else SEAL_DOWN))
             a2, b2 = add(add(a, out), down), add(add(b, out), down)
             if lips[m] is None:
                 lips[m] = Piece()
@@ -779,7 +819,8 @@ def _wall_feet(planned, borders, owners, lips, sealed):
             quad = [a, a2, b2, b]
             lip.verts.extend(quad)
             uv = planar_uvs(quad, tile)
-            for i, j, k in ((0, 1, 2), (0, 2, 3)):
+            # (an inward lip is seen through the slit from in front and from above alike: both its sides)
+            for i, j, k in ((0, 1, 2), (0, 2, 3)) + (((0, 2, 1), (0, 3, 2)) if inward else ()):
                 lip.faces.append((base + i, base + j, base + k))
                 lip.uvs.append((uv[i], uv[j], uv[k]))
             count += 1

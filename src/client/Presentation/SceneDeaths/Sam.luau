@@ -914,6 +914,19 @@ local function build(real)
 		if lock then
 			lock:Destroy()
 		end
+		-- (2026-11-15, the user: "add more blood splatters": the cut throws blood on the lens and down on the ground at
+		-- his feet, off to the side the blade went)
+		Splat.screen(hud, { at = Vector2.new(0.78, 0.66), size = 0.22, image = 4, seed = 41, hold = 0.9, drips = 1 })
+		local c = chest()
+		for i, spec in ipairs({ { 1.1, 0.6, 1.3 }, { 1.9, 1.1, 0.8 }, { 0.6, 1.5, 0.6 } }) do
+			Splat.ground(
+				ctx.stage.folder,
+				ctx:world(Vector3.new(c.X + spec[1], 0, c.Z + spec[2])),
+				ctx.origin.UpVector,
+				spec[3],
+				{ seed = 300 + i }
+			)
+		end
 		if line then
 			line:Destroy()
 		end
@@ -991,6 +1004,39 @@ local function build(real)
 			hud,
 			{ at = Vector2.new(0.86, 0.3), size = 0.2, image = 4, seed = 12, hold = 1.1, fade = 0.9, drips = 0 }
 		)
+		-- (more: a heavy one low on the other side, fine spray across the top, a second spray out of his back, and
+		-- the blood on the ground behind him where it lands, a pool starting under him)
+		Splat.screen(
+			hud,
+			{ at = Vector2.new(0.62, 0.84), size = 0.34, image = 3, seed = 19, hold = 1.6, fade = 1.0, drips = 2 }
+		)
+		Splat.screen(
+			hud,
+			{ at = Vector2.new(0.44, 0.12), size = 0.18, image = 2, seed = 23, hold = 1.0, fade = 0.8, drips = 0 }
+		)
+		Splat.spray(ctx:world(chest()), ctx.origin:VectorToWorldSpace(Vector3.new(-0.3, 0.5, 1)), 0.8)
+		local c = chest()
+		for i, spec in ipairs({
+			{ 0.3, 1.4, 1.6, 0.05 },
+			{ -0.5, 2.4, 1.1, 0.18 },
+			{ 0.7, 3.2, 0.9, 0.3 },
+			{ -0.2, 4.1, 0.6, 0.42 },
+		}) do
+			task.delay(spec[4], function()
+				Splat.ground(
+					ctx.stage.folder,
+					ctx:world(Vector3.new(c.X + spec[1], 0, c.Z + spec[2])),
+					ctx.origin.UpVector,
+					spec[3],
+					{ seed = 310 + i }
+				)
+			end)
+		end
+		Splat.ground(ctx.stage.folder, ctx:world(Vector3.new(c.X, 0, c.Z)), ctx.origin.UpVector, 1.2, {
+			image = 3,
+			seed = 330,
+			spread = 1.4,
+		})
 		Vfx.Emit.burst(ctx:world(chest()), {
 			tex = "VfxFlare",
 			color = RED,
@@ -1055,6 +1101,11 @@ local function build(real)
 	end)
 	-- 7.25 over the killer's back: the blade through him, sparks at the wound
 	ctx:shot(7.25, Vector3.new(-2.8, 6.2, -6.8), Vector3.new(0, 3.9, 0), 40, { eye = Vector3.new(-2.5, 6.0, -6.4) })
+	-- (2026-11-15) run through, the wound runs: drops falling from it all the time the blade is in him, onto the
+	-- pool under him
+	Splat.drips(ctx, function()
+		return victim and ctx:limb(victim, "Torso")
+	end, Vector3.new(0.2, -0.6, 0.55), 7.0, 11.4, 0.16)
 	ctx:during(7.25, 11.0, function()
 		if math.random() < 0.3 then
 			Vfx.Emit.burst(ctx:world(chest() + Vector3.new(0, 0.1, -0.5)), {
@@ -1079,6 +1130,25 @@ local function build(real)
 			hud,
 			{ at = Vector2.new(0.74, 0.7), size = 0.24, image = 1, seed = 31, hold = 0.9, fade = 0.9, drips = 1 }
 		)
+		-- (more: the blade drawn out throws a line of blood ahead of him across the lens and the ground)
+		Splat.screen(
+			hud,
+			{ at = Vector2.new(0.18, 0.4), size = 0.3, image = 4, seed = 37, hold = 1.2, fade = 0.9, drips = 2 }
+		)
+		Splat.screen(
+			hud,
+			{ at = Vector2.new(0.5, 0.92), size = 0.16, image = 2, seed = 43, hold = 0.8, fade = 0.7, drips = 0 }
+		)
+		local c = chest()
+		for i, spec in ipairs({ { 0.2, -1.2, 1.0 }, { -0.4, -2.2, 0.8 }, { 0.5, -3.0, 0.5 } }) do
+			Splat.ground(
+				ctx.stage.folder,
+				ctx:world(Vector3.new(c.X + spec[1], 0, c.Z + spec[2])),
+				ctx.origin.UpVector,
+				spec[3],
+				{ seed = 340 + i }
+			)
+		end
 		Vfx.Emit.burst(ctx:world(chest()), {
 			tex = "VfxFlare",
 			color = RED,
