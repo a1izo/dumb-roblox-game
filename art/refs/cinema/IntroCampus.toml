@@ -3,6 +3,12 @@ id = "IntroCampus"
 name = "Campus: the exam hall"
 status = "built"
 
+# Step 2 of the animation plan (docs/handoff/animation-cutscene-plan-2026-11-13.md), written 2026-11-15 for the re-act.
+[about]
+sentence = "At midnight the whole exam hall is bent over its paper, and the one candidate who has already finished, bored and sunk in his seat, is the only one who sees a black book fall out of the night; he wakes in one move, faces the door and stares, while everyone else keeps writing."
+action = "A body gone slack with boredom is jolted awake: the twirling pencil stops dead, the whole torso and head whip round to the door as one move, and then he holds there, leaning towards it, as the rest of the hall carries on."
+cuts_stay = "The owner liked this scene's structure (a re-paced version was called ruined and reverted, the verdict before that was fine but bland). Same nine cuts, same lengths, same set, same order and same story. Re-acted: every pose, every camera move and the light on every actor."
+
 [origin]
 what = "The Death Note falling in Death Note, episode 1: Light, bored in class by the window while the others work, sees a black notebook drop past outside and land in the schoolyard."
 recognisable = "The class bent over its work, Light chin in hand looking out; a view along the building's windows as a dark shape falls past; his eyes catching it; the notebook tumbling close; a wide of it landing; an extreme close on his eyes."
@@ -12,34 +18,62 @@ ours = "Rebuilt from scratch 2026-10-28: the entrance exam at midnight, thirty c
 url = "https://www.youtube.com/watch?v=2GA3fCQu1dA"
 title = "Light finds Death Note Scene"
 kind = "the anime scene"
-watched = "2026-10-28: frame sheets every 5 s over 0-100 s and every 1 s over 0-20 s, in the built-in browser"
+watched = "2026-10-28: frame sheets every 5 s over 0-100 s and every 1 s over 0-20 s, in the built-in browser. Watched again 2026-11-15 for the re-act: sheets at 1 s over 0-15 s, at 0.2 to 0.4 s over 8.4-12.8 s and 13.4-21 s."
 mirror = false
 
+# What the second watching showed that the first notes missed: Light never turns his head to the book. He stays dead
+# still, chin sunk in the palm, and only his eyes move. The notebook is shown to us, tumbling slowly big in the frame
+# with its cover turning to the lens, and the camera cuts between his stillness and its fall. Our noticer does turn
+# (the owner's story: he is the one who sees it), so the stillness before the turn is the part to copy exactly: it is
+# what makes the turn read.
+
+[[beat]]
+src = 0.0
+pose = "wide from the back of the room: rows of heads bent over desks, pencils moving, Light small at the back with his chin on his hand, the one head that is not bent"
 [[beat]]
 src = 1.3
 pose = "Light at his desk by the window, chin in hand, classmates writing"
 [[beat]]
+src = 3.0
+pose = "close: his cheek sunk in the palm, the elbow planted on the desk, the shoulders dropped and the whole body leaning to that side, eyes half-lidded and looking at nothing"
+[[beat]]
+src = 5.0
+pose = "the same hold, dead still but for a slow blink; the head's weight all on the hand; the other classmates a blur behind"
+[[beat]]
 src = 7.3
-pose = "outside, along the building's windows: a dark shape falling past"
+pose = "outside, along the building's windows: a dark shape drops into the top of the frame"
+[[beat]]
+src = 8.4
+pose = "the shape falls past a window, small and far, seen through the glass against the lit wall"
 [[beat]]
 src = 9.3
-pose = "his eyes catching it"
+pose = "his eyes catching it: back on Light, the head and the hand still dead, only the eyes slide right and down, the brows barely moving"
+[[beat]]
+src = 10.2
+pose = "the notebook fills the frame, tumbling slowly, dark against the brick and light, edge on"
 [[beat]]
 src = 11.3
-pose = "the notebook tumbling close"
+pose = "it turns over, the cover showing, drifting as if time had slowed"
+[[beat]]
+src = 12.4
+pose = "the cover faces the lens, DEATH NOTE lettering on it, still turning"
 [[beat]]
 src = 14.3
-pose = "wide: it lands in the yard"
+pose = "wide: it falls past the school's face and lands on the grass in the yard, small, and lies there"
+[[beat]]
+src = 15.8
+pose = "cut to Light at the window seen from outside, leaning on the sill, head tilted, looking down at where it fell"
 [[beat]]
 src = 18.3
-pose = "extreme close on his eyes, sharp interest"
+pose = "extreme close on his eyes and mouth, a finger at the lip, sharp interest, nothing else moving"
 
 [timing]
 length = 22.6
 fit = "9 cuts and the card: the hall (0-4); the aisle (4-6.8); him, finished, bored (6.8-9.6); outside, it drops out of the dark (9.6-11); falling past the lamp (11-12.6); his head snaps round (12.6-13.6); it lands in the snow, the lit arch beyond (13.6-15.8); his stare (15.8-17.8); the hall, only he turned (17.8-19.6); black and the case's card."
+lens = "the hall: high and wide, creeping; the aisle: low and long; him: a long lens in front, pushing in, the face and the shoulders; the fall: low looking up the wall, then close on the book with a lazy turn; the snap: close, a hand-held jolt; the landing: low in the snow; the stare: tighter and tilting; the last: a wide pull back that shows the hall behind him still writing."
 
 [r6]
-notes = "Bodies at exam desks sit perched (thighs sloping under the rack); hands placed with body_reach on the paper; the candidates use every other desk (an R6 body with arms is 4 studs across, the desks 3.6 apart). Extras wear the crowd's civilian bodies (LCrowd, now built on the campus too)."
+notes = "Bodies at exam desks sit perched (thighs sloping under the rack); hands placed with body_reach on the paper; the candidates use every other desk (an R6 body with arms is 4 studs across, the desks 3.6 apart). Extras wear the crowd's civilian bodies (LCrowd, now built on the campus too). A straight R6 arm propping the chin hides the face from a camera on that side (r6-near-arm-occlusion): the chin goes on the FAR arm (his left, from a camera on his right), so only the fist shows beside the cheek."
 
 [check]
-by = "run_cinema --clear 0 problems; --lint; contact sheets of every cut"
+by = "run_cinema --clear 0 problems; --lint; contact sheets of every cut; the motion report; the spacing strip over the head turn; a watch in the game"

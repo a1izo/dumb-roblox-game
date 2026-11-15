@@ -5,16 +5,24 @@ over the entrance exam, each candidate at their own rhythm; one player (picked a
 role) has finished, chin in hand; out in the night a black book falls past the lamp over the side door, and only he
 turns; it lands in the snow; nobody else looked up.
 
+Re-acted 2026-11-15 (the owner: "yes to all": every pose, camera and light redone; the story, the cuts, their lengths and
+the set are as they were, since a re-paced version was once called ruined): the noticer is acted through (writing fast,
+the page turned, the clock, the last stop, sitting back and tapping, sinking onto his arm, the snap, the lean to the door),
+every candidate writes with the shoulders as well as the hand, every close shot of him is a long lens from the door's side
+with a key and a cold rim on him, the first two shots have a rim from the stage end along the rows, the book is lit as it
+turns. One sentence and the one big action are at the top of art/refs/cinema/IntroCampus.toml.
+
 A  0.0-4.0   High from the back corner of the hall, craning down and in: the candidates writing under the lamps, a desk apart.
 B  4.0-6.8   Low down the aisle between the blocks, creeping forward: pencils going on both sides, each their own.
-C  6.8-9.6   The one by the side door, from in front: finished, chin in his hand, twirling his pencil, an eye on the
-             clock, a sigh.
+C  6.8-9.6   The one by the side door, from the aisle in front on his right, a long lens pushing in: finished, sat back
+             tapping his pencil with an eye on the clock, then sinking onto the arm laid along his desk, his eyes drifting
+             to the door.
 D  9.6-11.0  Outside, low, looking up the lit wall: something black drops fast out of the dark.
 F  11.0-12.6 Time all but stops: a black book hanging in the air, turning over slowly in the lamp's light.
-E  12.6-13.6 Inside, close: his head snaps round to the door.
+E  12.6-13.6 Inside, close from the aisle: he stills, then his head and body whip round to the door, into the lens.
 G  13.6-15.8 Low in the snow outside: fast again, it lands under the lamp, the snow bursting; beyond the arch, the lit hall.
-H  15.8-17.8 Close on his face from the door's side, pushing in: he stares.
-I  17.8-19.6 Wide from the front of the hall, pulling back: everyone writing; only he is turned to the door.
+H  15.8-17.8 From the door's side at his eye line, a long lens creeping in and tilting: he stares into it.
+I  17.8-19.6 From the doorway, rising and pulling right out: him, then the whole hall: everyone writing; only he is turned to the door.
    19.6-22.6 Black, then the case's card.
 
 The exam hall (maps/venues/campus/auditorium.py, Campus scene space): desks (ExamDesk: the top 2.66 high, 1.7 deep,
@@ -54,7 +62,6 @@ LANDING = (BOOK_X, 0.25, BOOK_Z)
 FALL = [(9.4, 31.0), (10.9, 19.0), (11.1, 18.2), (12.45, 16.4), (12.6, 15.6), (13.72, 0.25)]
 SLOW = (11.0, 12.5)
 LANDS = FALL[-1][0]
-TURN = 12.55  # his head snaps round to the door
 
 # Bodies at the desks -------------------------------------------------------------------------------------
 
@@ -112,8 +119,11 @@ def candidate(v):
             if x > 0.4:
                 x, line_d = -0.35, line_d + 0.12
             yaw = tilt + 10 * x
-            key(m, t, "sine", lean, neck=(pitch, yaw, tilt * 0.5), right=lambda j, o, x=x, dd=line_d: pencil(j, o, x, dd))
-            key(m, t + tempo * 0.5, "sine", lean, neck=(pitch, yaw, tilt * 0.5),
+            # (the whole body writes: the shoulders turn along the line with the hand, the weight comes forward as the
+            # page fills)
+            turn, lean_x = tilt * 0.3 + 5.0 * x, lean - 3.0 * (line_d + 0.35)
+            key(m, t, "sine", lean_x, turn=turn, neck=(pitch, yaw, tilt * 0.5), right=lambda j, o, x=x, dd=line_d: pencil(j, o, x, dd))
+            key(m, t + tempo * 0.5, "sine", lean_x, turn=turn, neck=(pitch, yaw, tilt * 0.5),
                 right=lambda j, o, x=x, dd=line_d: pencil(j, o, x + size * 0.5, dd + 0.02, ABOVE + 0.06))
             t += tempo
         return line_d
@@ -163,47 +173,109 @@ for v in range(VARIANTS):
     candidate(v)
 
 # The noticer ------------------------------------------------------------------------------------------------
-# Writing to the end of his paper, finished; sat back, the pencil twirled, the eyes drifting, the clock, a sigh;
-# then his head snaps round to the door (his right: +x), follows the thing down, flinches as it lands, stares.
+# Re-acted 2026-11-15 (the same story, cuts and lengths; art/refs/cinema/IntroCampus.toml): the one who has finished first.
+# He writes fast and sure, turns his page over, glances at the clock, stabs the last full stop and throws the pencil up;
+# sits back and taps; then sinks, his head laid on the arm that lies along his desk, the pencil's tapping slowing, his
+# eyes drifting to the door; then, on the cut to the close shot, his head and body whip round to the door as one move
+# (the wind-up, the snap, the overshoot), the arm off the desk, and he holds there, leaning towards it, as the others
+# go on writing. (His left arm lies on the desk and carries his head: a straight R6 arm cannot prop a chin, the fist
+# is nearer the cheek than the arm's own length; and from the camera on his right it is the far arm.)
+
+SNAP = 12.74  # his body whips round to the door (the cut to E is at 12.6: the wind-up is seen, then the snap)
+TURN = 12.6  # (the door's cold light comes on with the close shot)
+rn = random.Random(61)
+
+
+def lay_arm(j, o, x=-0.6, d=-1.5):
+    """The left arm lying forward along the desk, the fist on it (the head rests on it)."""
+    return body_reach(-1, j, o, (x, TOP + 0.5, d), direction=(0.0, -0.5, -0.85))
+
+
+def tap(j, o, x, lift=0.0):
+    """The right fist at the paper's near margin (the pencil tapped on it): nearer than the writing, so a body sat back
+    reaches it."""
+    return body_reach(1, j, o, paper(x, 0.38, ABOVE * 0.5 + lift), direction=(-0.3, -0.6, -0.75))
+
 
 n = Motion("IntroCampus_noticer", LENGTH, note="The Campus intro: the one who sees the book fall.")
-t = 0.0
-k = 0
-while t < 5.4:
-    x = -0.35 + 0.1 * (k % 8)
-    key(n, t, "sine", -11, neck=(-22, 3 + 8 * x, 2), right=lambda j, o, x=x: pencil(j, o, x, 0.3))
-    key(n, t + 0.11, "sine", -11, neck=(-22, 3 + 8 * x, 2), right=lambda j, o, x=x: pencil(j, o, x + 0.05, 0.32, ABOVE + 0.06))
-    t += 0.24
-    k += 1
-key(n, 5.7, "in", -12, neck=(-24, 0, 0), right=lambda j, o: pencil(j, o, 0.45, 0.35))  # the last full stop
-key(n, 6.0, "out", -6, neck=(-10, 0, 0), right=lambda j, o: pencil(j, o, 0.55, 0.2, ABOVE + 0.3))  # done; sits back
-TWIRL = [(0.62, 0.15), (0.55, 0.05), (0.66, 0.0), (0.58, 0.12)]
-for k, tt in enumerate((6.5, 6.85, 7.2, 7.55, 7.9, 8.25, 8.6, 8.95, 9.3, 9.65, 10.0, 10.4, 10.8, 11.2, 11.6, 12.0, 12.35)):
-    x, d = TWIRL[k % 4]
-    # (sat back, bored, the head tilted, the eyes drifting out towards the door's dark; up at the clock once; a sigh)
-    look = (10, -2, 6) if 7.4 <= tt <= 8.3 else (-2, -16 - 4 * math.sin(tt), 12)
-    lean = 1 + (2.5 if 8.8 <= tt <= 9.3 else 0)
-    key(n, tt, "sine", lean, neck=look, left=lambda j, o: hold_paper(j, o, 0.15, 0.25),
-        right=lambda j, o, x=x, d=d: pencil(j, o, x, d + 0.2, ABOVE + 0.2))
-# the snap round to the door, the chin off the hand, sitting up; the eyes following it down
-key(n, TURN, "sine", 1, neck=(-2, -18, 12), left=lambda j, o: hold_paper(j, o, 0.15, 0.25),
-    right=lambda j, o: pencil(j, o, 0.58, 0.32, ABOVE + 0.2))
-key(n, TURN + 0.22, "out", -2, turn=-22, neck=(6, -40, 0), left=lambda j, o: hold_paper(j, o, 0.1, 0.1),
-    right=lambda j, o: pencil(j, o, 0.6, 0.12, ABOVE + 0.25))
-key(n, LANDS - 0.05, "in", -3, turn=-24, neck=(-10, -42, 0), left=lambda j, o: hold_paper(j, o, 0.1, 0.1),
-    right=lambda j, o: pencil(j, o, 0.6, 0.12, ABOVE + 0.25))
-# the flinch as it hits
-key(n, LANDS + 0.12, "snap", 2, turn=-25, neck=(-4, -43, 0), left=lambda j, o: hold_paper(j, o, 0.2, 0.15),
-    right=lambda j, o: pencil(j, o, 0.65, 0.1, ABOVE + 0.4))
-key(n, LANDS + 0.5, "sine", -3, turn=-25, neck=(-6, -43, 0), left=lambda j, o: hold_paper(j, o, 0.15, 0.1),
-    right=lambda j, o: pencil(j, o, 0.55, 0.3, ABOVE + 0.05))
-# staring; leaning towards it a little, the head tilting (what was that?)
-key(n, 15.4, "sine", -5, turn=-27, neck=(-5, -44, -4), left=lambda j, o: hold_paper(j, o, 0.15, 0.1),
-    right=lambda j, o: pencil(j, o, 0.55, 0.3, ABOVE + 0.05))
-key(n, 17.2, "sine", -6, turn=-28, neck=(-5, -45, -9), left=lambda j, o: hold_paper(j, o, 0.15, 0.1),
-    right=lambda j, o: pencil(j, o, 0.55, 0.3, ABOVE + 0.05))
-key(n, LENGTH, "sine", -6, turn=-28, neck=(-5, -45, -10), left=lambda j, o: hold_paper(j, o, 0.15, 0.1),
-    right=lambda j, o: pencil(j, o, 0.55, 0.3, ABOVE + 0.05))
+
+
+def write(t0, t1, line, x, k0=0):
+    """Fast sure writing: the strokes' timing never the same twice, the body following the hand along the line and
+    leaning in as the page fills."""
+    t, k = t0, k0
+    while t < t1 - 0.05:
+        x += 0.11 * rn.uniform(0.75, 1.3)
+        if x > 0.42:
+            x, line = -0.35, line + 0.1
+        dt = 0.2 + 0.035 * math.sin(1.9 * k) + rn.uniform(-0.015, 0.015)
+        lean = -11.0 - 5.0 * line
+        yaw, turn = 3 + 8 * x, 2.4 * x
+        key(n, t, "sine", lean, turn=turn, neck=(-22, yaw, 2), right=lambda j, o, x=x, d=line: pencil(j, o, x, d))
+        key(n, t + dt * 0.5, "sine", lean, turn=turn, neck=(-22, yaw, 2),
+            right=lambda j, o, x=x, d=line: pencil(j, o, x + 0.05, d + 0.02, ABOVE + 0.06))
+        t += dt
+        k += 1
+    return line, x, k
+
+
+FLIP, CLOCK = 2.0, 4.0
+line, x, k = write(0.0, FLIP - 0.35, 0.0, -0.35)
+# the page turned over: the left hand sweeps to its far edge, lifts it and brings it across; the pencil waits in the air
+key(n, FLIP - 0.2, "out", -12, turn=-3, neck=(-20, -6, 0), left=lambda j, o: hold_paper(j, o, 0.95, 0.0),
+    right=lambda j, o: pencil(j, o, 0.3, line, ABOVE + 0.3))
+key(n, FLIP + 0.3, "out", -11, turn=-6, neck=(-16, -12, -3), left=lambda j, o: hold_paper(j, o, 1.1, -0.2),
+    right=lambda j, o: pencil(j, o, 0.3, line, ABOVE + 0.3))
+key(n, FLIP + 0.75, "sine", -12, turn=1, neck=(-22, 4, 2), left=lambda j, o: hold_paper(j, o, 0.1, -0.1),
+    right=lambda j, o: pencil(j, o, -0.35, 0.0, ABOVE + 0.1))
+line, x, k = write(FLIP + 0.95, CLOCK, 0.0, -0.35, k)
+# a quick look up at the clock over the stage (the pencil stops), then back down, faster
+key(n, CLOCK + 0.1, "out", -8, neck=(16, 14, 2), right=lambda j, o: pencil(j, o, x, line, ABOVE + 0.2))
+key(n, CLOCK + 0.55, "sine", -8, neck=(15, 15, 1), right=lambda j, o: pencil(j, o, x, line, ABOVE + 0.2))
+line, x, k = write(CLOCK + 0.8, 5.45, line, x, k)
+# the last full stop, pressed hard; the pencil thrown up off the page; he sits back
+key(n, 5.6, "in", -16, neck=(-24, 2, 0), right=lambda j, o: pencil(j, o, 0.45, line + 0.1, ABOVE - 0.04))
+key(n, 5.75, "out", -13, neck=(-14, 2, 0), right=lambda j, o: pencil(j, o, 0.55, line + 0.1, ABOVE + 0.5))
+key(n, 6.3, "sine", 5, neck=(13, 11, 4), left=lambda j, o: hold_paper(j, o, 0.15, 0.3), right=lambda j, o: tap(j, o, 0.45, 0.3))
+# C: sat back, looking up at the clock, the pencil tapping on the desk's edge (never at the same interval)
+for tt, up in ((6.9, 0.0), (7.04, 0.3), (7.34, 0.0), (7.5, 0.3)):
+    key(n, tt, "linear", 5, neck=(13, 11, 4), left=lambda j, o: hold_paper(j, o, 0.15, 0.3),
+        right=lambda j, o, up=up: tap(j, o, 0.45, up))
+# the slump: the shoulders go first and he sinks onto the arm laid along the desk; the head arrives after
+key(n, 7.62, "sine", 0, neck=(8, 6, 8), left=lambda j, o: hold_paper(j, o, 0.15, 0.3), right=lambda j, o: tap(j, o, 0.45, 0.25))
+key(n, 8.2, "out", -12, neck=(14, 0, 38), left=lay_arm, right=lambda j, o: tap(j, o, 0.5, 0.0))
+# (propped, bored: the pencil taps slower and slower, then lies still; the head rolls round slowly to the door)
+for tt, up in ((8.5, 0.28), (8.62, 0.0), (9.0, 0.22), (9.12, 0.0)):
+    key(n, tt, "linear", -12, neck=(14, 0, 38), left=lay_arm, right=lambda j, o, up=up: tap(j, o, 0.5, up))
+key(n, 9.5, "sine", -12, neck=(14, -16, 38), left=lay_arm, right=lambda j, o: tap(j, o, 0.5, 0.0))
+# D, F: unseen; he sits as he was, his eyes on the door, the pencil lifting and dropping lazily a couple of times
+for tt, up in ((10.4, 0.22), (10.52, 0.0), (11.45, 0.2), (11.57, 0.0)):
+    key(n, tt, "linear", -12, neck=(14, -17, 38), left=lay_arm, right=lambda j, o, up=up: tap(j, o, 0.5, up))
+key(n, 12.3, "sine", -12, neck=(14, -16, 38), left=lay_arm, right=lambda j, o: tap(j, o, 0.5, 0.0))
+# the wind-up (seen at the cut): he stills, drawn back the other way a hair; then the snap: head and body whip round to
+# the door, the left arm off the desk, the pencil dropped to the paper; the overshoot, and the settle into a lean
+key(n, SNAP - 0.1, "out", -14, turn=5, roll=2, neck=(10, 10, 40), left=lay_arm, right=lambda j, o: tap(j, o, 0.5, 0.0))
+key(n, SNAP + 0.1, "snap", -6, turn=-30, neck=(6, -50, -2), left=lambda j, o: hold_paper(j, o, 0.2, -0.2),
+    right=lambda j, o: tap(j, o, 0.6, 0.12))
+key(n, SNAP + 0.4, "out", -5, turn=-25, neck=(2, -43, 0), left=lambda j, o: hold_paper(j, o, 0.15, -0.25),
+    right=lambda j, o: tap(j, o, 0.6, 0.06))
+key(n, 13.55, "sine", -6, turn=-26, neck=(-3, -44, -2), left=lambda j, o: hold_paper(j, o, 0.15, -0.25),
+    right=lambda j, o: tap(j, o, 0.6, 0.06))
+# G, unseen: it lands; he flinches, then leans towards it
+key(n, LANDS + 0.12, "snap", 0, turn=-26, neck=(-4, -45, 0), left=lambda j, o: hold_paper(j, o, 0.2, -0.2),
+    right=lambda j, o: tap(j, o, 0.62, 0.15))
+key(n, LANDS + 0.6, "sine", -5, turn=-27, neck=(-5, -45, -3), left=lambda j, o: hold_paper(j, o, 0.15, -0.25),
+    right=lambda j, o: tap(j, o, 0.58, 0.0))
+# H: the stare, creeping: leaning further, the head tilting
+key(n, 15.8, "sine", -7, turn=-28, neck=(-5, -45, -5), left=lambda j, o: hold_paper(j, o, 0.15, -0.25),
+    right=lambda j, o: tap(j, o, 0.58, 0.0))
+key(n, 17.7, "sine", -10, turn=-30, neck=(-4, -46, -9), left=lambda j, o: hold_paper(j, o, 0.3, -0.3),
+    right=lambda j, o: tap(j, o, 0.58, 0.0))
+# I: still turned to the door; the left hand flat on the desk, the weight coming forward: he is about to rise
+key(n, 18.6, "sine", -15, turn=-32, neck=(-3, -47, -10), left=lambda j, o: hold_paper(j, o, 0.5, -0.35),
+    right=lambda j, o: tap(j, o, 0.55, 0.0))
+key(n, LENGTH, "sine", -17, turn=-33, neck=(-2, -48, -11), left=lambda j, o: hold_paper(j, o, 0.5, -0.35),
+    right=lambda j, o: tap(j, o, 0.55, 0.0))
 soft(n, head=3.0, arms=3.0)
 n.build()
 
@@ -262,14 +334,16 @@ book.at(LENGTH, LANDING, spins[-1])
 
 # The cameras, every one moving and held by hand (the owner, 2026-10-28).
 # A: high from the back corner of the hall, craning down and in.
-framing.dolly(shot, 0.0, 4.0, (21.0, 13.0, -79.6), (19.4, 10.4, -81.6), (-15.0, 2.0, -100.0), (-12.0, 2.6, -98.0),
-              fov0=56, fov1=50, shake=0.4, seed=1, cut=False)
+framing.dolly(shot, 0.0, 4.0, (21.5, 12.8, -79.2), (18.2, 8.8, -82.4), (-15.0, 2.0, -100.0), (0.0, 2.4, -95.0),
+              fov0=54, fov1=44, shake=0.5, seed=1, cut=False)
 # B: low down the aisle between the blocks, creeping forward.
-framing.dolly(shot, 4.0, 6.8, (2.8, 4.3, -79.4), (2.9, 4.0, -84.2), (2.6, 3.2, -100.0), fov0=50, fov1=46, shake=0.5,
+framing.dolly(shot, 4.0, 6.8, (2.8, 3.7, -79.4), (2.9, 3.4, -84.6), (2.6, 3.2, -100.0), fov0=50, fov1=44, shake=0.5,
               seed=2)
-# C: him, from in front on his right, pushing in. (Chin in hand was tried: a straight R6 arm hides the face.)
-shot.pan(6.8, 9.6, "noticer", (16.7, 5.3, -99.6), aim="Head", dy=-0.1, fov=40, cut=True, drift=(0.4, 0.1, 0.9),
-         operator=True, seed=3, shake=0.4, fov_to=33, ease_move=True)
+# C: him, from almost straight in front (off the stage's edge): his face and the arm his head lies on, the wood-panelled
+# wall behind him; a long lens from far enough that the head is half the frame, pushing in and drifting a little round
+# to the left. (From his right the near arm covered the face; from his left the hair did.)
+shot.pan(6.8, 9.6, "noticer", (16.4, 4.4, -103.2), aim="Head", dy=-0.15, fov=30, cut=True, drift=(-0.9, -0.1, 0.8),
+         operator=True, seed=3, shake=0.4, fov_to=27, ease_move=True)
 # D: outside, low in the passage looking up the lamp-lit wall into the night: something black drops out of the dark
 # over it (seen against the lit brick, not the black sky).
 framing.dolly(shot, 9.6, 11.0, (33.6, 4.5, -101.6), (33.4, 4.6, -101.2), (BOOK_X - 1.4, 24.0, BOOK_Z), (BOOK_X - 1.2, 20.0, BOOK_Z),
@@ -278,18 +352,20 @@ framing.dolly(shot, 9.6, 11.0, (33.6, 4.5, -101.6), (33.4, 4.6, -101.2), (BOOK_X
 # lens creeping in on its cover.
 framing.dolly(shot, 11.0, 12.6, (31.9, 19.4, -98.0), (31.7, 17.0, -97.8), (BOOK_X - 0.5, 18.4, BOOK_Z), (BOOK_X - 0.5, 15.9, BOOK_Z),
               fov0=40, fov1=36, roll0=6.0, roll1=9.0, shake=0.4, seed=5, ease_move=True)
-# E: inside, close from in front on his right: his head snaps round to the door.
-shot.pan(12.6, 13.6, "noticer", (17.6, 4.9, -98.6), aim="Head", dy=-0.05, fov=38, cut=True, drift=(-0.2, 0.0, 0.3),
-         operator=True, seed=6, shake=0.8, fov_to=33)
+# E: the same side, nearer and tighter: he stills, then his head and body whip round to the door and into the lens; the
+# hand-held frame jolts with it.
+shot.pan(12.6, 13.6, "noticer", (19.4, 5.0, -100.0), aim="Head", dy=-0.1, fov=34, cut=True, drift=(-0.2, 0.0, 0.3),
+         operator=True, seed=6, shake=0.9, fov_to=29)
 # G: low in the snow outside: it lands under the lamp; beyond the arch, the lit hall.
 framing.dolly(shot, 13.6, 15.8, (34.2, 1.1, -100.9), (33.3, 1.0, -100.0), (27.2, 2.4, -94.2), fov0=48, fov1=42, shake=0.4,
               seed=7)
-# H: close on his face from between him and the door, so he stares straight into it; pushing in, tilted.
-shot.pan(15.8, 17.8, "noticer", (18.6, 5.3, -94.2), aim="Head", dy=-0.1, fov=37, cut=True, drift=(-0.5, 0.0, 0.1),
-         roll=-7.0, operator=True, seed=8, shake=0.35, fov_to=30, ease_move=True)
-# I: from the doorway, high, pulling back: him turned to us, and the whole hall behind him still writing.
-shot.pan(17.8, BLACK, "noticer", (22.4, 5.4, -93.6), aim="Head", dy=-0.6, fov=50, cut=True, drift=(1.4, 0.4, 0.0),
-         operator=True, seed=9, shake=0.4, fov_to=60, ease_move=True)
+# H: from the door's side, a long lens, level with his eyes, so he stares straight into it; creeping in, tilted.
+shot.pan(15.8, 17.8, "noticer", (22.4, 5.0, -93.6), aim="Head", dy=-0.1, fov=33, cut=True, drift=(-0.6, 0.0, 0.1),
+         roll=-6.0, operator=True, seed=8, shake=0.35, fov_to=28, ease_move=True)
+# I: from the doorway, rising and pulling back all the way out: first on him, turned to the door, then the whole hall
+# behind him still writing, and he the only one still. (The last shot: it ends on that wide, held to the black.)
+framing.dolly(shot, 17.8, BLACK, (22.8, 5.2, -92.6), (23.6, 8.2, -90.2), (14.6, 4.6, -93.6), (7.0, 3.4, -94.6),
+              fov0=40, fov1=54, shake=0.4, seed=9)
 shot.subjects.append((BLACK, LENGTH, None, True))
 shot.cam(BLACK, (3.0, 11.8, -100.4), (14.0, 3.0, -93.0), fov=64, cut=True)
 shot.cam(LENGTH, (3.0, 11.8, -100.4), (14.0, 3.0, -93.0), fov=64, ease="linear")
@@ -309,6 +385,21 @@ shot.grade = (0.18, -0.1, -0.02, (232, 238, 255))
 shot.light("spot", (12.0, 10.0, -97.0), HEAD, color=(255, 214, 160), brightness=1.6, range=12, angle=45)
 shot.light("spot", (23.8, 6.0, -94.0), HEAD, color=(190, 210, 255), brightness=1.5, range=14, angle=35,
            show=(TURN, BLACK))
+# (a cold rim from behind him, opposite the lens in every close shot of him, so his head and shoulder come off the dark
+# rows behind; on again for the stare and the last wide)
+shot.light("spot", (8.0, 9.0, -87.0), HEAD, color=(170, 200, 255), brightness=1.5, range=14, angle=40, shadows=False,
+           show=(6.8, 9.6))
+shot.light("spot", (8.0, 9.0, -87.0), HEAD, color=(170, 200, 255), brightness=1.5, range=14, angle=40, shadows=False,
+           show=(TURN, BLACK))
+# (the candidates in the first two shots, seen from behind and above: a cold light from the stage end along the rows
+# rims the tops of their heads and shoulders against the warm pools of the pendants)
+shot.light("spot", (-3.0, 10.0, -105.0), (0.0, 3.0, -90.0), color=(160, 190, 255), brightness=1.2, range=26, angle=50,
+           shadows=False, show=(0.0, 6.8))
+shot.light("spot", (11.0, 10.0, -105.0), (9.0, 3.0, -90.0), color=(160, 190, 255), brightness=1.2, range=26, angle=50,
+           shadows=False, show=(0.0, 6.8))
+# (the book hanging in the air: the lamp's light on its cover as it turns)
+shot.light("spot", (31.0, 17.8, -99.0), (BOOK_X - 0.5, 17.0, BOOK_Z), color=(255, 226, 180), brightness=2.0, range=12,
+           angle=40, shadows=False, show=(SLOW[0], 12.6))
 shot.light("spot", (LAMP[0] + 0.4, LAMP[1] - 0.6, LAMP[2]), LANDING, color=(255, 210, 150), brightness=2.2, range=20,
            angle=55)
 shot.light("spot", (38.0, 14.0, -104.0), (BOOK_X, 8.0, BOOK_Z), color=(150, 170, 230), brightness=1.0, range=30, angle=45,
@@ -320,7 +411,10 @@ shot.light("spot", (31.5, 2.5, -98.5), (BOOK_X - 0.8, 20.0, BOOK_Z), color=(205,
 shot.event(0.0, "sfx", slot="clockTick")
 shot.event(0.0, "sfx", slot="penScratch")
 shot.event(0.4, "title", lines=["KAGEGAOKA UNIVERSITY", "Entrance exam, 23:58"], dur=3.2)
-shot.event(5.7, "sfx", slot="penStop")
+shot.event(FLIP + 0.3, "sfx", slot="pageTurn")  # (the page turned over)
+shot.event(5.6, "sfx", slot="penStop")  # (the last full stop)
+for tt in (6.9, 7.34, 8.62, 9.12):  # (the pencil tapping on the desk: the slot's own short tap)
+    shot.event(tt, "sfx", slot="penStop")
 shot.event(9.6, "sfx", slot="mapWindSnow")
 shot.event(SLOW[0], "fx", name="pulse", punch=0.05, dur=1.4)  # (time slows: the lens breathes in)
 shot.event(SLOW[0], "sfx", slot="wisp")
@@ -328,6 +422,8 @@ shot.event(SLOW[1], "fx", name="flash", r=230, g=236, b=255, strength=0.25, dur=
 shot.event(LANDS, "sfx", slot="bookImpact")
 shot.event(LANDS, "fx", name="snowburst", pos=list(LANDING))
 shot.event(LANDS, "fx", name="shake", strength=0.18, dur=0.2)
+shot.event(SNAP + 0.1, "fx", name="shake", strength=0.2, dur=0.18)  # (the jolt of the turn)
 shot.event(15.8, "sfx", slot="heartbeat")
+shot.event(16.0, "fx", name="drain", strength=0.35, dur=2.6)  # (the colour slowly leaves while he stares)
 shot.event(BLACK, "fx", name="black", hush=True)
 shot.event(BLACK + 0.5, "card", key="case", dur=LENGTH - BLACK - 0.5)
