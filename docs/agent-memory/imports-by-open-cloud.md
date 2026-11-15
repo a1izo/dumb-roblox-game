@@ -38,3 +38,10 @@ thousandth: the sculpted angel's modifiers). Export it ONCE with `--split 4` and
 DeathsGambitMaps_Scenes.fbx in git is older than the parts (they are too big to commit). Tokyo's map is over 20 MB
 too: `--split 2`. `run_props.py --export --set Fx` writes an EMPTY Fx file: the Fx set is built by
 `art/scripts/vfx/textures.py` then `art/scripts/vfx/meshes.py`.
+
+2026-11-15: the Core PROPS file via Open Cloud came in turned -178.5 degrees (its Calib_PropsCore_X cube at
+(-63.98, 0, 1.67) from O). Maps imports always arrive turned and scaled and the game reads them through their cubes,
+but the props sets must read 0/0/0 in the play test's "Import check" line, or ModelFacing.spec fails twice (a prop
+with no cubes takes Core's turn). Fix in place: rotate the whole model about its Calib _O so the _X cube lies at
+(+64, 0, 0). Smoke test a scene in a play test with a temporary LocalScript in PlayerScripts (it shares the game's
+module cache; execute_luau's own Client VM does not), then filter LogService:GetLogHistory for its tag.
