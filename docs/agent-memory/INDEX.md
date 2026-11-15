@@ -93,3 +93,6 @@
 - [R6 one knee](r6-one-knee.md) - the user rejected a split for a kneel (Thanos): the raised leg is an upright shin in front, the down leg to its knee; scene_actors.one_knee(pitch)
 - [Clock scene](clock-scene-2026-11-15.md) - Their time ran out remade: enamel dial with serif numerals, the victim on the boss over the hands, hands/pendulum/wristwatch Core 40, the world holds between ticks
 - [Cutscene lag](cutscene-lag-2026-11-15.md) - the governor never cut effects ("emoteFx" is no cut), Emit's quick frame watch, World/Away parks crowd and rain in far-off cutscenes, scene lamps follow the shadow cut
+- [Real briefing play test](studio-real-briefing-play-test.md) - forceRole + startMatch plays a role's real briefing in the Studio MCP; the logger, sampling an actor's body per frame, reopening Studio onto the place from its start page
+- [Walks and endings](cutscene-walks-and-endings.md) - RoleAce's Butler walk and ending measured in the game (constant speed, dead stop, pivot; a held stare) and the fixes; the [end] lint
+

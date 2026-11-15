@@ -431,6 +431,20 @@ the "sloppy" checklist again. Blender has lied every time this step was skipped.
 used, the report's numbers before and after, the sound list, what was not seen. Then stop and wait for the
 owner's word on that scene before starting the next.
 
+**Added 2026-11-15, after the pilot's first turn-down** ("meh": the Butler's walk off, the cutscene "not exiting", the final pan
+awkward). The loop was missing three checks, so a scene could pass every gate and still read badly:
+
+- **A walk check (steps 6 and 10).** Any actor who walks: sample the real walk in the game (recipe in
+  `docs/agent-memory/studio-real-briefing-play-test.md`: root speed, the leg cycle, the torso, the tray) and compare with a
+  reference. The motion report cannot see a walk that starts and stops dead or pivots after it; build walks with
+  `role_ace.py: travel()` (eased up and down, the heading turned into the arrival) and a speed that fits the person.
+- **An exit check (steps 9 and 10).** `run_cinema.py --lint` prints `[end]` notes (a last cut over 4.5 s, anything past the end,
+  a line that overruns, someone still walking as the shot ends). And watch the REAL flow from the first frame to the role card
+  (a forced role, a started match), not only the debug cue: camera, letterbox, effects and the HUD must all come back.
+- **A closing-shot check (step 5).** The last cut needs a release, not a hold: let the look go, let someone leave, keep it short
+  and still, cut to black for the card. A stare into the lens with the lens creeping in for seconds reads as embarrassment.
+  Say in words what the closing shot does before shooting it.
+
 **Rules for the loop.**
 
 - **Rebuild or re-act, never polish.** For each scene the stage lists say which. "Rebuild" means a new module from
@@ -606,3 +620,9 @@ the bottom of this file.
 
 - 2026-11-15, IntroCampus (1g, re-act: same nine cuts, same lengths, same story and set), branch claude/campus-react-84a4e7: one sentence and the one big action written in `art/refs/cinema/IntroCampus.toml` (the reference re-watched, 14 beats now, one new finding: Light never turns his head, only his eyes move); the noticer acted through (writing fast, the page turned, the clock, the last stop, sat back tapping, sinking with his head on the arm laid along the desk, the wind-up and the snap, the lean to the door), the candidates write with the shoulders too, six of nine cameras changed (every close shot of him a long lens from the door's side or from straight in front, the last shot rises and pulls right out), key and rim lights added, the book lit as it turns. Motion report: IntroCampus_noticer FAIL (frozen 4.4 s) before, PASS after (frozen 1.4 s, torso 14 percent, anticipation 2 of 2). `--clear` 0, `--lint` no notes (three `[frame]` notes before), acting file 151,327 characters. Not done: the game watch (Studio was in another session's Play, then not connected), the owner's verdict.
 - 2026-11-14, RoleDiavolo (1h, cameras and Ryuk only, re-act), branch claude/diavolo-ryuk-bc9da4: the owner's complaint (stale cameras when not camera POV, how Ryuk appears, how stiff he is) answered in [ryuk-specter-findings-2026-11-14.md](ryuk-specter-findings-2026-11-14.md): Ryuk is eight rigid parts, no joints (their guess is right), used in two scenes only; options and costs there. Changed in role_kira.py only: B, C, D, E, F are new held cameras, Ryuk is tipped about his hips and drawn in over 2.4 s so his head lands in the cut to F; story, cuts, lengths, voice, hidden cameras and effects unchanged. `--clear` 0, `--lint` only intended `[frame]` notes, motion report unchanged (PASS). Not done: the game watch (no Studio was connected), the Oculus deal (Luau, waits for the owner's choice), the owner's verdict.
+- 2026-11-15, RoleAce fix round (first turn-down at the owner's gate): measured the Butler's walk in the game, rebuilt it (eased
+  travel, a curved arrival, small moves while waiting, an exit through the door), rebuilt the ending (the stare released at 14.2, a
+  wide with the Butler leaving, a cut to black; length 17.5 to 16.6), added the `[end]` lint, a tray reference in `RoleAce.toml`
+  and the method checks above. The real briefing in the game ended on time and restored everything: "not exiting" was read as the
+  ending. Verdict pending.
+

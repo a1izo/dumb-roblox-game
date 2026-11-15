@@ -588,6 +588,40 @@ def _subject(shot, t):
     return (best[1], best[2]) if best else (None, False)
 
 
+def end_lint(shot, longest_cut=4.5, still_speed=0.6):
+    """Notes on how the shot ends (2026-11-15, the RoleAce pilot: the owner found the end of the scene awkward and said it
+    "isn't exiting": its last cut held a stare for 5.8 s, then crept on for 2.3 s with a servant left standing and nothing to
+    close it; the game's exit itself worked). A scene should hand over to what comes after it: no stare or creep running
+    past about `longest_cut` seconds in the last cut, nothing asked for after the end, a spoken line that is finished, and
+    nobody still walking through the last frame (leaving, or arriving, is part of the scene)."""
+    out = []
+    starts = [g[0][0] for g in shot.cam_groups if g]
+    if starts:
+        held = shot.length - starts[-1]
+        if held > longest_cut:
+            out.append(f"the last cut runs {held:.1f} s ({starts[-1]:.1f} to {shot.length:.1f}); over {longest_cut:.1f} s a held "
+                       f"shot or a creep reads as a stare")
+    for t, kind, data in shot.events:
+        if t > shot.length + 1e-6:
+            out.append(f"{kind} {data.get('name') or data.get('slot') or ''} at {t:.2f} s is after the shot's end ({shot.length:.2f})")
+        if kind == "line" and data.get("words"):
+            end = t + float(data["words"][-1][1]) + 0.5
+            if end > shot.length + 1e-6:
+                out.append(f"the spoken line ends at {end:.2f} s, after the shot's end ({shot.length:.2f})")
+    for g in shot.cam_groups:
+        for key in g:
+            if key[0] > shot.length + 1e-6:
+                out.append(f"a camera key at {key[0]:.2f} s is after the shot's end ({shot.length:.2f})")
+    for a in shot.actors:
+        if a.show[1] < shot.length - 1e-6 or a.show[0] > shot.length:
+            continue
+        p1, p0 = a.path.value(shot.length)[:3], a.path.value(max(0.0, shot.length - 0.15))[:3]
+        speed = float(np.hypot(p1[0] - p0[0], p1[2] - p0[2])) / 0.15
+        if speed > still_speed:
+            out.append(f"{a.slot} is still moving at {speed:.1f} studs a second as the shot ends (a walk should end, or leave the frame)")
+    return out
+
+
 def framing_lint(shot, step=0.25):
     """Warnings, as time ranges, for moments the player would not see the subject's face properly: the
     camera in their hair, their head cut by the letterbox or out of frame, the back or the top of their

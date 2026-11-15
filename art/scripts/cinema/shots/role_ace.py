@@ -36,7 +36,8 @@ from cinema.shot import Shot
 from motion import Motion
 
 NAME = "RoleAce"
-LENGTH = 17.5
+LENGTH = 16.6
+DONE = 14.2  # the stare is let go: the cut to the wide, the Butler leaving, Ace back to his screens
 AX = 240.0
 SEAT = 2.0  # the armchair's cushion
 ACE = (AX - 2.0, -1.6)  # (x, z) of the root on the cushion; he faces north (-z), the screens
@@ -125,11 +126,71 @@ _arm = posekit.fk({**CARRYING, "rShoulder": TRAY["rShoulder"]})["Right Arm"]
 TRAY_GRIP = ((-1.0, -1.05, 0.0), tuple(round(float(v), 2) for v in posekit.euler(_arm[:3, :3].T)))
 
 OFFER = (AX + 1.5, 1.6)  # where the Butler stops: south-east of the armchair, the tray at Ace's right hip, within his reach
-WAYPOINTS = [PANTRY, (AX + 8.0, 0.0), OFFER]
-SPEED = 4.0
-WALK_T0 = 5.8
-legs = [float(np.linalg.norm(np.array(b) - np.array(a))) for a, b in zip(WAYPOINTS, WAYPOINTS[1:])]
-WALK_T1 = WALK_T0 + sum(legs) / SPEED
+IN_WAY = [PANTRY, (AX + 9.0, 0.0), (AX + 5.5, 1.0), OFFER]  # (straight through the doorway, then a curve: he arrives turning to Ace)
+OUT_WAY = [OFFER, (AX + 5.5, 1.0), (AX + 9.0, 0.0), (AX + 11.5, 0.0)]
+SPEED = 3.0  # a butler with a tray: slower than the game's walk (4), eased in and out
+WALK_T0 = 4.4
+EXIT_T0 = 12.5
+
+
+def travel(points, t0, speed, accel=0.6, decel=0.8, yaw_start=None, turn_start=1.0, yaw_end=None, turn_end=1.3):
+    """A walk along a polyline: eased up to `speed` over `accel`, eased down over `decel` (2026-11-15: the Butler's walk was a
+    constant 4 studs a second that began and stopped dead, with a 50 degree pivot on the spot after it), the heading the
+    path's own (smoothed over a stud either side), blended into `yaw_start` over the first `turn_start` seconds and into
+    `yaw_end` over the last `turn_end`. Returns ([(t, x, z, yaw)] every 0.1 s, the time it ends)."""
+    pts = [np.array(p, float) for p in points]
+    seg = [float(np.linalg.norm(b_ - a_)) for a_, b_ in zip(pts, pts[1:])]
+    total = sum(seg)
+    d_acc, d_dec = speed * accel / 2, speed * decel / 2
+    cruise = max(0.0, total - d_acc - d_dec)
+    t_cruise = cruise / speed
+    T = accel + t_cruise + decel
+
+    def s_of(t):
+        if t <= accel:
+            return speed * t * t / (2 * accel)
+        if t <= accel + t_cruise:
+            return d_acc + speed * (t - accel)
+        u = t - accel - t_cruise
+        return min(total, d_acc + cruise + speed * u - speed * u * u / (2 * decel))
+
+    def at(sd):
+        sd = max(0.0, min(total, sd))
+        for k, ln in enumerate(seg):
+            if sd <= ln + 1e-9 or k == len(seg) - 1:
+                u = sd / max(ln, 1e-9)
+                return pts[k] + (pts[k + 1] - pts[k]) * min(1.0, u), pts[k + 1] - pts[k]
+            sd -= ln
+        return pts[-1], pts[-1] - pts[-2]
+
+    def wrap(a):
+        return (a + 180.0) % 360.0 - 180.0
+
+    def blend(a, b_, u):
+        u = max(0.0, min(1.0, u))
+        u = u * u * (3 - 2 * u)
+        return a + wrap(b_ - a) * u
+
+    out = []
+    n = int(math.ceil(T / 0.1))
+    for i in range(n + 1):
+        t = min(i * 0.1, T)
+        sd = s_of(t)
+        pos, _ = at(sd)
+        ahead, _ = at(sd + 1.0)
+        behind, _ = at(sd - 1.0)
+        d = ahead - behind
+        yaw = facing((0.0, 0.0), (float(d[0]), float(d[1]))) if np.linalg.norm(d) > 1e-6 else (out[-1][3] if out else 0.0)
+        if yaw_start is not None:
+            yaw = blend(yaw_start, yaw, t / turn_start)
+        if yaw_end is not None:
+            yaw = blend(yaw, yaw_end, 1.0 - (T - t) / turn_end)
+        out.append((round(t0 + t, 3), float(pos[0]), float(pos[1]), yaw))
+    return out, t0 + T
+
+
+WALK_IN, WALK_T1 = travel(IN_WAY, WALK_T0, SPEED, yaw_end=facing(OFFER, ACE))
+WALK_OUT, EXIT_T1 = travel(OUT_WAY, EXIT_T0, SPEED, yaw_start=facing(OFFER, ACE))
 BOWED_AT = WALK_T1 + 0.5
 
 # the tray's origin when he dips and holds it out (his frame), and each cup's place on it (the prop's frame is level,
@@ -231,9 +292,9 @@ R_CUBE = Held(1, _top_cube, CUBE_R)  # closed on the top cube
 R_LIPS = Held(1, _lips_at(0.36), CUBE_R)  # the cube at his lips
 R_CUPHOVER = Held(1, lambda j, o, n: tuple(np.array(_cup_on_tray(j, o, n)) + [0.0, 0.6, 0.0]), CUP_R)
 R_CUPRIM = Held(1, _cup_on_tray, CUP_R)  # on the cup standing on the tray
-R_CUPARC = Held(1, lambda j, o, n: (1.4, 2.0, -0.55), CUP_R)  # carried over the knee
+R_CUPARC = Held(1, lambda j, o, n: (2.3, 1.9, -1.5), CUP_R)  # carried out and round over the knee (the arm cannot fold)
 R_SIP = Held(1, _lips_at(0.46), CUP_R, bend=(0.0, 0.25, 0.0))  # the cup's rim at his lips
-R_HOLD = Held(1, lambda j, o, n: (0.7, 2.15, -1.55), CUP_R, bend=(0.0, 0.2, 0.0))  # the cup held at his chest
+R_HOLD = Held(1, lambda j, o, n: (1.0, 2.1, -2.2), CUP_R, bend=(0.0, 0.2, 0.0))  # the cup held out at arm's length (a fist cannot come nearer than 1.3 studs to its shoulder)
 
 
 
@@ -281,29 +342,31 @@ key(TURN + 0.1, "sine", -17, turn=-6, neck=(5, -12, 3), right=R_HOLD, left=L_KNE
 key(TURN + 0.22, "snap", -17, turn=14, neck=(-5, 84, 2), right=R_HOLD, left=L_KNEE)
 key(TURN + 0.55, "smooth", -17, turn=28, neck=(-4, 68, 2), right=R_HOLD, left=L_KNEE)
 # the stare is held; at the end one last small tilt, and the cup drawn a little in
-key(14.4, "sine", -17, turn=28, neck=(-4, 68, 2), right=R_HOLD, left=L_KNEE)
-key(15.8, "sine", -17, turn=28, neck=(-3, 68, 11), right=R_HOLD, left=L_KNEE)
-key(LENGTH, "smooth", -17, turn=28, neck=(-3, 68, 11), right=R_HOLD, left=L_KNEE)
+key(DONE + 0.1, "sine", -17, turn=28, neck=(-4, 68, 2), right=R_HOLD, left=L_KNEE)
+key(14.7, "sine", -17, turn=28, neck=(-3, 68, 9), right=R_HOLD, left=L_KNEE)
+# the stare is let go: he looks back at his screens, slowly, as if nothing had been said
+key(15.0, "sine", -17, turn=26, neck=(-3, 70, 9), right=R_HOLD, left=L_KNEE)
+key(15.9, "sine", -16, turn=-4, neck=(7, 4, 4), right=R_HOLD, left=L_KNEE)
+key(LENGTH, "smooth", -16, turn=-4, neck=(8, 2, 4), right=R_HOLD, left=L_KNEE)
 soft(ace, head=4.2, arms=5.0, head_damp=0.55, arm_damp=0.55)
 ace.build()
 T_PICK, T_EAT = 5.45, 6.55  # the top cube leaves the tower in his fist; it is eaten at the lips
 
-b = Motion("RoleAce_butler", LENGTH, note="Ace's role cutscene: the Butler brings the tea.")
+b = Motion("RoleAce_butler", LENGTH, note="Ace's role cutscene: the Butler brings the tea, and goes.")
 b.key(0.0, root=(0, 0, 0), neck=(-2, 0, 0), **TRAY)
 b.key(WALK_T1, root=(-2, 0, 0), neck=(-2, 0, 0), **TRAY)
 beat(b, 1.4, 0.5, antic=0.1, neck=(-3, 7, 0))  # (waiting in the pantry: a glance towards the door and the room)
-beat(b, 3.4, 0.6, antic=0.1, root=(-3, 2, 0), neck=(-5, 0, 0))  # a shift of weight
-beat(b, 5.0, 0.5, antic=0.1, neck=(-1, 4, 0))  # the order is ready
+beat(b, 3.0, 0.6, antic=0.1, root=(-3, 2, 0), neck=(-5, 0, 0))  # a shift of weight
 beat(b, BOWED_AT, 0.5, antic=0.15, root=(-9, 0, 0), neck=(-4, 0, 0), **HELD)  # a small dip, the tray held out
 beat(b, 10.6, 0.6, antic=0.1, neck=(-7, 9, 0))  # his eyes follow the cup up
 beat(b, 11.7, 0.7, antic=0.1, root=(-9, 3, 0), neck=(-3, 3, 0))  # a breath of weight, the tray still
-hold(b, 12.4)
-beat(b, 13.0, 0.4, antic=0.1, neck=(2, 18, 0))  # a glance at Ace: he has turned his head
-hold(b, 14.2)
-beat(b, 14.9, 0.6, root=(-3, 6, 0), neck=(-8, 6, 0), rShoulder=J((56, 0, -14), (0, 0.06, -0.16)), lShoulder=J((58, 0, 9), (0, 0.06, -0.16)))
-b.key(LENGTH, root=(-3, 6, 0), neck=(-8, 6, 0))
-soft(b, arms=2.6).plant(None, WALK_T0 - 0.1, stance=0.04).plant(WALK_T1 + 0.1, None, stance=0.04)
-walking(b, WALK_T0, WALK_T1, arms=0.35)
+hold(b, 11.9)
+beat(b, 12.15, 0.3, antic=0.1, neck=(2, 18, 0))  # a glance at Ace: he has turned his head
+beat(b, EXIT_T0 + 0.5, 0.6, root=(-2, 0, 0), neck=(-4, 0, 0), **TRAY)  # the tray brought level, and off
+b.key(LENGTH, root=(-2, 0, 0), neck=(-4, 0, 0))
+soft(b, arms=2.6).plant(None, WALK_T0 - 0.1, stance=0.04).plant(WALK_T1 + 0.1, EXIT_T0 - 0.1, stance=0.04)
+walking(b, WALK_T0, WALK_T1, speed=SPEED, arms=0.35)
+walking(b, EXIT_T0, EXIT_T1, speed=SPEED, arms=0.35)
 b.build()
 
 # The shot --------------------------------------------------------------------------------------------------
@@ -316,18 +379,12 @@ me = shot.actor("self", ace, silhouette=None)
 me.mark(0.0, (ACE[0], SEAT, ACE[1]), 0.0)
 
 bu = shot.actor("butler", b)
-marks = [WALK_T0]
-for a_, b_ in zip(WAYPOINTS, WAYPOINTS[1:]):
-    marks.append(marks[-1] + float(np.linalg.norm(np.array(b_) - np.array(a_))) / SPEED)
-heads = [facing(a_, b_) for a_, b_ in zip(WAYPOINTS, WAYPOINTS[1:])]
-bu.mark(0.0, (PANTRY[0], 0.0, PANTRY[1]), heads[0])
-bu.mark(WALK_T0, (PANTRY[0], 0.0, PANTRY[1]), heads[0], "linear")
-for i in range(1, len(WAYPOINTS) - 1):
-    yaw = heads[i - 1] + ((heads[i] - heads[i - 1] + 180.0) % 360.0 - 180.0) / 2
-    bu.mark(marks[i], (WAYPOINTS[i][0], 0.0, WAYPOINTS[i][1]), yaw, "linear")
-bu.mark(marks[-1], (OFFER[0], 0.0, OFFER[1]), heads[-1], "linear")
-bu.mark(marks[-1] + 0.5, (OFFER[0], 0.0, OFFER[1]), facing(OFFER, ACE))
-bu.mark(LENGTH, (OFFER[0], 0.0, OFFER[1]), facing(OFFER, ACE))
+bu.mark(0.0, (PANTRY[0], 0.0, PANTRY[1]), WALK_IN[0][3])
+for t, x, z, yaw in WALK_IN:
+    bu.mark(t, (x, 0.0, z), yaw, "linear")
+bu.mark(EXIT_T0, (OFFER[0], 0.0, OFFER[1]), facing(OFFER, ACE), "linear")
+for t, x, z, yaw in WALK_OUT[1:]:
+    bu.mark(t, (x, 0.0, z), yaw, "linear")
 bu.hold("TeaTray", "Right Arm", *TRAY_GRIP)
 footwork.apply(shot)
 
@@ -402,12 +459,12 @@ shot.pan(3.4, 6.8, "self", (AX - 11.1, 4.8, -2.2), aim="Head", dy=-0.2, fov=36, 
 # C: over his shoulder, low, to the door: the Butler and the pantry's warm light.
 shot.pan(6.8, 9.4, "butler", (AX - 5.8, 3.6, -0.2), aim="Torso", dy=0.9, fov=40, cut=True, operator=True, seed=3, shake=0.5,
          drift=(0.5, 0.0, 0.2))
-# D: from the door's side, in the line he will turn along: the tea, the sip, the turn, the stare, creeping in all the way.
-shot.pan(9.4, 15.2, "self", (AX - 11.1, 5.0, -1.0), aim="Head", dy=-0.2, fov=34, cut=True, operator=True, seed=4, shake=0.45,
-         drift=(2.4, 0.0, -0.3), fov_to=15, ease_move=True)
-# E: wide again from the door's side, pulling back: Ace small in the screens' light, his face turned to us.
-shot.pan(15.2, LENGTH, "self", (AX - 9.8, 3.2, 0.2), aim="Torso", dy=0.6, fov=40, cut=True, drift=(-1.2, 0.2, 1.2), operator=True,
-         seed=6, shake=0.5, fov_to=46, ease_move=True)
+# D: from his left, in the line he will turn along: the tea, the sip, the turn, then the stare held a breath and let go.
+shot.pan(9.4, DONE, "self", (AX - 11.1, 5.0, -1.0), aim="Head", dy=-0.2, fov=34, cut=True, operator=True, seed=4, shake=0.45,
+         drift=(2.0, 0.0, -0.3), fov_to=19, ease_move=True)
+# E: wide from his left, hardly moving: the Butler going out through the door, Ace back at his screens; then a cut to black.
+shot.pan(DONE, LENGTH, "self", (AX - 9.8, 3.4, 0.4), aim="Torso", dy=0.6, fov=38, cut=True, drift=(-0.5, 0.1, 0.4), operator=True,
+         seed=6, shake=0.35, fov_to=40, ease_move=True)
 
 # The light: the screens' cold glow is the only light (the set's own); a flickering key on his face from the screens, a cold
 # rim from behind him, and a warm spill through the pantry door from the moment the Butler is there to be seen.
@@ -425,7 +482,7 @@ for t, slot, part, radius, rack in ((0.0, "self", "Torso", 7.0, 0.0), (3.4, "sel
                                     (4.9, "self", "Right Arm", 2.6, 0.6), (6.3, "self", "Head", 3.2, 0.6),
                                     (6.8, "butler", "Torso", 5.0, 0.0), (9.4, "self", "Right Arm", 3.0, 0.0),
                                     (11.0, "self", "Head", 3.0, 0.7), (12.4, "self", "Head", 2.4, 0.5),
-                                    (15.2, "self", "Torso", 8.0, 0.0)):
+                                    (DONE, "self", "Torso", 8.0, 0.0)):
     shot.event(t, "fx", name="focus", slot=slot, part=part, radius=radius, far=0.12, near=0.06, rack=rack)
 shot.event(T_PICK, "sfx", slot="clockTick")
 shot.event(T_TAKE, "sfx", slot="clockTick")
@@ -434,6 +491,7 @@ shot.event(TURN, "sfx", slot="eyesOpen")
 shot.event(TURN + 0.05, "sfx", slot="heartbeat")
 shot.event(TURN + 0.05, "fx", name="pulse", punch=0.06, dur=0.8)
 shot.event(TURN + 0.2, "fx", name="drain", strength=0.5, dur=2.5)
+shot.event(LENGTH - 0.35, "fx", name="black")  # (out: the role card comes up on the dark)
 
 shot.audio(voice="voiceAce", voice_at=SAID, bed="bedAce")
 shot.line(SAID, "I had to test this just in case, but I, I never thought it would actually happen. {Hand}... it seems you "
