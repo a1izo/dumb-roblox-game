@@ -196,9 +196,19 @@ class Prop:
         self.open = tuple((float(t), float(v)) for t, v in open) if isinstance(open, (list, tuple)) else open
         self.show = (show[0], show[1] if show[1] is not None else shot.length)
         self.path = Track(shot.length, full_rotation=True)
+        self.head = None  # the Deathsinger's head, turned on its own: a Track of (pitch, yaw, roll) degrees (look())
 
     def at(self, t, pos, rot=(0, 0, 0), ease="smooth"):
         self.path.key(t, pos, rot, ease)
+        return self
+
+    def look(self, t, pitch=0.0, yaw=0.0, roll=0.0, ease="sine"):
+        """The Deathsinger ("Specter") turns his head, from the neck, by these degrees (client/Presentation/SpecterPose):
+        pitch + looks down, yaw + turns to his left, roll + tilts to his left. The game keeps it to what his neck hides
+        (yaw 25, nod 15 down and 10 up, roll 10). Nothing else has a head to turn."""
+        if self.head is None:
+            self.head = Track(self.shot.length, full_rotation=True)
+        self.head.key(t, (0.0, 0.0, 0.0), (pitch, yaw, roll), ease)
         return self
 
 
@@ -480,6 +490,8 @@ class Retime:
             window = self.span(*p.show)
             if window:
                 p.path = _Warped(p.path, self.old)
+                if p.head is not None:
+                    p.head = _Warped(p.head, self.old)
                 p.show = window
                 kept.append(p)
         shot.props = kept
@@ -708,6 +720,24 @@ def _path_lines(track, length, indent):
     ]
 
 
+def _angle_lines(track, length, indent):
+    """t and r (three angles, degrees) of a track of angles only, thinned."""
+    count = max(2, int(round(length * RATE)))
+    times = [length * i / count for i in range(count + 1)]
+    values = [track.value(t) for t in times]
+
+    def err(i, j, k):
+        f = _lerp_frac(times, i, j, k)
+        approx = values[i] + (values[j] - values[i]) * f
+        return np.max(np.abs(approx[3:] - values[k][3:])) / 0.3
+
+    keep = thin(times, values, err)
+    return [
+        f"{indent}t = {_flat([[times[i]] for i in keep], 3)},",
+        f"{indent}r = {_flat([values[i][3:] for i in keep], 2)},",
+    ]
+
+
 def export(shot):
     samples, cuts = shot.camera_samples()
     times = [s[0] for s in samples]
@@ -812,6 +842,10 @@ def export(shot):
         elif p.open is not None:
             lines.append(f"\t\t\topen = {num(p.open)},")
         lines += _path_lines(p.path, shot.length, "\t\t\t")
+        if p.head is not None:
+            lines.append("\t\t\thead = {")
+            lines += _angle_lines(p.head, shot.length, "\t\t\t\t")
+            lines.append("\t\t\t},")
         lines.append("\t\t},")
     lines.append("\t},")
     lines.append("\tevents = {")

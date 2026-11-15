@@ -34,6 +34,7 @@ local CameraDirector = require(script.Parent.CameraDirector)
 local Cinema = require(script.Parent.Cinema)
 local DeathFx = require(script.Parent.DeathFx)
 local Materialize = require(script.Parent.Materialize)
+local SpecterPose = require(script.Parent.SpecterPose)
 local Stage = require(script.Parent.Stage)
 local Vfx = require(script.Parent.Vfx)
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
@@ -153,6 +154,16 @@ local function samplePath(times: { number }, frames: { CFrame }, t: number): CFr
 	local i = find(times, t)
 	local j, alpha = alphaAt(times, i, t)
 	return frames[i]:Lerp(frames[j], alpha)
+end
+
+-- Three angles (a flat list of them, three to a key) at t, straight between the keys: the Deathsinger's head.
+local function sampleAngles(times: { number }, angles: { number }, t: number): (number, number, number)
+	local i = find(times, t)
+	local j, alpha = alphaAt(times, i, t)
+	local a, b = (i - 1) * 3, (j - 1) * 3
+	return angles[a + 1] + (angles[b + 1] - angles[a + 1]) * alpha,
+		angles[a + 2] + (angles[b + 2] - angles[a + 2]) * alpha,
+		angles[a + 3] + (angles[b + 3] - angles[a + 3]) * alpha
 end
 
 local function shown(range: { number }?, t: number): boolean
@@ -677,6 +688,7 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 				times = data.t,
 				frames = pathFrames(data),
 				open = nil :: number?, -- (a Manual opened over the shot: how open it was posed last)
+				pose = nil :: any, -- (the Deathsinger's head, mane and gear: Presentation/SpecterPose; false when it has none)
 			})
 		end
 	end
@@ -1132,6 +1144,15 @@ function ShotPlayer.play(name: string, options: Options?): boolean
 						if not drawn then
 							Materialize.appear(prop.model, { seconds = 0.3, quiet = true })
 						end
+					end
+				end
+				if prop.data.head and prop.model:IsA("Model") then
+					if prop.pose == nil then
+						prop.pose = SpecterPose.new(prop.model) or false
+					end
+					if prop.pose then
+						local pitch, yaw, roll = sampleAngles(prop.data.head.t, prop.data.head.r, tt)
+						SpecterPose.apply(prop.pose, pitch, yaw, roll)
 					end
 				end
 			elseif prop.model.Parent then

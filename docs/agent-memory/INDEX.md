@@ -87,3 +87,5 @@
 - [Fast run launcher](fast-run-launcher.md) - art/scripts/fast_run.py runs lint, strips, clearance, export, stills for one scene without the 70-emote build and the other scenes (25 s instead of 2 min); a body_reach hook checks every placed hand (2026-11-15)
 - [R6 head on the arm](r6-head-on-arm-pose.md) - no chin on a fist on R6 (fist 1.1 studs from the shoulder, limit 1.3); lay the far arm along the desk and the head on it, with the numbers (IntroCampus noticer, 2026-11-15)
 - [Stills trap: absolute outdir](stills-trap-absolute-outdir.md) - a relative outdir of review_stills lands in C:/art; CPU renders stall at 960x540 on the volumetric book shot, use DG_SIZE=640x360 for the loop (2026-11-15)
+- [Ryuk is eight rigid parts](ryuk-is-eight-rigid-parts.md) - the Specter model has no joints (8 MeshParts, pivot at his toes), is in two scenes only, Materialize fades him per part (head last); options and costs in the 2026-11-14 findings
+- [Held camera and sides](held-camera-and-sides.md) - RoleDiavolo's non-POV cameras redone 2026-11-14: held() for a bent path with a spring aim; a raised arm hides the face on its side, a second subject hides on the line through them

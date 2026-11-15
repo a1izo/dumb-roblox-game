@@ -27,10 +27,15 @@ right), the pen stand at (1.3, -6.2) and the dossier at (1.4, -5.2) (on his left
 pedestals; the chair behind it at (0, -8.0); the television across the room at (1, 6.6) facing the desk. He sits
 facing south (180), so his right is -x."""
 
+import math
+import random
+
+import numpy as np
+
 from animlib import J
 from cinema import footwork, framing
 from cinema.acting import body_reach, soft, to_torso
-from cinema.shot import Shot
+from cinema.shot import Shot, euler_rotation
 from emotes.kit import basis_angles, hold, reach
 from motion import Motion
 
@@ -47,7 +52,7 @@ PAGE_Y = BOOK_Y + 0.139 * MANUAL  # the page's face (ModelCatalog Grimoire.page.
 BAG = (1.6, -5.72)  # the bag of crisps stood on the dossier, by his left hand (clear of his face from the front)
 BAG_SCALE = 1.15
 BAG_Y = TOP + 0.12
-SINGER = (-2.6, -10.0)
+SINGER = (-2.2, -9.6)  # where he hangs: the floor under him, at the wall behind the chair, on his right
 ABOVE = 0.78  # the fist this far over the page puts the nib on it (PEN_GRIP)
 
 # (3-4 s longer, the owner, 2026-10-28: the beats given room, not slowed)
@@ -234,15 +239,95 @@ bag.at(0.0, (BAG[0], BAG_Y, BAG[1]), (0, 196, 0))
 bag.at(LENGTH, (BAG[0], BAG_Y, BAG[1]), (0, 196, 0))
 PAGE = (BOOK[0], PAGE_Y, BOOK[1])
 
-# The Deathsinger: drawn together out of the dark behind him as he bites, eyes first, whole as he leans back laughing,
+# The Deathsinger (Ryuk): drawn together out of the dark behind him as he bites, whole as he leans back laughing,
 # leaning in over his shoulder, laughing with him; gone before the hidden camera's view (it never shows on a camera).
+# He is one rigid model with no joints (docs/handoff/ryuk-specter-findings-2026-11-14.md), so the only things that move
+# are the model as a whole: here it is turned about his hips, not his feet (a lean about his feet would swing his hips
+# through the floor), it rises and steps forward out of the wall as it forms (the owner, 2026-11-14: "how ryuk appears"),
+# it floats, it sways, and its heaves come a beat behind Diavolo's and never at one rate.
+HIP_L = np.array([0.0, 3.9, 0.12])  # his hips in his own frame (his pivot is at his toes)
+HEAD_L = np.array([0.0, 7.05, -1.0])  # the middle of his head, in the same frame
+FACING = 180.0  # towards +z: the desk and the room
+FORMED = COMES + 2.4  # whole. Materialize fades each of his eight parts by where its middle stands (body and gear at
+# 0.4 of his height, mane 0.7, face, hair and eyes 0.8), so the head is the last thing in, from about 0.65 of the time:
+# 12.76 to 13.3, the first half second of the cut to F
 singer = shot.prop("Specter", show=(COMES, STUDY + 0.25))
-singer.at(COMES, (SINGER[0], 0.2, SINGER[1] + 0.4), (0, 180, 0))
-singer.at(BACK + 0.9, (SINGER[0], 0.2, SINGER[1]), (10, 174, 0), "out")
-shot.event(COMES, "materialize", model="Specter", dur=1.4, r=200, g=30, b=45)
-for k in range(6):
-    t = BACK + 1.0 + 0.24 * k
-    singer.at(t, (SINGER[0], 0.3 + (0.25 if k % 2 else 0.0), SINGER[1] + 0.3), (12 - (5 if k % 2 else 0), 170, 4))
+
+
+def ryuk(t, spot, lean=0.0, turn=0.0, roll=0.0, rise=0.0, ease="sine"):
+    """A key for the Deathsinger: stood at `spot` (x, z), `rise` studs off the floor, leaning `lean` degrees into the
+    room, turned `turn` and rolled `roll`, all about his hips."""
+    rest = euler_rotation(0.0, FACING, 0.0)
+    spin = euler_rotation(lean, FACING + turn, roll)
+    pos = np.array([spot[0], 0.2 + rise, spot[1]]) + rest @ HIP_L - spin @ HIP_L
+    singer.at(round(t, 4), tuple(round(float(v), 3) for v in pos),
+              (round(lean, 2), round(FACING + turn, 2), round(roll, 2)), ease)
+
+
+def ryuk_head(t):
+    """Where the middle of his head is at t (the set's space)."""
+    v = singer.path.value(t)
+    return np.array(v[:3]) + euler_rotation(*v[3:6]) @ HEAD_L
+
+
+# forming: leaning back in the dark by the wall, rising, stepping forward and turning to the room
+ryuk(COMES, (SINGER[0] - 0.15, SINGER[1] - 0.9), lean=-4.0, turn=10.0, roll=-3.0, rise=-0.1)
+ryuk(COMES + 1.0, (SINGER[0] - 0.05, SINGER[1] - 0.5), lean=-1.0, turn=5.0, roll=2.0, rise=0.2)
+ryuk(FORMED - 0.4, (SINGER[0], SINGER[1]), lean=6.0, turn=0.0, roll=-1.0, rise=0.5)
+# the laugh, once his head is in: heaves in uneven runs (four, three, three, two) with a held breath between them, each a
+# different size, a beat behind Diavolo's; the lean creeps in over his shoulder, the sway is slow, and the laugh dies
+# away as Diavolo settles over his books. (Evenly spaced heaves read as the metronome the old scene had: the probe in the
+# notes measured the first try at 0.22 to 0.28 s between turns.)
+_rng = random.Random(11)
+_beats, _t = [], FORMED - 0.15
+for _run in (4, 3, 3, 2):
+    for _ in range(_run):
+        _beats.append(_t)
+        _t += _rng.uniform(0.17, 0.27)
+    _t += _rng.uniform(0.22, 0.4)
+_beats = [b for b in _beats if b < STUDY + 0.2]
+for _k, _t in enumerate(_beats):
+    _u = (_t - FORMED) / (STUDY + 0.25 - FORMED)
+    _calm = 1.0 if _t < 14.6 else 0.55
+    _up = _k % 2 == 0
+    ryuk(_t, (SINGER[0] + 0.12 * math.sin(_k * 0.9), SINGER[1] + 0.6 * max(_u, 0.0)),
+         lean=7.0 + 6.0 * max(_u, 0.0) + (2.8 if _up else -1.6) * _calm * _rng.uniform(0.6, 1.25),
+         turn=-6.0 * max(_u, 0.0) + 3.0 * math.sin(_k * 0.55), roll=3.2 * math.sin(2 * math.pi * 0.4 * (_t - FORMED)),
+         rise=0.5 + 0.12 * math.sin(2 * math.pi * 0.55 * (_t - FORMED)) + (0.1 if _up else -0.05) * _calm)
+# His head, turned from the neck by the game (client/Presentation/SpecterPose; the owner chose it, 2026-11-14: "head turn,
+# no import"). Pitch + looks down, yaw + turns to his left, which is towards Diavolo (he stands at +x of him); the game
+# keeps it to what the neck hides (yaw 25, 15 down, 10 up, roll 10). Drawn in turned away and tipped back, the face comes
+# round to the room as the head fills in (12.8 to 13.3), it turns and bends to look down at Diavolo and nods with the
+# heaves, then snaps back to the lens to stare as Diavolo goes back to his books: what the hidden camera does not see.
+GAZE = [(COMES, -4.0, -16.0, 6.0), (COMES + 1.2, -3.0, -12.0, 4.0), (FORMED - 0.7, 2.0, 0.0, 0.0),
+        (FORMED - 0.3, 3.0, 0.0, 0.0), (FORMED + 0.3, 10.0, 18.0, -4.0), (FORMED + 1.0, 11.0, 21.0, -4.0)]
+LENS_AT = FORMED + 1.35  # (14.95: back to the lens)
+
+
+def _gaze(t):
+    """The waypoints above, straight between them (the nods are keyed on top)."""
+    for (t0, *a), (t1, *b) in zip(GAZE, GAZE[1:]):
+        if t0 <= t <= t1:
+            u = (t - t0) / (t1 - t0)
+            return [x + (y - x) * u for x, y in zip(a, b)]
+    return list(GAZE[-1][1:])
+
+
+for _t0, _pitch, _yaw, _roll in GAZE:
+    singer.look(_t0, _pitch, _yaw, _roll)
+for _k, _t in enumerate(_beats):  # (a nod and a flick of the head a beat after each heave, while he looks down at him)
+    if GAZE[-2][0] - 0.1 < _t < LENS_AT - 0.2:
+        _p, _y, _r = _gaze(_t + 0.08)
+        singer.look(_t + 0.08, _p + (3.5 if _k % 2 == 0 else -1.2), _y + (1.2 if _k % 2 == 0 else -1.0), _r)
+singer.look(LENS_AT, 3.0, 2.0, 2.0, "snap")
+singer.look(STUDY + 0.25, 3.5, 1.0, 2.0)
+# (a long drawn-out materialize: it starts on the bite, as the owner asked on 2026-10-28, and the head and eyes, the last
+# to be drawn in, come in on the cut to F)
+shot.event(COMES, "materialize", model="Specter", dur=round(FORMED - COMES, 3), r=200, g=30, b=45)
+_head_done = ryuk_head(FORMED)
+shot.event(FORMED - 0.25, "fx", name="burst", pos=[round(float(v), 3) for v in _head_done + np.array([0.0, 0.15, 0.6])], r=235, g=35,
+           b=50, amount=18)  # (sparks at his eyes as the head fills in)
+shot.event(FORMED - 0.1, "fx", name="pulse", punch=0.07, dur=0.7)
 
 # The hidden cameras (black and white, REC and the time: the "cctv" effect), each high in a corner of the room and
 # still: (from, to, where, looking at, fov, label).
@@ -254,43 +339,95 @@ for t0, t1, eye, aim, fov, _ in CAMS:
     shot.cam(t0, eye, aim, fov=fov, cut=True)
     shot.cam(t1, eye, aim, fov=fov, ease="linear")
 # (Every camera but the hidden ones is held by hand, the owner, 2026-10-28: "the camera feels very stale": a breath of
-# drift, and each one moving: a push, a creep, a zoom, a pull out. The hidden cameras stay locked off: that is what
-# makes them cameras on a wall.)
-# B: low over the desk from in front, the page in the foreground and him bent over it beyond: the pen writes; the
-# lens pushing in on the nib.
-look_b = (PAGE[0] + 0.05, PAGE[1] + 0.45, PAGE[2] - 0.5)
-framing.dolly(shot, CUTS[0], CUTS[1], (PAGE[0] + 0.4, PAGE[1] + 0.85, PAGE[2] + 2.0),
-              (PAGE[0] + 0.28, PAGE[1] + 0.72, PAGE[2] + 1.45), look_b, fov0=50, fov1=42, roll0=-4.0, roll1=-7.0,
-              shake=0.7, seed=21)
-# C: close, from in front on his left, zooming slowly: the eyes come up off the page.
-shot.pan(CUTS[1], CUTS[2], "self", front(3.9, -1.0, 4.6), aim="Head", dy=-0.2, fov=46, cut=True, drift=(0.0, 0.0, -0.2),
-         operator=True, seed=23, shake=0.5, fov_to=38, ease_move=True)
-# D: across the desk, pushing in and zooming through the held pause: the crisp taken and raised.
-shot.pan(CUTS[3], CUTS[4], "self", front(6.8, 0.5, 4.4), aim="Head", dy=0.1, fov=46, cut=True, drift=(0.0, 0.0, -2.0),
-         roll=-3.0, operator=True, seed=25, shake=0.5, fov_to=36, ease_move=True)
-# E: low and close from his right (the crisp comes in from the far side), tilted, half the face in the dark: held by
-# hand, creeping; a snap in on the bite, and the frame rattled after it.
-eye_e = front(3.5, 1.5, 4.75)
-head_e = framing.part(shot, "self", BITE, "Head")
-look_e = (float(head_e[0]), float(head_e[1]) - 0.15, float(head_e[2]))
-framing.dolly(shot, CUTS[4], BITE - 0.02, (eye_e[0] - 0.1, eye_e[1], eye_e[2] + 0.12),
-              (eye_e[0] - 0.05, eye_e[1], eye_e[2] - 0.08), look_e, fov0=43, fov1=41, roll0=-9.0, roll1=-10.0,
-              shake=0.6, seed=27, ease_move=False)
-shot.subjects.append((CUTS[4], CUTS[5], "self", False))
-shot.cam(BITE + 0.08, (eye_e[0] + 0.15, eye_e[1] + 0.05, eye_e[2] - 0.22), look_e, fov=36, roll=-13.0, ease="snap")
-for k, (dx, dy) in enumerate(((0.05, -0.04), (-0.04, 0.03), (0.02, -0.01))):  # (rattled by it)
-    shot.cam(BITE + 0.16 + 0.08 * k, (eye_e[0] + 0.15 + dx, eye_e[1] + 0.05 + dy, eye_e[2] - 0.23), look_e, fov=36,
-             roll=-13.0 + 1.5 * (1 if k % 2 else -1), ease="out")
-shot.cam(CUTS[5], (eye_e[0] + 0.2, eye_e[1] + 0.05, eye_e[2] - 0.32), look_e, fov=35, roll=-13.0, ease="sine")
-# F: low and wide from the room, rising and zooming out as he leans back and the Deathsinger comes.
-shot.pan(CUTS[5], STUDY + 0.25, "self", front(7.6, 0.6, 3.2), aim="Torso", dy=1.6, fov=50, cut=True,
-         drift=(0.2, 1.6, 1.4), operator=True, seed=29, shake=0.7, fov_to=58, ease_move=True)
+# drift, and each one moving. 2026-11-14, the owner again: stale "when it's not camera pov": the five cuts that are not
+# the hidden cameras were all slow creeps in from the front at a head-and-shoulders size. Now each is a different move
+# from a different place and size, with something in front of the lens, and the one that shows Ryuk is built round him:
+# B from above and the right, a drop to the nib; C from his left, a long lens easing in; D from the low right behind the
+# lamp's glow, trucking in across it; E tight on the bite and pulling out and round to find him forming behind the
+# chair; F low and close from his right, rising, with both of them in the frame. The hidden cameras stay locked off:
+# that is what makes them cameras on a wall.)
+
+
+def _smooth(u):
+    return u * u * (3 - 2 * u)
+
+
+def held(t0, t1, path, aim, fov, roll=(0.0, 0.0), shake=0.7, seed=0, lag=0.9):
+    """A camera held by a person for one cut: it goes along `path` (2 points, or 3 for a bend), eased in and out, its
+    lens zooming `fov` (from, to) and rolling `roll`; it looks where aim(t) is, a beat late, settling with a little
+    overshoot (the spring of framing.pan), and breathes with a faint hand-held drift (`shake` times the usual)."""
+    pts = [np.array(p, float) for p in path]
+    rng = np.random.default_rng(seed)
+    ph = rng.uniform(0, 2 * math.pi, 6)
+    n = max(2, int(round((t1 - t0) * 15)))
+    omega, zeta = 2 * math.pi / lag, 0.72
+    look = vel = None
+    shot.subjects.append((t0, t1, "self", False))
+    for i in range(n + 1):
+        u = i / n
+        t = t0 + (t1 - t0) * u
+        m = _smooth(u)
+        if len(pts) == 2:
+            p = pts[0] + (pts[1] - pts[0]) * m
+        else:
+            p = (1 - m) ** 2 * pts[0] + 2 * (1 - m) * m * pts[1] + m ** 2 * pts[2]
+        target = np.array(aim(t), float)
+        if look is None:
+            look, vel = target.copy(), np.zeros(3)
+        else:
+            h = (t1 - t0) / n / 4
+            for _ in range(4):
+                vel = vel + (omega * omega * (target - look) - 2 * zeta * omega * vel) * h
+                look = look + vel * h
+        p = p + 0.035 * shake * np.array([math.sin(1.3 * t + ph[0]) + 0.5 * math.sin(3.1 * t + ph[1]),
+                                          math.sin(1.1 * t + ph[2]) + 0.4 * math.sin(2.7 * t + ph[3]), 0.0])
+        look_now = look + 0.05 * shake * np.array([math.sin(0.9 * t + ph[4]), math.sin(1.7 * t + ph[5]), 0.0])
+        shot.cam(t, tuple(p), tuple(look_now), fov=fov[0] + (fov[1] - fov[0]) * m, roll=roll[0] + (roll[1] - roll[0]) * m,
+                 ease="linear", cut=(i == 0))
+
+
+def on(part, dy=0.0):
+    """Aimed at a part of his body, wherever it is then."""
+    return lambda t: framing.part(shot, "self", t, part) + np.array([0.0, dy, 0.0])
+
+
+def between(t, k):
+    """k of the way from Diavolo's head to the Deathsinger's (the set's space)."""
+    d, r = framing.part(shot, "self", t, "Head"), ryuk_head(t)
+    return d + (r - d) * k
+
+
+# B: from above, in front of him, the page and the pen hand under the lens, the lamp's glow on one side and the chip bag
+# on the other and him bowed over it beyond: the lens drops in towards the nib as the name is written (the anime's high
+# shot of the hand).
+held(CUTS[0], CUTS[1], [front(4.4, -0.8, 5.7), front(3.6, 0.2, 5.0)], on("hand", -0.7), fov=(38, 33), roll=(-3.0, 2.0),
+     shake=0.6, seed=21)
+# C: close, from his left and a little above, a long lens easing in from further back: the eyes come up off the page
+# and the face goes still. The window is the depth behind him.
+held(CUTS[1], CUTS[2], [front(5.2, -3.7, 4.8), front(4.3, -3.0, 4.7)], on("Head", 0.15), fov=(33, 28), roll=(2.0, 3.0),
+     shake=0.45, seed=23)
+# D: low and further back from his right, the lamp's glow across the foreground, the lens trucking in across it as the
+# crisp is taken and raised beside his face and held (the crisp is on his left: from his right his face stays clear).
+held(CUTS[3], CUTS[4], [front(5.6, 4.8, 3.5), front(4.6, 3.3, 4.2)], on("Head", 0.1), fov=(42, 33), roll=(-2.5, -1.0),
+     shake=0.5, seed=25)
+# E: tight and low from straight in front on the bite (the crisp snaps across to the mouth), then pulled out and round to
+# the right and down (the lens widening) to find the Deathsinger forming in the dark behind the chair, to his right: from
+# that side he stands clear of Diavolo's head; the camera's look slides from his face to the space between them.
+held(CUTS[4], CUTS[5], [front(4.8, 0.2, 3.9), front(5.0, 3.4, 3.6), front(6.6, 6.4, 3.0)],
+     lambda t: framing.part(shot, "self", t, "Head") + (ryuk_head(t) - framing.part(shot, "self", t, "Head"))
+     * (0.62 * _smooth(min(1.0, max(0.0, (t - BITE - 0.3) / 0.95)))) + np.array([0.0, 0.15, 0.0]), fov=(41, 48),
+     roll=(5.0, -1.0), shake=0.55, seed=27, lag=0.7)
+# F: low and close from his right, under the lamp's glow, rising as the laugh takes him: Diavolo thrown back in the chair and
+# the Deathsinger leaning in over his shoulder, both faces in the frame; the lens tilts up as the Deathsinger comes down.
+held(CUTS[5], STUDY + 0.25, [front(4.5, 1.4, 3.0), front(5.1, 0.4, 3.6)],
+     lambda t: between(t, 0.45 + 0.05 * (t - CUTS[5]) / (STUDY + 0.25 - CUTS[5])),
+     fov=(60, 55), roll=(3.0, -2.0), shake=0.7, seed=29)
 # G: the hidden camera behind him (CAMS).
 shot.cam_groups.sort(key=lambda g: g[0][0])  # (the hidden cameras' cuts were added first: in time order)
 
 # The lens: barely soft, only to put the eye where the cut is about.
 for t, part, radius in ((CUTS[0], "Right Arm", 2.5), (CUTS[1], "Head", 2.5), (CUTS[3], "Head", 3.0),
-                        (CUTS[4], "Head", 2.0), (CUTS[5], "Torso", 6.0)):
+                        (CUTS[4], "Head", 3.0), (CUTS[5], "Torso", 6.0)):
     shot.event(t, "fx", name="focus", slot="self", part=part, radius=radius, far=0.12, near=0.06)
 for t0, *_ in CAMS:
     shot.event(t0, "fx", name="focus")  # (a security camera sees it all flat)
@@ -307,10 +444,13 @@ shot.light("spot", (PAGE[0] - 1.0, PAGE[1] + 2.8, PAGE[2] - 1.4), PAGE, color=(2
            angle=40, shadows=False, show=(CUTS[0], CUTS[1]))  # (the page lit for the insert)
 shot.light("spot", (0.8, 3.8, 5.6), HEAD, color=(235, 245, 255), brightness=1.8, range=20, angle=26,
            show=(LOOK[1] - 0.05, LOOK[1] + 0.35), flicker=0.9)  # (the television flaring as the news breaks)
-shot.light("spot", (SINGER[0] + 0.5, 0.6, SINGER[1] + 2.0), (SINGER[0], 7.0, SINGER[1]), color=(220, 25, 35),
-           brightness=1.4, range=12, angle=50, show=(COMES, STUDY + 0.25))
+# (the red of the Deathsinger comes up in three steps and wavers, as a failing bulb does, while he is drawn in, rather
+# than switching on whole at the bite: lamps only go on and off, so it is three lamps coming on a beat apart)
+for _from, _gain, _waver in ((COMES, 0.5, 0.8), (COMES + 0.7, 0.45, 0.6), (COMES + 1.4, 0.45, 0.3)):
+    shot.light("spot", (SINGER[0] + 0.5, 0.6, SINGER[1] + 2.0), (SINGER[0], 7.0, SINGER[1]), color=(220, 25, 35),
+               brightness=_gain, range=12, angle=50, show=(_from, STUDY + 0.25), flicker=_waver)
 shot.light("point", (SINGER[0], 5.0, SINGER[1] + 1.0), color=(200, 20, 30), brightness=0.8, range=8, shadows=False,
-           show=(BACK + 0.2, STUDY + 0.25))
+           show=(FORMED - 0.2, STUDY + 0.25))
 
 # Sound and effects.
 shot.event(0.0, "sfx", slot="mapRainGlass", loop=True)
