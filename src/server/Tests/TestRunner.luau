@@ -117,6 +117,9 @@ function TestRunner.run(folder: Instance): boolean
 				failed += 1
 				table.insert(failures, module.Name .. " could not be loaded: " .. tostring(spec))
 			end
+			-- (a breath between spec files: run without one, the whole suite in the full place outlasted Studio's
+			-- script timeout, 2026-11-15; the runner has its own thread)
+			task.wait()
 		end
 	end
 
