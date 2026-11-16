@@ -1,6 +1,6 @@
 """The Grey Realm's landmarks (remade 2026-11-04 to the user's reference videos): the spawn ledge, the bowl with its
 dish of skulls and ring of candle stones, the tableaux round its rim, the throne high on its rock with the plaque at
-its foot and Most Wins beside it, the grotto with the Academy inside, the chess game, the stone notebook over the
+its foot and Most Wins beside it, the grotto with the Academy inside, the chess game, the
 rift, the carcass with the duel's stones under its ribs, the two tusks, the junk heaps and the great arch. Each
 records the anchors the lobby's Luau builds its own things at (the
 board, signs, candles, stone figures, drill desks, puppets, the spawn, the games).
@@ -394,7 +394,7 @@ CAGES = [(P.GATE_DIR + 150.0, 14.0), (P.GATE_DIR + 210.0, 14.0), (P.GATE_DIR + 1
          (P.GATE_DIR + 24.0, 19.0)]
 
 
-# The chessboard, the notebook, the rift -----------------------------------------------------------------------------
+# The chessboard, the rift -----------------------------------------------------------------------------
 
 
 BOARD_TOP = 0.2  # the chessboard's squares under the pieces stand level at this height
@@ -439,13 +439,6 @@ def chessboard(s):
     s.prop("ChessGame", x, z, rot, 1.0, BOARD_TOP)
     kx, kz = f.w(*P.chess_square(P.CHESS_FALLEN))
     s.collider((kx, BOARD_TOP + 1.1, kz), (5.6, 2.2, 2.4), rot, True, None)
-
-
-def notebook(s):
-    """The stone notebook over the rift, stopped in its fall (it neither collides nor casts a shadow on anyone's dive:
-    a diver goes in under it)."""
-    x, y, z, rot = P.NOTEBOOK
-    s.prop("StoneNotebook", x, z, rot, 1.0, y)
 
 
 def rift_mark(s):
@@ -599,7 +592,7 @@ def build(s, g):
     steles(s)
     grotto(s, g)
     chessboard(s)
-    notebook(s)
+    # (no stone notebook over the rift: taken out 2026-11-16, the user's "remove these floating things from the drop")
     rift_mark(s)
     carcass(s)
     duel(s)

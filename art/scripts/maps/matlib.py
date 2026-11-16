@@ -101,6 +101,9 @@ FLAT = {
     "DimLamp": ("Neon", (92, 102, 124), 0, 0),
     "DimBand": ("Neon", (106, 120, 146), 0, 0),
     "DimBandWarm": ("Neon", (136, 112, 84), 0, 0),
+    # The city under the rift (2026-11-16): its streets' sodium glow, and the lamps at its crossings.
+    "CitySodium": ("Neon", (112, 70, 34), 0, 0),
+    "CityLamp": ("Neon", (255, 176, 96), 0, 0),
     # The scene deaths' sets (maps/venues/scenes): grass blades, painted signs, cars, blood, the board's screen.
     "GrassBlade": ("SmoothPlastic", (98, 106, 66), 0, 0),
     "GrassBladeDry": ("SmoothPlastic", (146, 136, 92), 0, 0),

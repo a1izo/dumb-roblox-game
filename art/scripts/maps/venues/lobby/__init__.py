@@ -3,7 +3,7 @@ user's two reference videos. A flat grey plain under one blinding glow low in th
 west, jagged pale shards on the skyline. Players appear on a ledge of billowing rock in the south, facing north over
 the bowl (a great stone basin sunk in the plain where everyone gathers: the candle stones of who is ready round a dish
 of skulls, the five tableaux round its rim) to the bone throne high on its rock against the glow. North-east, the rift
-down to the human world, the stone notebook hanging over it; east, the colossal carcass with the name duel under its
+down to the human world; east, the colossal carcass with the name duel under its
 ribs; south-west, the grotto with the Academy inside, lit by cage lanterns; north-west, the chess game, two colossal
 tusks, the great arch; heaps of junk about. Over two causeways: the Chain Heap (the Spire Ascent climbs round a
 colossal chain hanging out of the sky, west) and a garden of pale shards (north-east). The lobby's games are the

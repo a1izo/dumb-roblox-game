@@ -9,18 +9,23 @@ the `rift` anchor). Straight beneath the opening stands a broad hall whose roof,
 on it, is where a dive ends: the only solid thing down there (anchor `landing`).
 
 The city is built at a third of its size (a city three times as far away looks the same), so its
-tallest tower still ends well under the realm."""
+tallest tower still ends well under the realm. Its buildings are the case maps' (maps/skyline.py: night facades with
+their window grids, lit windows over the glass) drawn through Scaled, and its streets glow with sodium light with a
+lamp at every crossing (2026-11-16, the user: "make it so it doesnt look like an empty baseplate around"; until then
+plain boxes over a flat ground with thin blue strips)."""
 
 import math
 import random
 
-from maps import city
+from maps import city, matlib, skyline
 from maps import geo2d as g2
-from maps.mesher import cross, dot, sub
+from maps.mesher import Scene, cross, dot, planar_uvs, sub
 from maps.venues.lobby import plan as P
 from maps.venues.lobby.terrain import boulder, rock
 
 K = P.CITY_SCALE  # the city's scale
+# The night facades the city's buildings wear (maps/facades.py): two, for the lobby's texture memory.
+STYLES = ("NightOffice", "NightTile")
 
 
 def face_to(s, mat, pts, target):
@@ -236,6 +241,27 @@ def rim(s, poly, cx, cz, rng):
 # Kagegaoka far below --------------------------------------------------------------------------------------
 
 
+class Scaled:
+    """The scene seen through the city's scale, for the case maps' builders (skyline.block): points in the city's
+    own units go where Below.p puts them, and the textures keep their full size, so a window bay is still one bay of
+    its facade. Only what those builders draw with is here."""
+
+    box = Scene.box
+    prism = Scene.prism
+    cylinder = Scene.cylinder
+    lathe = Scene.lathe
+    quad = Scene.quad
+
+    def __init__(self, below):
+        self.below = below
+
+    def polygon(self, mat, points, uvs=None, tile=None):
+        tile = tile or matlib.tile_size(mat)
+        if uvs is None:
+            uvs = [(u * tile, v * tile) for u, v in planar_uvs(points, tile)]
+        return self.below.s.polygon(mat, [self.below.p(*q) for q in points], uvs, tile)
+
+
 class Below:
     """Draws the city in its own units (x, z from the rift's middle, y up from its ground), scaled by K
     under the rift."""
@@ -243,6 +269,7 @@ class Below:
     def __init__(self, s):
         self.s = s
         self.cx, self.cz = g2.centroid(P.RIFT)
+        self.scaled = Scaled(self)
 
     def p(self, x, y, z):
         return (self.cx + x * K, P.BELOW_Y + y * K, self.cz + z * K)
@@ -257,7 +284,33 @@ class Below:
             pts.reverse()
         self.s.polygon(mat, pts)
 
-    def block(self, rng, x0, z0, x1, z1, floors, lit):
+    def block(self, rng, x0, z0, x1, z1, floors, lit, most=6):
+        """A building in a night facade (skyline.block, through the city's scale): its walls, at most `most` lit
+        windows, its roof. Returns the roof's height."""
+        poly = [(x0, z0), (x1, z0), (x1, z1), (x0, z1)]
+        return skyline.block(self.scaled, poly, max(2, floors), random.Random(rng.random()), y=0.0, lit=lit,
+                             styles=STYLES, detail=0, roof_mat="CityRoof", most=most, setback=False)
+
+    def street(self, x0, z0, x1, z1, along_z):
+        """A street's asphalt and its sodium glow down the middle (`along_z`: the street runs along z)."""
+        self.up("CityRoad", x0, z0, x1, z1, 0.2)
+        if along_z:
+            mid = (x0 + x1) / 2
+            self.up("CitySodium", mid - 2.5, z0, mid + 2.5, z1, 0.3)
+        else:
+            mid = (z0 + z1) / 2
+            self.up("CitySodium", x0, mid - 2.5, x1, mid + 2.5, 0.3)
+
+    def lamps(self, x, z, road):
+        """The lamps at a crossing: one on each corner."""
+        for dx in (-1, 1):
+            for dz in (-1, 1):
+                lx, lz = x + dx * (road / 2 + 1.5), z + dz * (road / 2 + 1.5)
+                self.up("CityLamp", lx - 2.0, lz - 2.0, lx + 2.0, lz + 2.0, 0.4)
+
+    def hall(self, rng, x0, z0, x1, z1, floors, lit):
+        """The landing hall: four walls of plain cladding with bands of windows, its roof at exactly floors * 12 +
+        1.5 (anchor `landing` and the dive's collider are there)."""
         top = floors * 12.0
         clad = "CityFacade" if rng.random() < 0.7 else "CityFacadeWarm"
         sides = (((x0, z0), (x1, z0), (0, -1)), ((x1, z0), (x1, z1), (1, 0)), ((x1, z1), (x0, z1), (0, 1)),
@@ -317,12 +370,12 @@ def below(s):
     n = int(half // step)
     for i in range(-n, n + 1):
         c = i * step
-        # Streets both ways, with a line of lamps down each side.
-        b.up("CityRoad", c - road / 2, -half, c + road / 2, half, 0.2)
-        b.up("CityRoad", -half, c - road / 2, half, c + road / 2, 0.2)
-        for off in (-road / 2 + 1.0, road / 2 - 1.0):
-            b.up("DimLamp", c + off - 0.8, -half, c + off + 0.8, half, 0.35)
-            b.up("DimLamp", -half, c + off - 0.8, half, c + off + 0.8, 0.35)
+        # Streets both ways, glowing with their sodium lamps, a lamp on every corner of a crossing.
+        b.street(c - road / 2, -half, c + road / 2, half, True)
+        b.street(-half, c - road / 2, half, c + road / 2, False)
+        for j in range(-n, n + 1):
+            if not near_river(c, j * step, 0.0):
+                b.lamps(c, j * step, road)
     towers = []
     for i in range(-n, n):
         for j in range(-n, n):
@@ -338,9 +391,9 @@ def below(s):
             centre = max(0.0, 1 - dist / 900.0)
             if rng.random() < 0.5:
                 floors = int(rng.uniform(3, 8) + centre * rng.uniform(4, 26))
-                b.block(rng, x0, z0, x1, z1, floors, 0.35 + 0.2 * centre)
+                top = b.block(rng, x0, z0, x1, z1, floors, 0.35 + 0.2 * centre, 10)
                 if floors > 18:
-                    towers.append(((x0 + x1) / 2, floors * 12.0 + 1.5, (z0 + z1) / 2))
+                    towers.append(((x0 + x1) / 2, top + 1.2, (z0 + z1) / 2))
             else:
                 w = (x1 - x0) / 2 - 2.0
                 for qx in (0, 1):
@@ -349,7 +402,7 @@ def below(s):
                             continue
                         floors = int(rng.uniform(2, 6) + centre * rng.uniform(0, 12))
                         bx0, bz0 = x0 + qx * (w + 4.0), z0 + qz * (w + 4.0)
-                        b.block(rng, bx0, bz0, bx0 + w, bz0 + w, floors, 0.3 + 0.2 * centre)
+                        b.block(rng, bx0, bz0, bx0 + w, bz0 + w, floors, 0.3 + 0.2 * centre, 5)
     for k, (x, y, z) in enumerate(towers[:24]):
         s.blinker(b.p(x, y + 3.0, z), (190, 205, 230), 1.6 + (k % 5) * 0.3, 1.1, (k * 0.37) % 2.0)
     # The station's glow, and the Central Tower a little off the middle, lit at its 38th floor.
@@ -403,11 +456,8 @@ def far_city(s, b, half, outer, river):
         if abs(c) < half:
             continue
         for lo, hi in ((-outer, outer),):
-            b.up("CityRoad", c - 9.0, lo, c + 9.0, hi, 0.2)
-            b.up("CityRoad", lo, c - 9.0, hi, c + 9.0, 0.2)
-            if i % 2 == 0:
-                b.up("DimLamp", c - 0.8, lo, c + 0.8, hi, 0.35)
-                b.up("DimLamp", lo, c - 0.8, hi, c + 0.8, 0.35)
+            b.street(c - 9.0, lo, c + 9.0, hi, True)
+            b.street(lo, c - 9.0, hi, c + 9.0, False)
     for i in range(-n, n):
         for j in range(-n, n):
             x0, z0 = i * step + 14.0, j * step + 14.0
@@ -425,19 +475,8 @@ def far_city(s, b, half, outer, river):
             tall = rng.random() < 0.07
             floors = int(rng.uniform(30, 60)) if tall else int(rng.uniform(3, 16))
             inset = rng.uniform(0.0, 30.0)
-            top = floors * 12.0
             bx0, bz0, bx1, bz1 = x0 + inset, z0 + inset, x1 - inset, z1 - inset
-            clad = "CityFacade" if rng.random() < 0.75 else "CityFacadeWarm"
-            sides = (((bx0, bz0), (bx1, bz0), (0, -1)), ((bx1, bz0), (bx1, bz1), (1, 0)), ((bx1, bz1), (bx0, bz1), (0, 1)),
-                     ((bx0, bz1), (bx0, bz0), (-1, 0)))
-            for a, bb, out in sides:
-                b.side(clad, a, bb, 0.0, top, out)
-                if rng.random() < 0.22:
-                    y = rng.randrange(0, max(1, floors)) * 12.0 + 4.0
-                    pa = (a[0] + out[0] * 0.6, a[1] + out[1] * 0.6)
-                    pb = (bb[0] + out[0] * 0.6, bb[1] + out[1] * 0.6)
-                    b.side("DimWarm" if rng.random() < 0.2 else "DimWindow", pa, pb, y, y + 5.0, out)
-            b.up("CityRoof", bx0, bz0, bx1, bz1, top)
+            top = b.block(rng, bx0, bz0, bx1, bz1, floors, 0.22, 4)
             if tall and rng.random() < 0.5:
                 s.blinker(b.p((bx0 + bx1) / 2, top + 3.0, (bz0 + bz1) / 2), (190, 205, 230), 1.8 + rng.random(), 1.2,
                           rng.uniform(0, 2.0))
@@ -449,7 +488,7 @@ def landing(s, b):
     sides, r the ring)."""
     w, d, floors = P.LANDING
     rng = random.Random(4242)
-    roof = b.block(rng, -w, -d, w, d, floors, 0.5) + 1.5
+    roof = b.hall(rng, -w, -d, w, d, floors, 0.5) + 1.5
     ring = P.LANDING_RING / K
     n = 28
     for k in range(n):

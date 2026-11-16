@@ -15,7 +15,7 @@ the Spire Ascent climbs on one, the other is a garden of shards.
   tableaux stand round its rim (stone figures the game stands on them, acting out how a case goes).
 - North, on the line from the spawn: the bone throne high on a rock against the glow (the game seats the player
   with the most wins on it, in stone), the plaque at the rock's foot, Most Wins on a slab beside it.
-- North-east: the rift, the hole down to the human world, the stone notebook hanging over it in its fall.
+- North-east: the rift, the hole down to the human world (its stone notebook taken out 2026-11-16).
 - East: the colossal carcass, its ribs arching out of the ash; the name duel's two stones under them.
 - South-west: the grotto, a cave in the cliffs where the Academy is (the practice altars, the puppets).
 - West plateau (over its causeway): the Chain Heap, a mountain of junk with a colossal chain hanging into it out
@@ -293,9 +293,6 @@ def grown(poly, d):
 
 RIFT_GUARD = grown(RIFT, GUARD)
 RIFT_MID = g2.centroid(RIFT)
-# The stone notebook over the rift, stopped in its fall: x, y, z, rot (high enough that a dive goes under it).
-NOTEBOOK = (RIFT_C[0] + 2.0, 22.0, RIFT_C[1] - 2.0, 35.0)
-
 # Far beneath the rift's middle: the hall whose roof a dive ends on. In the city's own units, from the point
 # under the rift's middle (the city is drawn at a third of its size): half its width (x), half its depth (z)
 # and its floors. It reaches past the whole opening, so whoever goes over the rim anywhere comes down on it.

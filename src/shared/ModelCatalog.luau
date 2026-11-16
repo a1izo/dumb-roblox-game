@@ -3838,15 +3838,6 @@ return {
 		tris = 1068,
 		glow = { { 255, 170, 90 } },
 	},
-	StoneNotebook = {
-		size = { 14.577, 9.914, 9.783 },
-		pivot = "centre",
-		material = "Slate",
-		collide = false,
-		color = { 38, 37, 35 },
-		set = "Lobby",
-		tris = 10460,
-	},
 	StoreShelf = {
 		size = { 8.12, 5.85, 3.08 },
 		pivot = "bottom",

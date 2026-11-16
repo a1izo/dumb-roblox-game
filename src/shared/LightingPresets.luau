@@ -255,8 +255,10 @@ LightingPresets.maps = {
 		outdoorAmbient = rgb(36, 40, 60),
 		envDiffuse = 0.28,
 		envSpecular = 0.4,
-		density = 0.22,
-		haze = 1.7,
+		-- (thinner, 2026-11-16, the user of the view from the windows: "make it look like its not baseplate": at 0.22
+		-- and 1.7 the city 440 studs down was one even violet plane under its scattered window lights)
+		density = 0.16,
+		haze = 1.2,
 		glare = 0.05,
 		atmosphereColor = rgb(84, 74, 118),
 		decay = rgb(52, 40, 76),

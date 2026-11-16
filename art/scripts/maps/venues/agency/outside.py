@@ -7,7 +7,12 @@ and then a police helicopter sweeps its searchlight across the floors.
 
 Nothing out here can be reached: it is all meshes and effects (no colliders), so the walk stays
 inside the glass. Kept cheap: flat colours (no textures this far off), windows as lit bands, lamps
-as flat quads; long strips are cut into pieces so no mesh grows past a Roblox part's size."""
+as flat quads; long strips are cut into pieces so no mesh grows past a Roblox part's size.
+
+2026-11-16 (the user, of the view from the windows: "make it look like its not baseplate"): the streets glow with
+their sodium light down the middle and a lamp stands on every corner of a crossing (the lamps were small dashes every
+26 studs, gone in the haze from 450 studs up, and the ground read as one flat plane), and a skyline of far towers
+closes the view all round (the ground used to end in a straight line at the horizon)."""
 
 import math
 import random
@@ -81,15 +86,21 @@ def ground(s, rng):
     for c in lines:
         flat(s, "CityRoad", c - ROAD / 2, -CITY, c + ROAD / 2, CITY, GY)
         flat(s, "CityRoad", -CITY, c - ROAD / 2, CITY, c + ROAD / 2, GY + 0.02)
-        for side in (-1, 1):
-            o = c + side * (ROAD / 2 + 1.0)
-            u = -CITY + rng.uniform(0, 20)
-            while u < CITY:
-                if not (abs(u) < 150 and abs(o) < 150):
-                    lamp = "NeonOrange" if rng.random() < 0.7 else "NeonWarm"
-                    dash(s, lamp, o - 0.6, u, o + 0.6, u + 3.0, GY + 0.1)
-                    dash(s, lamp, u, o - 0.6, u + 3.0, o + 0.6, GY + 0.1)
-                u += 26.0
+        # (the street's sodium glow down its middle, round the tower's own plaza)
+        spans = [(-CITY, CITY)] if abs(c) > 150 else [(-CITY, -170.0), (170.0, CITY)]
+        for a, b in spans:
+            flat(s, "CitySodium", c - 2.0, a, c + 2.0, b, GY + 0.12)
+            flat(s, "CitySodium", a, c - 2.0, b, c + 2.0, GY + 0.14)
+    # a lamp on each corner of every crossing (none on the tower's plaza)
+    for x in lines:
+        for z in lines:
+            if abs(x) < 150 and abs(z) < 150:
+                continue
+            for sx in (-1, 1):
+                for sz in (-1, 1):
+                    lx, lz = x + sx * (ROAD / 2 + 1.5), z + sz * (ROAD / 2 + 1.5)
+                    lamp = "CityLamp" if rng.random() < 0.8 else "NeonWarm"
+                    dash(s, lamp, lx - 1.5, lz - 1.5, lx + 1.5, lz + 1.5, GY + 0.2)
     # The river: dark water between lamp-lit banks.
     for (ax, az), (bx, bz) in zip(RIVER, RIVER[1:]):
         steps = max(1, math.ceil((bx - ax) / PIECE))
@@ -187,12 +198,28 @@ def roof(s, rng, x0, z0, x1, z1, top):
 
 
 def ridge(s, rng):
-    """Where the ground stops to the north, a ridge of tall dark towers closes the view."""
+    """Where the ground stops, a ridge of tall dark towers closes the view: to the north (where the ground stops short
+    of the lobby) and, since 2026-11-16, all round at the far edge, so the horizon is a skyline and not the ground's
+    straight edge."""
     x = -FAR
     while x < FAR:
         w = rng.uniform(60.0, 120.0)
         block(s, rng, x, -FAR_N + 10.0, x + w - 8.0, -FAR_N + 70.0, rng.randint(26, 44), 0.12, "NightOffice")
         x += w
+    edge = FAR - 80.0
+    for side in ("s", "e", "w"):
+        u = -edge if side == "s" else -FAR_N + 80.0
+        end = edge
+        while u < end:
+            w = rng.uniform(70.0, 150.0)
+            floors = rng.randint(14, 40)
+            if side == "s":
+                block(s, rng, u, edge, u + w - 10.0, edge + 60.0, floors, 0.1)
+            elif side == "e":
+                block(s, rng, edge, u, edge + 60.0, u + w - 10.0, floors, 0.1)
+            else:
+                block(s, rng, -edge - 60.0, u, -edge, u + w - 10.0, floors, 0.1)
+            u += w
 
 
 def landmarks(s, rng):
