@@ -52,16 +52,24 @@ Cast.COSTUMES = {
 	},
 	-- the patriot's saluter: Snake's fatigues, the long-tailed bandana, his weathered skin, and his face from the
 	-- marketplace (2026-11-14, the user: the drawn one "isnt accurate and sucks ... use the marketplace for a head
-	-- accessory"): the classic Snake face with its beard, and the eyepatch on its strap over it
+	-- accessory"): the classic Snake face with its beard, and the eyepatch on its strap over it. His hair under the
+	-- bandana (2026-11-16, the user: "give snake his hat and hair": the bandana sat on a bald head and read as a flat
+	-- cap): the MGS3 mullet, base and addon, from the bandana's own set
 	snake = {
 		skin = { head = TAN, torso = TAN, arms = TAN, legs = TAN },
 		shirt = 12463194829,
 		pants = 12463202877,
-		accessories = { HatAccessory = { 137173363080914 }, FaceAccessory = { 111744462200963, 74484209898344 } },
+		accessories = {
+			HatAccessory = { 137173363080914 },
+			HairAccessory = { 80668929398586, 99280018149729 },
+			FaceAccessory = { 111744462200963, 74484209898344 },
+		},
 		-- (the face, then the eyepatch and its strap over it)
 		lift = { face = 1.035, eyepatch = 1.075 },
 		clear = {
 			"HatAccessory",
+			-- (a player dressed as Snake wears his hair, not their own under it)
+			"HairAccessory",
 			"FaceAccessory",
 			"NeckAccessory",
 			"ShouldersAccessory",
