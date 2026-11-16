@@ -1090,19 +1090,6 @@ Cosmetics.ITEMS = {
 		added = "2026-10-14",
 	},
 	{
-		id = "emote_parade_march",
-		kind = "emote",
-		category = "stroll",
-		name = "Parade March",
-		rarity = "legendary",
-		source = "shop",
-		price = 900,
-		emote = "paradeMarch",
-		stroll = true,
-		pace = 5.5, -- studs a second it walks by itself (Controllers/StrollWalker)
-		added = "2026-10-14",
-	},
-	{
 		id = "emote_griddy",
 		kind = "emote",
 		category = "stroll",
@@ -1126,19 +1113,6 @@ Cosmetics.ITEMS = {
 		emote = "mushroomStroll",
 		stroll = true,
 		pace = 4.5, -- studs a second it walks by itself (Controllers/StrollWalker)
-		added = "2026-10-14",
-	},
-	{
-		id = "emote_not_my_problem",
-		kind = "emote",
-		category = "stroll",
-		name = "Not My Problem",
-		rarity = "legendary",
-		source = "shop",
-		price = 900,
-		emote = "notMyProblem",
-		stroll = true,
-		pace = 4, -- studs a second it walks by itself (Controllers/StrollWalker)
 		added = "2026-10-14",
 	},
 	-- The emote pack: duos (`duo`: played with the nearest player, who is asked first; DuoService).

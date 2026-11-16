@@ -385,7 +385,6 @@ stays `good` until a failing report **and** a wrong look in the game say otherwi
 | 5 | `wave` | free | `anims.py:222` | 2.4 | one-shot | 134 | 2 | Roblox classic | checked | 1.76 | FAIL: torso | not yet | good | FAIL torso (2%): Roblox's own recording, length frozen; kept on the owner's call; length frozen |
 | 6 | `theLongClimb` | stroll | `anims_emotes.py:728` | 1.84 | loop | 91 | 0 | video reference | checked | 1.17 | FAIL: torso | not yet | re-act | FAIL torso (3%): a stroll's standing loop where only the limbs act; the walk cycle is a separate clip |
 | 7 | `twoWeeksNotice` | dance | `emotes/dances.py:392` | 3.2 | one-shot | 418 | 2 | video reference | checked | 1.17 | FAIL: same | not yet | re-act | FAIL same timing (7 of 10 moves take one timing) |
-| 8 | `paradeMarch` | stroll | `anims_emotes.py:742` | 3.2 | loop | 232 | 0 | video reference | checked | 0.91 | PASS | not yet | good | stroll, video reference; reference has no written beats |
 | 9 | `impossibleLean` | pose | `emotes/poses.py:102` | 4.2 | one-shot | 75 | 1 | video reference | checked | 0.90 | PASS | not yet | good | pose, video reference |
 | 10 | `jawlineCheck` | pose | `emotes/poses.py:150` | 3.2 | one-shot | 83 | 1 | video reference | checked | 0.76 | PASS | not yet | good | pose, video reference |
 | 11 | `sugarTower` | prop | `emotes/props.py:159` | 6 | one-shot | 111 | 0 | video reference | checked | 0.75 | PASS | not yet | good | prop, video reference; reference has no written beats |
@@ -396,7 +395,6 @@ stays `good` until a failing report **and** a wrong look in the game say otherwi
 | 16 | `goalCelebration` | dance | `emotes/dances.py:134` | 3 | one-shot | 271 | 2 | video reference | checked | 0.61 | PASS | not yet | good | dance, video reference |
 | 17 | `facepalm` | free | `emotes/free.py:141` | 2.4 | one-shot | 78 | 2 | mocap | checked | 0.61 | PASS | not yet | good | free, mocap; length frozen |
 | 18 | `writeAir` | older | `emotes/older.py:288` | 3 | one-shot | 125 | 1 | video reference | checked | 0.57 | PASS | not yet | good | older, video reference |
-| 19 | `notMyProblem` | stroll | `anims_emotes.py:773` | 3 | loop | 61 | 0 | video reference | checked | 0.55 | PASS | not yet | good | stroll, video reference; reference has no written beats |
 | 20 | `fortySeconds` | prop | `emotes/props.py:307` | 4.6 | one-shot | 90 | 0 | video reference | checked | 0.55 | PASS | not yet | good | prop, video reference; reference has no written beats |
 | 21 | `animatronicWelcome` | dance | `emotes/dances.py:246` | 9.6 | loop | 386 | 3 | video reference | checked | 0.52 | PASS | not yet | good | dance, video reference |
 | 22 | `blindfoldLift` | prop | `emotes/props.py:331` | 4 | loop | 41 | 0 | video reference | checked | 0.50 | PASS | not yet | good | prop, video reference; reference has no written beats |
@@ -451,8 +449,8 @@ stays `good` until a failing report **and** a wrong look in the game say otherwi
 
 ### 3.3 The worst fifteen, to watch first
 
-The first fifteen rows above: the seven that fail, then the eight passing clips nearest a limit. Sheet of six of them: `emotes_worst_candidates.png`
-(notMyProblem, paradeMarch, itsYou, menacingPose, think, cuffedLead; these were picked from the first, interim ranking, before Tool 1 landed, and are not
+The first fifteen rows above: the seven that fail, then the eight passing clips nearest a limit. Sheet of four of them (two more were removed from the game on 2026-11-16): `emotes_worst_candidates.png`
+(itsYou, menacingPose, think, cuffedLead; these were picked from the first, interim ranking, before Tool 1 landed, and are not
 the fifteen below. The seven failing ones were not rendered; `review_emote.py` with their names does it).
 
 | # | Clip | Len s | Tool 1 | Nearest or failing limit |
@@ -464,7 +462,6 @@ the fifteen below. The seven failing ones were not rendered; `review_emote.py` w
 | 5 | `wave` | 2.4 | FAIL: torso | torso 2% |
 | 6 | `theLongClimb` | 1.84 | FAIL: torso | torso 3% |
 | 7 | `twoWeeksNotice` | 3.2 | FAIL: same | same timing 7 of 10 |
-| 8 | `paradeMarch` | 3.2 | PASS | torso 4% |
 | 9 | `impossibleLean` | 4.2 | PASS | anticipation 1 of 6 |
 | 10 | `jawlineCheck` | 3.2 | PASS | torso 5% |
 | 11 | `sugarTower` | 6 | PASS | dead 6.0 s of 8 |
@@ -484,7 +481,6 @@ T1 numbers for the fifteen:
 | `wave` | FAIL: torso | 0.0 | 1.9 neck | 0.0 | 0/2 | 0/2 | 0% of 0.0 | 2% | 0 | 0/0 | 0/0 |
 | `theLongClimb` | FAIL: torso | 0.1 | 1.8 root | 0.0 | 0/6 | 2/6 | 0% of 0.0 | 3% | 0 | 3/5 | 0/0 |
 | `twoWeeksNotice` | FAIL: same | 0.2 | 0.3 lShoulder | 0.0 | 0/20 | 4/20 | 0% of 0.0 | 9% | 3 | 7/10 | 9/10 |
-| `paradeMarch` | PASS | 0.7 | 1.6 root | 0.0 | 0/7 | 7/7 | 100% of 1.2 | 4% | 0 | 2/6 | 1/2 |
 | `impossibleLean` | PASS | 0.6 | 3.1 lShoulder | 0.0 | 0/6 | 1/6 | 100% of 2.8 | 35% | 0 | 0/0 | 0/2 |
 | `jawlineCheck` | PASS | 0.0 | 2.7 lShoulder | 0.4 | 2/3 | 1/3 | 0% of 0.4 | 5% | 0 | 0/0 | 1/2 |
 | `sugarTower` | PASS | 0.1 | 6.0 lShoulder | 0.0 | 0/1 | 1/1 | 0% of 0.8 | 20% | 3 | 3/9 | 1/3 |
@@ -568,7 +564,7 @@ Rendered with the repo's own review scripts through Blender 5.2 in the backgroun
 | `deaths_scene_referenced_victims.png` | requiem, Blackwall, Sam, sans, Iron Man, selection victims and the patriot's saluter | `review_anims.py` |
 | `deaths_table_reactions.png` | the five table reaction clips | `review_anims.py` |
 | `wins/newWorld/sheet.png`, `wins/checkmate/sheet.png`, `wins/finalPageBureau/sheet.png`, `wins/checkmateCoven/sheet.png` | the star in its set through each shot of four of the worst win cutscenes (events and effects not drawn) | `review_win.py` |
-| `emotes_worst_candidates.png` | six of the most still emotes by an early ranking (notMyProblem, paradeMarch, itsYou, menacingPose, think, cuffedLead), 12 frames each | `review_anims.py` |
+| `emotes_worst_candidates.png` | four of the most still emotes by an early ranking (itsYou, menacingPose, think, cuffedLead), 12 frames each | `review_anims.py` |
 | `movement_handovers_from_behind.png`, `movement_strafes_back_from_behind.png` | the handovers and the strafe and backward cycles from behind | `review_anims.py` |
 
 `review_deaths.py` was not run: it renders the shop's death scenes from `deathcuts.CUTS`, which is empty now, and running it rewrites

@@ -9,7 +9,7 @@
 
 local Migrations = {}
 
-Migrations.CURRENT = 11
+Migrations.CURRENT = 12
 
 -- Internal role ids; they never change even though the displayed names do.
 local ROLE_IDS = { "Kira", "Follower", "L", "Watari", "TaskForce" }
@@ -354,6 +354,38 @@ local STEPS: { [number]: (any) -> () } = {
 			for slot, id in pairs(data.equipped) do
 				if type(id) == "string" and string.sub(id, 1, 8) == "verdict_" then
 					data.equipped[slot] = nil
+				end
+			end
+		end
+	end,
+	-- v11 -> v12 (2026-11-16, the owner's call, no refund): the strolls Parade March and Not My Problem left the game.
+	-- Whoever owned one loses it, worn or not; it goes from the wishlist, the new-cards list, the stance and the
+	-- emote wheel too (the wheel keeps its other slots where they are).
+	[11] = function(data)
+		local gone = { emote_parade_march = true, emote_not_my_problem = true }
+		local clips = { paradeMarch = true, notMyProblem = true }
+		for _, key in ipairs({ "owned", "wishlist", "shopSeen" }) do
+			local map = data[key]
+			if type(map) == "table" then
+				for id in pairs(gone) do
+					map[id] = nil
+				end
+			end
+		end
+		if type(data.equipped) == "table" then
+			for slot, id in pairs(data.equipped) do
+				if gone[id] then
+					data.equipped[slot] = nil
+				end
+			end
+		end
+		if gone[data.stance] then
+			data.stance = ""
+		end
+		if type(data.emoteWheel) == "table" then
+			for index, id in pairs(data.emoteWheel) do
+				if clips[id] or gone[id] then
+					data.emoteWheel[index] = ""
 				end
 			end
 		end

@@ -3925,10 +3925,6 @@ end
 FX.griddy = strollSteps(function(character)
 	stepDust(character, 1.2)
 end)
--- Parade March: a crisp little stamp of dust under each step.
-FX.paradeMarch = strollSteps(function(character)
-	stepDust(character, 1.5)
-end)
 -- Mushroom Stroll: pale spores puffing up where each foot comes down.
 FX.mushroomStroll = strollSteps(function(character)
 	local sole = lowerSole(character)
@@ -3944,10 +3940,6 @@ FX.mushroomStroll = strollSteps(function(character)
 			light = 0.3,
 		})
 	end
-end)
--- Not My Problem: a lazy scuff of dust behind each dragging step.
-FX.notMyProblem = strollSteps(function(character)
-	stepDust(character, 0.6)
 end)
 
 -- The rung each effect needs on the ladder (Shared/EmoteInfo `fx`): 1 one small accent, 2 a tailored effect with
