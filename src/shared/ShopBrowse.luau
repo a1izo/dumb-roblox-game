@@ -22,7 +22,6 @@ ShopBrowse.SHOW = {
 	{ id = "all", name = "All" },
 	{ id = "notOwned", name = "Not owned" },
 	{ id = "afford", name = "Can afford" },
-	{ id = "wished", name = "Wishlist" },
 } :: { Choice }
 
 ShopBrowse.SORTS = {

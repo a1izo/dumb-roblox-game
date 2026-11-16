@@ -6,7 +6,8 @@
 -- (2026-10-21), and the ties and the white pieces went with the owner's drops (2026-10-21): Film Noir and Gilded Age
 -- were made up again from what is left, and Ivory Tower from the new pale pieces (Moth Lantern, Frost Script,
 -- Shattered). The hats left the game (2026-10-27): Film Noir, Gilded Age and Seeing Red were made up again a
--- second time.
+-- second time. Ivory Tower's Moth Lantern went off sale with the shop's "The dead" suit (2026-11-16): the
+-- Bone Chair took its place.
 
 local Cosmetics = require(script.Parent.Cosmetics)
 
@@ -24,7 +25,7 @@ Sets.LIST = {
 	{
 		id = "ivory",
 		name = "Ivory Tower",
-		pieces = { "specter_moth", "writing_frost" },
+		pieces = { "chair_bone", "writing_frost" },
 		title = "title_set_ivory",
 	},
 	{

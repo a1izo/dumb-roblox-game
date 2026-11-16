@@ -13,6 +13,9 @@ local Ranks = require(script.Parent.Parent.Ranks)
 
 local ProgressRules = {}
 
+-- Whether a case still writes the Season ledger (off since 2026-11-16).
+ProgressRules.LEDGER = false
+
 export type Summary = {
 	role: string,
 	side: string, -- "Team" or "Kira"
@@ -219,9 +222,10 @@ function ProgressRules.apply(data: any, summary: Summary, now: number): Result
 	end
 
 	-- The Season ledger: the case's points (more for a win and for each quest finished in it), each tier
-	-- reached paid at once.
+	-- reached paid at once. (Off since 2026-11-16: the user took the ledger out of the shop; its titles are
+	-- achievements now and its other things are on sale. ProgressRules.LEDGER turns it back on.)
 	local season = Ledger.season(now)
-	if season > 0 and type(data.ledger) == "table" then
+	if ProgressRules.LEDGER and season > 0 and type(data.ledger) == "table" then
 		local points = Ledger.pointsFor(summary.won, #result.quests)
 		for _, step in ipairs(Ledger.add(data.ledger, season, points)) do
 			local item = step.reward.item

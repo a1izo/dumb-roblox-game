@@ -3,16 +3,14 @@
 -- cannot be bought at all. An emote is not worn: a bought one goes on the emote wheel's first
 -- empty slot (EmoteService), and so is a custom death: it goes in the first empty slot of Diavolo's four
 -- (Shared/DeathLoadout), and the slot buttons move it. It also keeps what the shop needs to remember for browsing
--- (Shared/ShopBrowse): the new cards already looked at, and the wishlist, announced on arriving
--- when a wished card is in Today's hand. And Fate's draw (Shared/Fate): a card of the week's deck
--- not owned yet, for Fate.PRICE coins, told to the client (Net "Fate") so the shop can turn it over.
+-- (Shared/ShopBrowse): the new cards already looked at. The wishlist and Fate's draw were taken out of
+-- the shop on 2026-11-16 (the user's word); old wishlists are only emptied of bought cards.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Cosmetics = require(Shared:WaitForChild("Cosmetics"))
 local DeathLoadout = require(Shared:WaitForChild("DeathLoadout"))
-local Fate = require(Shared:WaitForChild("Fate"))
 local Net = require(Shared:WaitForChild("Net"))
 local ShopBrowse = require(Shared:WaitForChild("ShopBrowse"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
@@ -25,7 +23,6 @@ local Match = require(script.Parent.Match)
 local RateLimit = require(script.Parent.RateLimit)
 
 local ShopRequest = Net.event("ShopRequest")
-local FateRemote = Net.event("Fate")
 
 local ShopService = {}
 
@@ -43,6 +40,9 @@ function ShopService.canBuy(item: Cosmetics.Item, now: number): (boolean, string
 	end
 	return true, ""
 end
+
+-- The wishlist and Fate, taken out of the shop on 2026-11-16 (the user's word).
+local WISHLIST = false
 
 -- The new cards of a suit, looked at (their "New" ribbons go).
 local function markSeen(player: Player, ids: any)
@@ -68,73 +68,6 @@ local function markSeen(player: Player, ids: any)
 	end
 end
 
--- Fate's draw: a card of this week's deck not owned yet, by its odds.
-local function drawFate(player: Player)
-	local data = DataService.get(player)
-	if not data then
-		return
-	end
-	if Match.get(player) then
-		Match.notify(player, "Only in the lobby.", "bad")
-		return
-	end
-	local owns = function(item: Cosmetics.Item): boolean
-		return CosmeticsService.owns(player, item)
-	end
-	local id = Fate.pick(Fate.deck(Fate.week(os.time())), owns, Random.new():NextNumber())
-	local item = Cosmetics.byId(id)
-	if not item then
-		Match.notify(player, "You own the whole deck. New deck on Monday.", "info")
-		return
-	end
-	if data.coins < Fate.PRICE then
-		Match.notify(player, string.format("You need %d Reál.", Fate.PRICE), "bad")
-		return
-	end
-	data.coins -= Fate.PRICE
-	Analytics.coins(player, -Fate.PRICE, data.coins, "Shop", "fate:" .. item.id)
-	data.owned[item.id] = true
-	data.wishlist[item.id] = nil
-	if item.kind == "emote" then
-		EmoteService.placeBought(data, item.emote)
-	end
-	FateRemote:FireClient(player, { itemId = item.id })
-	Match.notify(player, "Fate deals you " .. item.name .. ".", "good")
-	CosmeticsService.grantSets(player)
-	CosmeticsService.grantMilestones(player)
-	DataService.push(player)
-	DataService.saveSoon(player)
-	CosmeticsService.apply(player)
-end
-
--- A heart on a card: on the wishlist, or off it.
-local function wish(player: Player, item: Cosmetics.Item, on: boolean)
-	local data = DataService.get(player)
-	if not data then
-		return
-	end
-	if on then
-		if not ShopBrowse.wishable(item) or CosmeticsService.owns(player, item) then
-			return
-		end
-		local count = 0
-		for _ in pairs(data.wishlist) do
-			count += 1
-		end
-		if count >= ShopBrowse.WISH_LIMIT then
-			Match.notify(player, "Your wishlist is full (" .. ShopBrowse.WISH_LIMIT .. ").", "info")
-			return
-		end
-		data.wishlist[item.id] = true
-	elseif data.wishlist[item.id] then
-		data.wishlist[item.id] = nil
-	else
-		return
-	end
-	DataService.push(player)
-	DataService.saveSoon(player)
-end
-
 -- On arriving: the wished cards in Today's hand (bought ones leave the wishlist).
 function ShopService.announceWishes(player: Player)
 	local data = DataService.get(player)
@@ -149,6 +82,10 @@ function ShopService.announceWishes(player: Player)
 		if not item or owns(item) then
 			data.wishlist[id] = nil
 		end
+	end
+	-- (the wishlist was taken out of the shop 2026-11-16: no pings for it any more)
+	if not WISHLIST then
+		return
 	end
 	local found = ShopBrowse.wishedToday(data.wishlist, owns, ShopRotation.dayOf(os.time()))
 	if #found == 0 then
@@ -179,7 +116,7 @@ local function onRequest(player: Player, payload)
 		markSeen(player, payload.itemIds)
 		return
 	elseif payload.action == "fate" then
-		drawFate(player)
+		-- (Fate was taken out of the shop 2026-11-16, the user's word: no draws)
 		return
 	end
 	if type(payload.itemId) ~= "string" then
@@ -196,7 +133,7 @@ local function onRequest(player: Player, payload)
 	end
 	local action = payload.action
 	if action == "wish" then
-		wish(player, item, payload.on == true)
+		-- (the wishlist was taken out 2026-11-16)
 		return
 	end
 	if action == "turn" then

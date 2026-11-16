@@ -1,19 +1,16 @@
 -- The shop, "Death's hand": a table of tarot cards dealt by Death (Shop/Card). The suits run along the
--- top (Cosmetics.SUITS: Today's hand, Diavolo, Ace, The dead, Emotes, Titles, and Robux
--- once a product is on sale); a suit with nothing in it yet is not shown. Today's hand is the day's six
+-- top (Cosmetics.SUITS: Today's hand, Diavolo, Ace, Custom deaths, Emotes, Win cutscenes, Seats, Titles, Robux
+-- once a product is on sale, and Premium: empty for now, for things bought with Robux); a suit with nothing in it yet is not shown. Today's hand is the day's six
 -- and the day's deal (a card of the shop's own stock, a quarter off: Shared/ShopRotation), dealt face
 -- down (the same for everyone): each is turned over with a click, and stays turned that day (ShopService
 -- "turn"). The other suits lay their cards out by kind (Emotes by its sections: dances, poses, with
--- props, strolls, duo, with how many you own and the next collection milestone). Fate lays out the week's deck
--- face up with the odds of each card, and draws one you do not own for 250 coins (hold "Draw"; the card
--- dealt turns over: Shared/Fate). The Ledger shows the season's thirty tiers, how far you are and what each
--- pays (Progression/Ledger).
+-- props, strolls, duo, with how many you own and the next collection milestone). (Fate, the Ledger, the Wishlist
+-- and The dead were taken out of the shop on 2026-11-16, the user's word.)
 --
 -- Over a suit of kinds, a row to browse it (Shared/ShopBrowse): a search, what to show (all, not owned,
 -- can afford, wished) and an order (as dealt, cheapest, dearest, rarest, newest). A card new to the shop
 -- wears a "New" ribbon until you leave the suit it is in (ShopService "seen"), and a suit with new cards
--- has a dot on its tab (Today's hand: while a card lies face down). A heart on a card not owned puts it on
--- the wishlist (ShopService "wish"); arriving on a day one of them is in Today's hand, you are told.
+-- has a dot on its tab (Today's hand: while a card lies face down).
 --
 -- Picking a card lifts it and shows it on you in Your look (Shop/YourLook), on the right; under it, what
 -- you can do: hold "Buy · 300" for half a second (a bought thing is worn at once; a bought emote goes on
@@ -37,9 +34,6 @@ local Rarity = require(Shared:WaitForChild("Rarity"))
 local ShopBrowse = require(Shared:WaitForChild("ShopBrowse"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
 local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
-local Fate = require(Shared:WaitForChild("Fate"))
-local Ledger = require(Shared:WaitForChild("Progression"):WaitForChild("Ledger"))
-local TimeUtil = require(Shared:WaitForChild("Progression"):WaitForChild("TimeUtil"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
@@ -53,7 +47,6 @@ local WinCinema = require(script.Parent.Parent.Presentation.WinCinema)
 local YourLook = require(script.Parent.Shop.YourLook)
 
 local ShopRequest = Net.event("ShopRequest")
-local FateRemote = Net.event("Fate")
 local ProfileRequest = Net.event("ProfileRequest")
 local LocalPlayer = Players.LocalPlayer
 
@@ -104,7 +97,6 @@ local showing = "all" -- ShopBrowse.SHOW
 local sorting = "order" -- ShopBrowse.SORTS
 local searching = ""
 local newHere: { string } = {} -- the new cards dealt in this suit, seen once you leave it
-local fateDealt: string? = nil -- the card Fate just dealt, turned over once the profile says it is yours
 local confirming: string? = nil -- the Condemned or Godhood card whose buy is waiting to be confirmed
 local sealing: string? = nil -- the card just bought: sealed once the profile says it is yours
 local flaring: string? = nil -- the card just worn or put on the wheel: it flares once the profile says so
@@ -142,14 +134,6 @@ local function formatTime(seconds: number): string
 	return string.format("%dh %02dm", hours, minutes)
 end
 
--- A longer wait: days and hours (or hours and minutes under a day).
-local function formatSpan(seconds: number): string
-	if seconds < 86400 then
-		return formatTime(seconds)
-	end
-	return string.format("%dd %dh", math.floor(seconds / 86400), math.floor((seconds % 86400) / 3600))
-end
-
 local function onSale(): boolean
 	for _, pack in ipairs(Products.COIN_PACKS) do
 		if pack.id ~= 0 then
@@ -170,7 +154,7 @@ local function suits(): { Cosmetics.Suit }
 	local list = {}
 	for _, suit in ipairs(Cosmetics.SUITS) do
 		local show
-		if suit.id == "today" or suit.id == "fate" or suit.id == "ledger" or suit.id == "wishlist" then
+		if suit.id == "today" or suit.id == "premium" then
 			show = true
 		elseif suit.id == "robux" then
 			show = onSale()
@@ -203,14 +187,6 @@ local function suitHasNews(profile, suit: Cosmetics.Suit): boolean
 		local turned = ShopRotation.turned(profile.shopTurned, day)
 		for _, id in ipairs(ShopRotation.hand(day)) do
 			if not table.find(turned, id) and not turnedHere[id] then
-				return true
-			end
-		end
-		return false
-	elseif suit.id == "wishlist" then
-		-- (a dot while something wished for is in Today's hand, cheaper)
-		for _, id in ipairs(ShopRotation.hand(ShopRotation.dayOf(os.time()))) do
-			if profile.wishlist ~= nil and profile.wishlist[id] == true then
 				return true
 			end
 		end
@@ -467,23 +443,6 @@ local function showAction(profile, item: Cosmetics.Item?)
 		}, held)
 		actionNote.Text = if confirming == item.id then "Press again to confirm." else ""
 	end
-	-- The wishlist, as a button of its own under the buy button (the heart on the card does the same).
-	if ShopBrowse.wishable(item) and not owns(profile, item) and not stanceHolder.Visible then
-		local wished = profile.wishlist ~= nil and profile.wishlist[item.id] == true
-		stanceHolder.Visible = true
-		Kit.button({
-			Name = "Wish",
-			text = if wished then "Wishlisted" else "Wishlist",
-			icon = "heart",
-			variant = if wished then "primary" else "secondary",
-			size = "s",
-			upper = false,
-			Size = UDim2.fromScale(1, 1),
-			Parent = stanceHolder,
-		}, function()
-			ShopRequest:FireServer({ action = "wish", itemId = item.id, on = not wished })
-		end)
-	end
 	if isDeal(item) and not owns(profile, item) then
 		local deal = ShopRotation.isDeal(item.id, os.time())
 		actionNote.Text = string.format(
@@ -580,12 +539,6 @@ local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, f
 		faceDown = faceDown,
 		isNew = fresh,
 		offer = offerText(item),
-		wished = profile.wishlist ~= nil and profile.wishlist[item.id] == true,
-		onWish = if ShopBrowse.wishable(item) and not owns(profile, item)
-			then function(on: boolean)
-				ShopRequest:FireServer({ action = "wish", itemId = item.id, on = on })
-			end
-			else nil,
 		onPick = function()
 			ShopPanel.choose(item.id)
 		end,
@@ -595,285 +548,6 @@ local function deal(profile, item: Cosmetics.Item, grid: Frame, order: number, f
 	if item.id == pickedId then
 		card:setPicked(true)
 	end
-end
-
--- A row over the cards, in the table (for Fate's draw and the Ledger's standing).
-local function banner(order: number, height: number): Frame
-	return Kit.frame({
-		Name = "Banner",
-		Size = UDim2.new(1, 0, 0, height),
-		LayoutOrder = order,
-		Parent = tableScroll,
-	})
-end
-
--- Fate: the draw, and the week's deck face up with each card's odds.
-local function buildFate(profile)
-	local now = os.time()
-	local deck = Fate.deck(Fate.week(now))
-	local ownsItem = function(item: Cosmetics.Item): boolean
-		return owns(profile, item)
-	end
-	local odds = Fate.odds(deck, ownsItem)
-	local left = 0
-	for _ in pairs(odds) do
-		left += 1
-	end
-	local row = banner(1, T.touch)
-	local size = UDim2.new(0, 280, 1, 0)
-	if left == 0 then
-		local button =
-			Kit.button({ text = "All collected", variant = "secondary", size = "m", Size = size, Parent = row })
-		Kit.setEnabled(button, false)
-	elseif profile.coins < Fate.PRICE then
-		local button = Kit.button({
-			text = string.format("%d more Reál", Fate.PRICE - profile.coins),
-			variant = "secondary",
-			size = "m",
-			Size = size,
-			Parent = row,
-		})
-		Kit.setEnabled(button, false)
-	else
-		local button = Kit.button({
-			Name = "Draw",
-			text = string.format("Draw %d", Fate.PRICE),
-			icon = "real",
-			variant = "primary",
-			size = "m",
-			Size = size,
-			Parent = row,
-		}, function()
-			ShopRequest:FireServer({ action = "fate" })
-		end)
-		firstButton = button
-	end
-	Kit.label({
-		Text = string.format("%d of %d left", left, #deck),
-		font = "bodyItalic",
-		color = C.dim,
-		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(280 + T.space.l, 0),
-		Size = UDim2.new(1, -(280 + T.space.l), 1, 0),
-		Parent = row,
-	})
-	local grid = section("This week's deck", 2)
-	for index, id in ipairs(deck) do
-		local item = Cosmetics.byId(id)
-		if item then
-			local dealt = fateDealt == id and owns(profile, item)
-			deal(profile, item, grid, index, dealt)
-			local chance = odds[id]
-			if chance then
-				cards[id]:setChip(string.format("%d%%", math.max(1, math.floor(chance * 100 + 0.5))), false)
-			end
-		end
-	end
-	-- The card just dealt: turned over, and shown on you.
-	local dealtCard = if fateDealt then cards[fateDealt] else nil
-	if dealtCard and dealtCard.faceDown then
-		fateDealt = nil
-		dealtCard:turn(function()
-			pick(dealtCard.item)
-		end)
-	end
-	noteLabel.Text = string.format("New deck in %s", formatSpan(TimeUtil.secondsToNextWeek(now)))
-end
-
--- The Ledger: the season, how far you are, what each tier pays; its things as cards.
--- One thing of each kind, as the ledger names it on its line.
-local ONE_KIND = {
-	grimoire = "Manual cover",
-	specter = "Deathsinger form",
-	title = "Title",
-	writing = "Writing style",
-	verdict = "Verdict style",
-	reason = "Custom death",
-	emote = "Emote",
-	win = "Win cutscene",
-	seat = "Seat",
-	chair = "Chair",
-}
-
--- The Ledger (redone 2026-11-11, the user: "making it look better and the rewards being more tempting"): the
--- season's name big over the standing and the points to the next tier; the season's things as shop cards (the next
--- one marked); then the ledger itself, one line per tier as an account book is kept: a drawn box (ticked red once
--- paid), the tier, what it pays, the amount in mono. Things and purses stand out from the plain coin lines.
-local function buildLedger(profile)
-	local now = os.time()
-	local season = Ledger.season(now)
-	if season <= 0 then
-		noteLabel.Text = "No season running."
-		return
-	end
-	local record = Ledger.view(profile.ledger, season)
-	local _, ends = Ledger.bounds(season)
-	local done = record.tier >= Ledger.TIERS
-	local into = record.points - record.tier * Ledger.PER_TIER
-	local nextThing: number? = nil
-	for tier = record.tier + 1, Ledger.TIERS do
-		if Ledger.reward(season, tier).item then
-			nextThing = tier
-			break
-		end
-	end
-
-	-- the standing
-	local top = banner(1, 104)
-	Kit.text({ face = "Head", text = Ledger.name(season), size = 34, color = C.bone, Parent = top })
-	Kit.label({
-		Name = "Standing",
-		Text = if done then "Every tier paid." else string.format("Tier %d of %d", record.tier, Ledger.TIERS),
-		font = "body",
-		size = "lead",
-		color = C.bone,
-		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(0, 44),
-		Size = UDim2.new(0.5, 0, 0, 26),
-		Parent = top,
-	})
-	Kit.label({
-		Name = "Earn",
-		Text = string.format("+%d a case  +%d a win  +%d a quest", Ledger.PLAY, Ledger.WIN, Ledger.QUEST),
-		font = "mono",
-		size = "small",
-		color = C.dim,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		AutomaticSize = Enum.AutomaticSize.None,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 50),
-		Size = UDim2.new(0.5, 0, 0, 20),
-		Parent = top,
-	})
-	Kit.label({
-		Name = "Points",
-		Text = if done
-			then string.format("%d points", record.points)
-			else string.format("%d/%d points to tier %d", into, Ledger.PER_TIER, record.tier + 1),
-		font = "mono",
-		size = "small",
-		color = C.dim,
-		AutomaticSize = Enum.AutomaticSize.None,
-		Position = UDim2.fromOffset(0, 72),
-		Size = UDim2.new(1, 0, 0, 18),
-		Parent = top,
-	})
-	local _, setMeter = Kit.meter({ Position = UDim2.new(0, 0, 1, -6), Parent = top })
-	setMeter(if done then 1 else into / Ledger.PER_TIER, false)
-
-	-- the season's things, as the shop shows them (the next one marked)
-	local things = section("This season's things", 2)
-	local order = 0
-	for tier = 1, Ledger.TIERS do
-		local reward = Ledger.reward(season, tier)
-		local item = if reward.item then Cosmetics.byId(reward.item) else nil
-		if item then
-			order += 1
-			deal(profile, item, things, order, false)
-			if not owns(profile, item) then
-				cards[item.id]:setChip(
-					if tier == nextThing then string.format("Next: tier %d", tier) else string.format("Tier %d", tier),
-					false
-				)
-			end
-		end
-	end
-
-	-- the ledger itself
-	local book = Kit.frame({
-		Name = "Book",
-		Size = UDim2.new(1, 0, 0, 0),
-		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 3,
-		Parent = tableScroll,
-	})
-	Kit.list(book, 0)
-	Kit.heading({ text = "The ledger", LayoutOrder = 0, Parent = book })
-	for tier = 1, Ledger.TIERS do
-		local reward = Ledger.reward(season, tier)
-		local item = if reward.item then Cosmetics.byId(reward.item) else nil
-		local purse = reward.coins ~= nil and Ledger.PURSES[tier] ~= nil
-		local big = item ~= nil or purse
-		local paid = tier <= record.tier
-		local line = Kit.frame({
-			Name = "Tier" .. tier,
-			Size = UDim2.new(1, 0, 0, if big then 46 else 32),
-			LayoutOrder = tier,
-			Parent = book,
-		})
-		local box = Kit.Base.make("Frame", {
-			Name = "Box",
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Size = UDim2.fromOffset(18, 18),
-			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.new(0, 2, 0.5, 0),
-			Parent = line,
-		})
-		Kit.Base.stroke(box, C.bone, 2, if paid then 0 else 0.4)
-		Kit.Boil.attach(box, 1)
-		if paid then
-			local tick = Kit.icon({
-				name = "check",
-				size = 22,
-				color = C.danger,
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.6, 0.4),
-				Parent = box,
-			})
-			Kit.Boil.attach(tick, 1)
-		end
-		Kit.label({
-			Text = string.format("%02d", tier),
-			font = "mono",
-			size = "small",
-			color = C.dim,
-			AutomaticSize = Enum.AutomaticSize.None,
-			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.new(0, 32, 0.5, 0),
-			Size = UDim2.fromOffset(28, 18),
-			Parent = line,
-		})
-		local what = if item then item.name elseif purse then "A purse" else "Reál"
-		local amount = if item
-			then (if owns(profile, item)
-				then string.format("yours, or %d R", Ledger.instead(item))
-				else (ONE_KIND[item.kind] or item.kind))
-			else string.format("+%d R", reward.coins or 0)
-		Kit.label({
-			Text = what,
-			font = if big then "bodyBold" else "body",
-			size = if big then "lead" else "body",
-			color = if big and not paid then C.bone else C.dim,
-			TextWrapped = false,
-			TextTruncate = Enum.TextTruncate.AtEnd,
-			AutomaticSize = Enum.AutomaticSize.None,
-			AnchorPoint = Vector2.new(0, 0.5),
-			Position = UDim2.new(0, 68, 0.5, -1),
-			Size = UDim2.new(1, -(68 + 200), 0, 28),
-			Parent = line,
-		})
-		Kit.label({
-			Text = if tier == nextThing or (tier == record.tier + 1 and not big) then "next  " .. amount else amount,
-			font = "mono",
-			size = "small",
-			color = if big and not paid then C.bone else C.dim,
-			TextXAlignment = Enum.TextXAlignment.Right,
-			TextWrapped = false,
-			AutomaticSize = Enum.AutomaticSize.None,
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -4, 0.5, 0),
-			Size = UDim2.fromOffset(196, 20),
-			Parent = line,
-		})
-		Kit.rule({
-			color = C.bone,
-			transparency = if big then 0.55 else 0.8,
-			Position = UDim2.new(0, 0, 1, -1),
-			Parent = line,
-		})
-	end
-	noteLabel.Text = string.format("Ends in %s", formatSpan(math.max(0, ends - now)))
 end
 
 -- Robux (only once something is on sale): coin packs, passes, the custom alias.
@@ -1176,37 +850,15 @@ function ShopPanel.rebuild()
 		noteLabel.Text = "New cards in " .. formatTime(ShopRotation.secondsLeft(now))
 	elseif currentSuit == "robux" then
 		buildRobux(profile)
-	elseif currentSuit == "fate" then
-		buildFate(profile)
-	elseif currentSuit == "ledger" then
-		buildLedger(profile)
-	elseif currentSuit == "wishlist" then
-		-- Everything wished for, from every suit, by kind; a wished card in Today's hand is cheaper today.
-		local order = 0
-		for _, kind in ipairs(Cosmetics.KINDS) do
-			local wished = {}
-			for _, item in ipairs(Cosmetics.ofKind(kind)) do
-				if profile.wishlist ~= nil and profile.wishlist[item.id] == true and not owns(profile, item) then
-					table.insert(wished, item)
-				end
-			end
-			if #wished > 0 then
-				order += 1
-				local grid = section(Cosmetics.KIND_NAMES[kind] or kind, order)
-				for index, item in ipairs(wished) do
-					deal(profile, item, grid, index, false)
-				end
-			end
-		end
-		if order == 0 then
-			Kit.label({
-				Text = "Your wishlist is empty.",
-				font = "bodyItalic",
-				color = C.dim,
-				Parent = tableScroll,
-			})
-		end
-		noteLabel.Text = "You get a ping when a wishlisted item is on sale."
+	elseif currentSuit == "premium" then
+		-- (2026-11-16, the user: a premium shop for things bought with Robux, empty for now)
+		Kit.label({
+			Text = "Nothing here yet.",
+			font = "bodyItalic",
+			color = C.dim,
+			Parent = tableScroll,
+		})
+		noteLabel.Text = "Premium things, bought with Robux, will be sold here."
 	else
 		local suit = Cosmetics.suit(currentSuit)
 		local order = 0
@@ -1662,12 +1314,6 @@ function ShopPanel.init()
 		Parent = lookPanel,
 	}, function()
 		openSheet(false)
-	end)
-	FateRemote.OnClientEvent:Connect(function(payload)
-		if type(payload) == "table" and type(payload.itemId) == "string" then
-			-- (turned over when the profile that owns it comes)
-			fateDealt = payload.itemId
-		end
 	end)
 	ClientState.ProfileChanged:Connect(function()
 		if Router.isOpen("shop") then

@@ -57,8 +57,22 @@ Achievements.LIST = {
 	),
 	a("survive10", "Hard to kill", "Survive 10 matches.", { "stats", "survived" }, 10, 100),
 	a("survive50", "Unwritten", "Survive 50 matches.", { "stats", "survived" }, 50, 300, "title_unwritten"),
-	a("souls10", "Ferryman", "Gather 10 lost souls.", { "stats", "duties" }, 10, 50),
-	a("souls100", "Shepherd of souls", "Gather 100 lost souls.", { "stats", "duties" }, 100, 250, "title_shepherd"),
+	-- (the Season ledger's titles, earned here since the ledger left the shop, 2026-11-16)
+	a("bookkeeper", "Bookkeeper", "Work 250 case files.", { "stats", "tasks" }, 250, 200, "title_s1_bookkeeper"),
+	a("accountant", "Death's Accountant", "Play 150 matches.", { "stats", "matches" }, 150, 300, "title_s1_accountant"),
+	a("scribe", "Night Scribe", "Find 75 paper notes.", { "stats", "notesFound" }, 75, 200, "title_s2_scribe"),
+	a("witness", "The Last Witness", "Survive 25 matches.", { "stats", "survived" }, 25, 300, "title_s2_witness"),
+	-- (the lost souls were taken out 2026-11-16: these two count haunts on the map now)
+	a("souls10", "Ferryman", "Haunt the living 10 times.", { "stats", "haunts" }, 10, 50),
+	a(
+		"souls100",
+		"Shepherd of souls",
+		"Haunt the living 100 times.",
+		{ "stats", "haunts" },
+		100,
+		250,
+		"title_shepherd"
+	),
 	a("ink1", "First entry", Terms.f("Write a name in {grimoire} and see it come true."), { "stats", "kills" }, 1, 25),
 	a("ink25", "Writer's callus", "25 names come true.", { "stats", "kills" }, 25, 250, "title_inkstained"),
 	a("arrest1", "Warrant served", Terms.f("Arrest {hand} as {zero}."), { "stats", "arrests" }, 1, 50),

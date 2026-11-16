@@ -1,6 +1,6 @@
 -- Fate's draw (a weekly deck the same for everyone, worth a draw, odds that add up, never a card owned) and the
 -- Season ledger (season dates, tiers, rewards paid once each, a new season starting again; the case's points
--- in ProgressRules.apply), and the season's emote joining Today's hand once the season is over.
+-- in ProgressRules.apply, switched off 2026-11-16 when the Ledger left the shop), and the season's emote sold now.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -120,13 +120,14 @@ return function(t)
 			for _, season in pairs(Ledger.SEASONS) do
 				for tier, id in pairs(season.items) do
 					local item = Cosmetics.byId(id) :: any
-					-- (the season's own things, or pieces from the shop given free)
-					local earned = item ~= nil and (item.source == "season" or item.price ~= nil)
+					-- (the season's own things, pieces from the shop, or the titles now earned as achievements)
+					local earned = item ~= nil
+						and (item.source == "season" or item.source == "achievement" or item.price ~= nil)
 					expect(earned and tier <= Ledger.TIERS and tier % 3 == 0).to.equal(true)
 				end
 			end
 		end)
-		it("writes a case's points, more for a win and each quest, and pays the tiers it reaches", function()
+		it("writes no points and pays no tiers now that the Ledger is out of the shop (2026-11-16)", function()
 			local data = Migrations.defaults(0)
 			local now = Ledger.START + 3 * DAY
 			data.ledger = { season = 1, points = 95, tier = 0 }
@@ -148,71 +149,18 @@ return function(t)
 				xpBefore = 0,
 			} :: any
 			local result = ProgressRules.apply(data, summary, now)
-			local ledger = result.ledger :: any
-			expect(ledger ~= nil).to.equal(true)
-			expect(ledger.points >= Ledger.PLAY + Ledger.WIN).to.equal(true)
-			expect(data.ledger.points).to.equal(95 + ledger.points)
-			expect(data.ledger.tier >= 1).to.equal(true)
-			local paid = false
+			expect(ProgressRules.LEDGER).to.equal(false)
+			expect(result.ledger).to.equal(nil)
+			expect(data.ledger.points).to.equal(95)
 			for _, line in ipairs(result.lines) do
-				if string.find(line.label, "Ledger, tier 1", 1, true) then
-					paid = true
-				end
+				expect(string.find(line.label, "Ledger", 1, true)).to.equal(nil)
 			end
-			expect(paid).to.equal(true)
 		end)
-		it("pays a thing already owned in coins instead", function()
-			local data = Migrations.defaults(0)
-			local now = Ledger.START + 3 * DAY
-			data.ledger = { season = 1, points = 299, tier = 2 }
-			data.owned["seat_composed"] = true
-			local summary = {
-				won = false,
-				role = "L",
-				side = "Team",
-				survived = true,
-				tasks = 0,
-				notesFound = 0,
-				correctVotes = 0,
-				kills = 0,
-				reads = 0,
-				arrests = 0,
-				duties = 0,
-				reports = 0,
-				rigs = 0,
-				ghost = false,
-				xpBefore = 0,
-			} :: any
-			local result = ProgressRules.apply(data, summary, now)
-			local paid = 0
-			for _, line in ipairs(result.lines) do
-				if string.find(line.label, "Ledger, tier 3", 1, true) then
-					paid = line.coins
-				end
-			end
-			expect(paid).to.equal(Ledger.instead(Cosmetics.byId("seat_composed")))
-			expect(paid > 0).to.equal(true)
-		end)
-		it("puts the season's emote in Today's hand only once the season is over, at its later price", function()
+		it("sells the season's emote in the shop now, for 1200", function()
 			local newWorld = Cosmetics.byId("emote_new_world") :: any
-			local _, ends = Ledger.bounds(1)
-			expect(Cosmetics.laterPrice(newWorld, ends - 1)).to.equal(nil)
-			expect(Cosmetics.laterPrice(newWorld, ends)).to.equal(1200)
-			expect(ShopRotation.priceOf(newWorld, ends - DAY)).to.equal(nil)
-			expect(ShopRotation.rotates(newWorld, ends + DAY)).to.equal(true)
-			local before, after = false, false
-			for day = math.floor(ends / DAY) - 300, math.floor(ends / DAY) - 1 do
-				if table.find(ShopRotation.forDay(day), "emote_new_world") then
-					before = true
-				end
-			end
-			for day = math.floor(ends / DAY), math.floor(ends / DAY) + 400 do
-				if table.find(ShopRotation.forDay(day), "emote_new_world") then
-					after = true
-				end
-			end
-			expect(before).to.equal(false)
-			expect(after).to.equal(true)
+			expect(newWorld.source).to.equal("shop")
+			expect(newWorld.price).to.equal(1200)
+			expect(ShopRotation.fullPrice(newWorld, Ledger.START + DAY)).to.equal(1200)
 		end)
 	end)
 end

@@ -132,15 +132,16 @@ Cosmetics.ITEMS = {
 		color = Color3.fromRGB(12, 12, 16),
 	},
 
-	-- Specter outlines (seen by other ghosts only)
+	-- Specter outlines (seen by other ghosts only). The shop's "The dead" suit that sold them was taken out
+	-- on 2026-11-16 (the user's word): none is sold any more (source "retired", no price, never in Today's
+	-- hand); the ones already owned stay in the inventory, and the VIP one stays the VIP's.
 	{
 		id = "specter_ember",
 		kind = "specter",
 		name = "Ember Wraith",
 		blurb = "A drifting shape that sheds embers.",
 		rarity = "rare",
-		source = "shop",
-		price = 300,
+		source = "retired",
 		color = Color3.fromRGB(255, 120, 60),
 		form = "embers",
 	},
@@ -150,8 +151,7 @@ Cosmetics.ITEMS = {
 		name = "Veil of Dusk",
 		blurb = "Grey veils trail behind you.",
 		rarity = "epic",
-		source = "rotation",
-		price = 600,
+		source = "retired",
 		color = Color3.fromRGB(170, 100, 255),
 		form = "veil",
 	},
@@ -171,8 +171,7 @@ Cosmetics.ITEMS = {
 		name = "Crow Shroud",
 		blurb = "Crow feathers and a crow on each shoulder.",
 		rarity = "epic",
-		source = "shop",
-		price = 650,
+		source = "retired",
 		color = Color3.fromRGB(60, 62, 74),
 		form = "crows",
 	},
@@ -182,8 +181,7 @@ Cosmetics.ITEMS = {
 		name = "Cut Marionette",
 		blurb = "A puppet with cut strings.",
 		rarity = "legendary",
-		source = "shop",
-		price = 1200,
+		source = "retired",
 		color = Color3.fromRGB(214, 200, 176),
 		form = "marionette",
 	},
@@ -193,8 +191,7 @@ Cosmetics.ITEMS = {
 		name = "Moth Lantern",
 		blurb = "Pale moths circle a light in your chest.",
 		rarity = "rare",
-		source = "shop",
-		price = 350,
+		source = "retired",
 		color = Color3.fromRGB(214, 228, 240),
 		form = "moths",
 	},
@@ -963,11 +960,12 @@ Cosmetics.ITEMS = {
 		category = "pose",
 		name = "New World",
 		rarity = "godhood",
-		source = "season",
+		-- (the Season ledger's last tier until 2026-11-16, when the ledger was taken out of the shop at the user's
+		-- word: on sale now)
+		source = "shop",
+		price = 1200,
 		emote = "newWorld",
 		added = "2026-10-14",
-		-- (the Season ledger's last tier until season 1 ends; then in Today's hand)
-		later = { from = "2026-11-25", price = 1200 },
 	},
 	{
 		id = "emote_reapers_eyes",
@@ -1480,10 +1478,16 @@ Cosmetics.ITEMS = {
 	{ id = "title_set_online", kind = "title", name = "Terminally Online", rarity = "legendary", source = "set" },
 	{ id = "title_set_floor", kind = "title", name = "Floor Filler", rarity = "epic", source = "set" },
 	-- Earned: the Season ledger (Progression/Ledger)
-	{ id = "title_s1_bookkeeper", kind = "title", name = "Bookkeeper", rarity = "rare", source = "season" },
-	{ id = "title_s1_accountant", kind = "title", name = "Death's Accountant", rarity = "epic", source = "season" },
-	{ id = "title_s2_scribe", kind = "title", name = "Night Scribe", rarity = "rare", source = "season" },
-	{ id = "title_s2_witness", kind = "title", name = "The Last Witness", rarity = "epic", source = "season" },
+	{ id = "title_s1_bookkeeper", kind = "title", name = "Bookkeeper", rarity = "rare", source = "achievement" },
+	{
+		id = "title_s1_accountant",
+		kind = "title",
+		name = "Death's Accountant",
+		rarity = "epic",
+		source = "achievement",
+	},
+	{ id = "title_s2_scribe", kind = "title", name = "Night Scribe", rarity = "rare", source = "achievement" },
+	{ id = "title_s2_witness", kind = "title", name = "The Last Witness", rarity = "epic", source = "achievement" },
 	-- Earned: owning so many emotes (Progression/Collection)
 	{ id = "title_c_mover", kind = "title", name = "Mover", rarity = "rare", source = "collection" },
 	{ id = "title_c_showstopper", kind = "title", name = "Showstopper", rarity = "epic", source = "collection" },
@@ -1559,12 +1563,8 @@ Cosmetics.KIND_NAMES = {
 export type Suit = { id: string, name: string, icon: string, kinds: { string }? }
 Cosmetics.SUITS = {
 	{ id = "today", name = "Today's hand", icon = "cards" },
-	{ id = "fate", name = "Fate", icon = "dice" },
-	{ id = "ledger", name = "Ledger", icon = "note" },
-	{ id = "wishlist", name = "Wishlist", icon = "heart" },
 	{ id = "diavolo", name = Terms.f("{Hand}"), icon = "quill", kinds = { "writing", "grimoire" } },
 	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
-	{ id = "dead", name = "The dead", icon = "skull", kinds = { "specter" } },
 	{ id = "reasons", name = "Custom deaths", icon = "grimoire", kinds = { "reason" } },
 	{ id = "emotes", name = "Emotes", icon = "palm", kinds = { "emote" } },
 	{ id = "wins", name = "Win cutscenes", icon = "flag", kinds = { "win" } },
@@ -1573,6 +1573,9 @@ Cosmetics.SUITS = {
 	-- (no Sets suit: taken out of the shop 2026-11-10, the user's call; a set's pieces stay on sale in their own
 	-- suits and a full set still earns its title, Shared/Sets)
 	{ id = "robux", name = "Robux", icon = "coin" },
+	-- (2026-11-16, the user: "add a premium shop tab where you can buy things with robux, but leave it empty for now";
+	-- Fate, the Ledger, the Wishlist and The dead were taken out of the shop the same day)
+	{ id = "premium", name = "Premium", icon = "coin" },
 } :: { Suit }
 
 -- The Emotes suit's sections, in order (an emote's `category`).

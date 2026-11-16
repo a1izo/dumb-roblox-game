@@ -255,13 +255,15 @@ return function(t)
 			-- hats left with the Wardrobe on 2026-10-27)
 			expect(#Cosmetics.KINDS).to.equal(10)
 			for _, kind in ipairs(Cosmetics.KINDS) do
+				-- (the specter forms are sold in no suit since "The dead" left the shop, 2026-11-16)
+				local want = if kind == "specter" then 0 else 1
 				local suits = 0
 				for _, suit in ipairs(Cosmetics.SUITS) do
 					if suit.kinds and table.find(suit.kinds, kind) then
 						suits += 1
 					end
 				end
-				expect(suits).to.equal(1)
+				expect(suits).to.equal(want)
 			end
 		end)
 	end)
