@@ -4,10 +4,12 @@
 -- Progress comes only from the end-of-match summary.
 --
 -- stat: a key of the match summary (see ProgressRules): matches, wins, survived, tasks,
--- notesFound, correctVotes, duties, reports (votes cast in meetings: the key is older than the
--- meaning), and for the Deathsinger quests (period "ghost": three a
--- day, progressing only in cases you ended as a Deathsinger) wagersWon, haunts. (The spirit trial's quest went
--- with the trial on 2026-11-05: a profile still holding it that day simply skips it.)
+-- notesFound, correctVotes, reports (votes cast in meetings: the key is older than the meaning).
+-- Two optional conditions make a quest harder than a plain count:
+--   when: "survived" | "wonAlive": the match only counts if you lived, or won and lived.
+--   each: the stat must reach this many IN ONE match for the match to count (as 1).
+-- (The Deathsinger quests and the lost-soul quests went 2026-11-16, with the lost souls; a profile still
+-- holding one of them simply skips it.)
 
 local Terms = require(script.Parent.Parent.Terms)
 
@@ -20,149 +22,74 @@ export type Quest = {
 	goal: number,
 	coins: number,
 	xp: number,
-	period: string, -- "daily", "weekly" or "ghost"
+	period: string, -- "daily" or "weekly"
+	when: string?,
+	each: number?,
 }
 
+local function q(
+	id: string,
+	text: string,
+	stat: string,
+	goal: number,
+	reward: number,
+	period: string,
+	extra: { when: string?, each: number? }?
+): Quest
+	return {
+		id = id,
+		text = text,
+		stat = stat,
+		goal = goal,
+		coins = reward,
+		xp = reward,
+		period = period,
+		when = if extra then extra.when else nil,
+		each = if extra then extra.each else nil,
+	}
+end
+
+-- Daily: three a day, each on a different stat, so a day mixes a few kinds of play. A plain count asks for
+-- 3+ matches or 12+ case files; the rest ask you to do something well in one match.
 Quests.LIST = {
-	-- daily
-	{ id = "d_play2", text = "Play 2 matches", stat = "matches", goal = 2, coins = 40, xp = 40, period = "daily" },
-	{ id = "d_play3", text = "Play 3 matches", stat = "matches", goal = 3, coins = 60, xp = 60, period = "daily" },
-	{ id = "d_win1", text = "Win a match", stat = "wins", goal = 1, coins = 50, xp = 50, period = "daily" },
-	{ id = "d_survive1", text = "Survive a match", stat = "survived", goal = 1, coins = 40, xp = 40, period = "daily" },
-	{ id = "d_tasks5", text = "Work 5 case files", stat = "tasks", goal = 5, coins = 40, xp = 40, period = "daily" },
-	{ id = "d_tasks8", text = "Work 8 case files", stat = "tasks", goal = 8, coins = 60, xp = 60, period = "daily" },
-	{
-		id = "d_note1",
-		text = "Find a paper note",
-		stat = "notesFound",
-		goal = 1,
-		coins = 50,
-		xp = 50,
-		period = "daily",
-	},
-	{
-		id = "d_vote1",
-		text = Terms.f("Vote for {hand} once"),
-		stat = "correctVotes",
-		goal = 1,
-		coins = 50,
-		xp = 50,
-		period = "daily",
-	},
-	{ id = "d_souls3", text = "Gather 3 lost souls", stat = "duties", goal = 3, coins = 40, xp = 40, period = "daily" },
-	{
-		id = "d_report1",
-		text = "Vote in a meeting",
-		stat = "reports",
-		goal = 1,
-		coins = 30,
-		xp = 30,
-		period = "daily",
-	},
-	-- Deathsinger (period "ghost")
-	{ id = "g_souls5", text = "Gather 5 lost souls", stat = "duties", goal = 5, coins = 40, xp = 40, period = "ghost" },
-	{
-		id = "g_wager1",
-		text = "Win a Death's wager",
-		stat = "wagersWon",
-		goal = 1,
-		coins = 50,
-		xp = 50,
-		period = "ghost",
-	},
-	{
-		id = "g_haunt3",
-		text = "Haunt the lobby 3 times",
-		stat = "haunts",
-		goal = 3,
-		coins = 30,
-		xp = 30,
-		period = "ghost",
-	},
-	{
-		id = "g_wager2",
-		text = "Win 2 Death's wagers",
-		stat = "wagersWon",
-		goal = 2,
-		coins = 70,
-		xp = 70,
-		period = "ghost",
-	},
+	-- matches
+	q("d_play3", "Play 3 matches", "matches", 3, 90, "daily"),
+	q("d_play5", "Play 5 matches", "matches", 5, 150, "daily"),
+	-- wins
+	q("d_win1", "Win a match", "wins", 1, 80, "daily"),
+	q("d_win2", "Win 2 matches", "wins", 2, 170, "daily"),
+	q("d_winalive", "Win a match and live to see it", "wins", 1, 110, "daily", { when = "wonAlive" }),
+	q("d_winalive2", "Win 2 matches without dying", "wins", 2, 220, "daily", { when = "wonAlive" }),
+	-- surviving
+	q("d_survive2", "Survive 2 matches", "survived", 2, 100, "daily"),
+	q("d_survive3", "Survive 3 matches", "survived", 3, 150, "daily"),
+	-- case files
+	q("d_tasks12", "Work 12 case files", "tasks", 12, 90, "daily"),
+	q("d_tasks20", "Work 20 case files", "tasks", 20, 150, "daily"),
+	q("d_tasksone", "Work 8 case files in a single match", "tasks", 1, 120, "daily", { each = 8 }),
+	q("d_tasksalive", "Work 6 case files and survive, twice", "tasks", 2, 150, "daily", { when = "survived", each = 6 }),
+	-- paper notes
+	q("d_note2", "Find 2 paper notes", "notesFound", 2, 100, "daily"),
+	q("d_note3", "Find 3 paper notes", "notesFound", 3, 150, "daily"),
+	q("d_noteone", "Find 2 paper notes in a single match", "notesFound", 1, 110, "daily", { each = 2 }),
+	-- votes
+	q("d_vote2", Terms.f("Vote for {hand} twice"), "correctVotes", 2, 130, "daily"),
+	q("d_vote3", Terms.f("Vote for {hand} 3 times"), "correctVotes", 3, 190, "daily"),
+	q("d_voteone", Terms.f("Vote for {hand} twice in a single match"), "correctVotes", 1, 140, "daily", { each = 2 }),
+	-- meetings
+	q("d_report3", "Vote in 3 meetings", "reports", 3, 90, "daily"),
+	q("d_report2one", "Vote in 2 meetings in a single match", "reports", 1, 100, "daily", { each = 2 }),
 	-- weekly
-	{
-		id = "w_play10",
-		text = "Play 10 matches",
-		stat = "matches",
-		goal = 10,
-		coins = 200,
-		xp = 200,
-		period = "weekly",
-	},
-	{
-		id = "w_play20",
-		text = "Play 20 matches",
-		stat = "matches",
-		goal = 20,
-		coins = 350,
-		xp = 350,
-		period = "weekly",
-	},
-	{ id = "w_win5", text = "Win 5 matches", stat = "wins", goal = 5, coins = 250, xp = 250, period = "weekly" },
-	{ id = "w_win10", text = "Win 10 matches", stat = "wins", goal = 10, coins = 400, xp = 400, period = "weekly" },
-	{
-		id = "w_survive5",
-		text = "Survive 5 matches",
-		stat = "survived",
-		goal = 5,
-		coins = 200,
-		xp = 200,
-		period = "weekly",
-	},
-	{
-		id = "w_tasks40",
-		text = "Work 40 case files",
-		stat = "tasks",
-		goal = 40,
-		coins = 250,
-		xp = 250,
-		period = "weekly",
-	},
-	{
-		id = "w_notes5",
-		text = "Find 5 paper notes",
-		stat = "notesFound",
-		goal = 5,
-		coins = 250,
-		xp = 250,
-		period = "weekly",
-	},
-	{
-		id = "w_votes3",
-		text = Terms.f("Vote for {hand} 3 times"),
-		stat = "correctVotes",
-		goal = 3,
-		coins = 250,
-		xp = 250,
-		period = "weekly",
-	},
-	{
-		id = "w_souls15",
-		text = "Gather 15 lost souls",
-		stat = "duties",
-		goal = 15,
-		coins = 200,
-		xp = 200,
-		period = "weekly",
-	},
-	{
-		id = "w_reports5",
-		text = "Vote in 5 meetings",
-		stat = "reports",
-		goal = 5,
-		coins = 200,
-		xp = 200,
-		period = "weekly",
-	},
+	q("w_play10", "Play 10 matches", "matches", 10, 200, "weekly"),
+	q("w_play20", "Play 20 matches", "matches", 20, 350, "weekly"),
+	q("w_win5", "Win 5 matches", "wins", 5, 250, "weekly"),
+	q("w_win10", "Win 10 matches", "wins", 10, 400, "weekly"),
+	q("w_survive5", "Survive 5 matches", "survived", 5, 200, "weekly"),
+	q("w_tasks40", "Work 40 case files", "tasks", 40, 250, "weekly"),
+	q("w_notes5", "Find 5 paper notes", "notesFound", 5, 250, "weekly"),
+	q("w_votes3", Terms.f("Vote for {hand} 3 times"), "correctVotes", 3, 250, "weekly"),
+	q("w_winalive3", "Win 3 matches and survive each", "wins", 3, 300, "weekly", { when = "wonAlive" }),
+	q("w_reports5", "Vote in 5 meetings", "reports", 5, 200, "weekly"),
 } :: { Quest }
 
 Quests.PER_PERIOD = 3
@@ -212,11 +139,6 @@ end
 
 function Quests.weekly(week: number): { string }
 	return pick("weekly", week * 130363 + 11)
-end
-
--- The day's three Deathsinger quests.
-function Quests.ghost(day: number): { string }
-	return pick("ghost", day * 92821 + 7)
 end
 
 -- A replacement daily quest for a reroll: one not already held, on a different stat.
