@@ -22,6 +22,11 @@ What the check behind it found that day:
 - **Nothing erodes** (every particle leaves by fading), and **no tool shows an effect as pictures** (`Clock.hold`
   exists; nothing uses it).
 
+**Decided 2026-11-16, colour:** asked whether shop effects (emotes, cosmetics) should use full colour instead of
+the grey rule, the owner said "Yes, full colour". Shop effects wear their own colour (or their tier's) at full
+strength and are never washed toward grey; world and gameplay effects keep `docs/vfx.md` rule 1 (they were not part
+of the question).
+
 **Why:** this is the third "make the effects high quality" round (2026-10-24, 2026-11-12/14, now). The earlier
 rounds added layers and counts of the same sprites; the look did not change because the textures and the lack of a
 picture loop did not change.

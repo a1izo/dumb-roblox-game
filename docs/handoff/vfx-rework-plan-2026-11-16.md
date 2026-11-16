@@ -27,14 +27,22 @@ Nothing is built. No ticket is started. The order is fixed:
 Stage 0 tickets V0.1, V0.3 and V0.4 touch different files and can run at the same time in separate sessions. So can
 Stage 1 (Python and Blender) and Stage 2 (Luau), because the texture names are fixed in this file (Part 5).
 
+## Decided by the owner
+
+- **Colour (2026-11-16: "Yes, full colour").** Asked whether shop effects (emotes, cosmetics) should use full colour
+  instead of the grey rule, the owner said yes. So: anything bought in the shop (emotes, Manual covers, writing
+  styles, verdicts, win cutscenes, Deathsinger forms, custom deaths) wears its own colour at full strength, or its
+  tier's colour when it has none of its own. Do not wash a shop effect toward grey, bone or white: only its
+  white-hot core is white. World and gameplay effects (candles, haze, rain, deaths by plain causes, the Trial's
+  wisp, the eyes) were not part of the question and keep `docs/vfx.md` rule 1. Each emote keeps the colour already
+  chosen for it (The Long Climb green, Jackpot Shuffle green, the aura colours in `EmoteFx`'s `AURAS`); crimson as
+  a *tier* colour is still Godhood's.
+
 ## Open questions for the owner (work goes on with the defaults)
 
-1. **Colour.** `docs/vfx.md` rule 1 says effects live in greys, bone and soft white, and colour is earned. The auras
-   already have their own colours (2026-10-26). Default taken here: world and gameplay effects keep the grey rule;
-   anything bought in the shop (emotes, covers, writing, verdicts, wins, forms) wears its own colour at full strength.
-2. **Where textures come from.** Default: made here, by Blender simulation and by script, nothing borrowed (the
+1. **Where textures come from.** Default: made here, by Blender simulation and by script, nothing borrowed (the
    2026-10-24 commit: "drawn for the game, not borrowed"). Free CC0 packs or generated images only on the owner's yes.
-3. **The bar.** The references on file are Ink Game's emotes and Jujutsu Shenanigans' bursts (2026-10-24). If the
+2. **The bar.** The references on file are Ink Game's emotes and Jujutsu Shenanigans' bursts (2026-10-24). If the
    owner can name three to five exact effects they think are great, V0.4 uses those first.
 
 ## Read these first
@@ -361,6 +369,8 @@ Luau only. Old function names keep working until Stage 4 has moved their callers
 - **V2.4 Ramps.** `Emit` specs take `ramp = { core, body, edge }` (three colours) in place of `color`, expanded to
   a ColorSequence white-hot at birth, body through the middle, edge at death; and `Vfx/Palette.luau` holds the
   ramps: one per rarity tier (`src/shared/Rarity.luau`), the world's greys, danger red, and each emote's own.
+  Shop ramps are full colour (the owner, 2026-11-16): the body is the item's colour at full saturation and the
+  edge is a darker, deeper shade of the same hue, never a grey.
 - **V2.5 Recipes, remade and added** in `Vfx/Recipes.luau` (split it by family if it passes 800 lines). Each built
   on `Moment`, each with a dark layer, each from the new textures, each against its reference file:
   `impact` (styles `sharp`, `heavy`, `soft`), `slam`, `slash`, `glint` (replaces `twinkle`), `pillar`, `flame`,
@@ -507,3 +517,5 @@ verdict where there was a gate.)
 
 - 2026-11-16, the plan written. Checked that day: the place has the real Fx textures (no stand-ins), the texture
   measurements of Part 2, the usage counts of Part 2. Not done: no effect was watched in the game.
+- 2026-11-16, the owner's answer on colour: "Yes, full colour" for shop effects (see "Decided by the owner").
+  `docs/vfx.md` rule 1 amended to match.
