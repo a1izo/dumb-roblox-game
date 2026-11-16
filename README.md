@@ -195,7 +195,7 @@ Every action also has an on-screen button for touch devices, and gamepads are su
   read the meeting without typing, watch the cutscenes, and go back to the lobby when they
   leave or the case closes. You cannot be queued and watching at once; a party member readying
   up brings you back.
-- **Shop and Robux** ("Death's hand"): hats, notebook covers, writing, verdict and death styles,
+- **Shop and Robux** ("Death's hand"): hats, notebook covers, writing and death styles,
   Deathsinger forms, emotes, titles, win cutscenes (one for each side, played by the winning side's
   lead for everyone at the ending), seats and chairs for the war table, matching sets, a daily hand of
   six plus a deal at a quarter off, Fate's weekly draw (odds shown, coins only), the Season ledger

@@ -9,7 +9,7 @@
 
 local Migrations = {}
 
-Migrations.CURRENT = 10
+Migrations.CURRENT = 11
 
 -- Internal role ids; they never change even though the displayed names do.
 local ROLE_IDS = { "Kira", "Follower", "L", "Watari", "TaskForce" }
@@ -329,6 +329,33 @@ local STEPS: { [number]: (any) -> () } = {
 			and (type(data.deathLoadout) ~= "table" or #data.deathLoadout == 0)
 		then
 			data.deathLoadout = { worn, "", "", "" }
+		end
+	end,
+	-- v10 -> v11 (2026-11-16, the owner's call, no refund): Ace's verdict styles left the game (the six verdict_ items,
+	-- the Ace shop tab and the verdict slot). Whoever owned one loses it, worn or not, and it goes from the wishlist and
+	-- the new-cards list too.
+	[10] = function(data)
+		for _, key in ipairs({ "owned", "wishlist", "shopSeen" }) do
+			local map = data[key]
+			if type(map) == "table" then
+				local ids = {}
+				for id in pairs(map) do
+					table.insert(ids, id)
+				end
+				for _, id in ipairs(ids) do
+					if type(id) == "string" and string.sub(id, 1, 8) == "verdict_" then
+						map[id] = nil
+					end
+				end
+			end
+		end
+		if type(data.equipped) == "table" then
+			data.equipped.verdict = nil
+			for slot, id in pairs(data.equipped) do
+				if type(id) == "string" and string.sub(id, 1, 8) == "verdict_" then
+					data.equipped[slot] = nil
+				end
+			end
 		end
 	end,
 }

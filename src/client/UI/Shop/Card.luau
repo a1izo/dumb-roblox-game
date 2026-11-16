@@ -9,7 +9,7 @@
 --   Godhood    a crimson edge glowing in from it, and motes of page drifting up
 --   (no shine and no drifting under reduced motion)
 --
--- Objects (hats, ties, Manual covers, chairs) are a small 3D view; a verdict is its scene at its moment, a form a
+-- Objects (hats, ties, Manual covers, chairs) are a small 3D view; a form is a
 -- floating wraith wearing it, a death a body caught half way through it, a writing style a name written in it on its
 -- page (never a glyph standing for them: the owner, 2026-10-25); an emote is a small pale mannequin caught in its
 -- move (Shop/PoseFigure), with its props; a title its nameplate. Picked, the card lifts. A card of Today's hand can lie face
@@ -59,7 +59,6 @@ local CHIP_ICONS = { "real", "check", "lock" }
 -- The still for kinds with no 3D view: an icon (styles and emotes come in suits of their own).
 local STILL_ICON = {
 	writing = "quill",
-	verdict = "zero",
 	emote = "palm",
 	specter = "ghost",
 }
@@ -136,7 +135,7 @@ local function propOf(item: Cosmetics.Item): string?
 end
 
 -- Styles' and forms' own pictures (the owner, 2026-10-25: "dont use emojis to portray anything in the shop"): a
--- verdict at its moment, a form on a floating wraith, a death caught half way, a name written in the style. Effects a
+-- form on a floating wraith, a death caught half way, a name written in the style. Effects a
 -- 3D view cannot draw are laid over it as stills (Presentation/ViewFx).
 local SAMPLE_NAME = "Kenji Mori" -- (as in Your look: a name from the pools, nobody's in a case)
 
@@ -314,12 +313,7 @@ end
 local function picture(item: Cosmetics.Item, parent: GuiObject): (GuiObject?, Model?)
 	local kind = item.kind
 	local style = item.style
-	if kind == "verdict" and type(style) == "string" then
-		local view = Styles.verdictStill(style, parent)
-		if view then
-			return view, nil
-		end
-	elseif kind == "specter" and type(item.form) == "string" then
+	if kind == "specter" and type(item.form) == "string" then
 		local view = formPicture(item, parent)
 		if view then
 			return view, nil
@@ -783,7 +777,6 @@ local KIND_WORD: { [string]: string } = {
 	title = "Title",
 	movingTitle = "Moving title", -- (a title whose letters move: Shared/TitleMotion)
 	writing = "Writing",
-	verdict = "Verdict",
 	emote = "Emote",
 	win = "Cutscene",
 	seat = "Seat",

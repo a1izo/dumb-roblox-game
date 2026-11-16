@@ -3,7 +3,7 @@
 --   kind    grimoire (the cover of the Manual
 --           Diavolo holds while writing), specter (your form as a Deathsinger: `form` names what it wears),
 --           title (shown in the lobby and on the results screen only), writing (how Diavolo's
---           names go into the Manual: `style`), verdict (how Ace's arrest lands: `style`), death
+--           names go into the Manual: `style`), death
 --           (what becomes of you when you die: `style`), emote (`emote` is its clip, `category` its
 --           section in the shop: dance, pose, prop, stroll or duo; `lobbyOnly` when it looks like a
 --           game signal, a death, an arrest or the Eyes, so it is never played in a match), seat (how you sit
@@ -24,7 +24,7 @@
 --
 -- Role neutrality: nothing here may show or hide what role someone has. A Manual cover only
 -- shows while Diavolo writes, when he is in plain sight anyway, and ghosts are only ever
--- seen by other ghosts. A writing or verdict style is never a public attribute: during a case
+-- seen by other ghosts. A writing style is never a public attribute: during a case
 -- only its owner sees it, and everyone once that identity is out (the server sends it in the
 -- cues).
 
@@ -260,74 +260,6 @@ Cosmetics.ITEMS = {
 		price = 600,
 		style = "frost",
 		color = Color3.fromRGB(150, 200, 235),
-	},
-
-	-- Verdict styles (Ace's arrest)
-	{
-		id = "verdict_gavel",
-		kind = "verdict",
-		name = "Final Gavel",
-		blurb = "One strike of the gavel.",
-		rarity = "rare",
-		source = "shop",
-		price = 300,
-		style = "gavel",
-		color = Color3.fromRGB(120, 78, 50),
-	},
-	{
-		id = "verdict_cuffs",
-		kind = "verdict",
-		name = "Iron Cuffs",
-		blurb = "Cuffs snap shut with a spark.",
-		rarity = "rare",
-		source = "shop",
-		price = 350,
-		style = "cuffs",
-		color = Color3.fromRGB(190, 194, 204),
-	},
-	{
-		id = "verdict_checkmate",
-		kind = "verdict",
-		-- (renamed so it doesn't share a name with the Bureau's Godhood win cutscene)
-		name = "Endgame",
-		blurb = "The king falls and cracks.",
-		rarity = "epic",
-		source = "shop",
-		price = 650,
-		style = "checkmate",
-		color = Color3.fromRGB(40, 40, 44),
-	},
-	{
-		id = "verdict_sugar",
-		kind = "verdict",
-		name = "Sweet Justice",
-		blurb = "The top sugar cube gets flicked off.",
-		rarity = "legendary",
-		source = "mastery",
-		style = "sugar",
-		color = Color3.fromRGB(244, 242, 236),
-	},
-	{
-		id = "verdict_stamp",
-		kind = "verdict",
-		name = "Guilty Stamp",
-		blurb = "GUILTY, stamped on their file.",
-		rarity = "common",
-		source = "shop",
-		price = 200,
-		style = "stamp",
-		color = Color3.fromRGB(150, 152, 158),
-	},
-	{
-		id = "verdict_lamp",
-		kind = "verdict",
-		name = "Interrogation Lamp",
-		blurb = "One lamp, one chair, everything else dark.",
-		rarity = "epic",
-		source = "shop",
-		price = 600,
-		style = "lamp",
-		color = Color3.fromRGB(255, 236, 190),
 	},
 
 	-- Custom deaths (2026-10-25): a cause of death of your own to write in the Manual. Put in one of Diavolo's four death
@@ -1536,7 +1468,6 @@ Cosmetics.KINDS = {
 	"specter",
 	"title",
 	"writing",
-	"verdict",
 	"reason",
 	"emote",
 	"win",
@@ -1549,7 +1480,6 @@ Cosmetics.KIND_NAMES = {
 	specter = "Deathsinger forms",
 	title = "Titles",
 	writing = "Writing styles",
-	verdict = "Verdict styles",
 	reason = "Custom deaths",
 	emote = "Emotes",
 	win = "Win cutscenes",
@@ -1564,7 +1494,6 @@ export type Suit = { id: string, name: string, icon: string, kinds: { string }? 
 Cosmetics.SUITS = {
 	{ id = "today", name = "Today's hand", icon = "cards" },
 	{ id = "diavolo", name = Terms.f("{Hand}"), icon = "quill", kinds = { "writing", "grimoire" } },
-	{ id = "ace", name = Terms.f("{Zero}"), icon = "zero", kinds = { "verdict" } },
 	{ id = "reasons", name = "Custom deaths", icon = "grimoire", kinds = { "reason" } },
 	{ id = "emotes", name = "Emotes", icon = "palm", kinds = { "emote" } },
 	{ id = "wins", name = "Win cutscenes", icon = "flag", kinds = { "win" } },
@@ -1595,7 +1524,6 @@ Cosmetics.KIND_SINGULAR = {
 	specter = "Deathsinger form",
 	title = "Title",
 	writing = "Writing style",
-	verdict = "Verdict style",
 	reason = "Custom death",
 	emote = "Emote",
 	win = "Win cutscene",

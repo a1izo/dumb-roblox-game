@@ -3,6 +3,8 @@
 Written 2026-11-16 for other agents (cheaper models included) to carry out. The owner's words: "currently anything
 that uses vfx such as animations, emotes, cosmetics etc look horrible and cheap". The ask: rework all of it.
 
+**Update 2026-11-16: Ace's verdict styles are gone** (the owner: "remove ace shop and verdict styles completely"). `Presentation/Verdicts.luau`, the verdict stills in `Styles.luau` and the `verdict` family are deleted: skip every verdict row, count and ticket below.
+
 How to use this file. Read Parts 1 to 3 once, whole. Then take the next open ticket in the Status block, do exactly
 that ticket, commit it by itself, log it at the bottom, and stop where the ticket says stop. A ticket is written so
 it can be done without the conversation that produced this plan. If a ticket is unclear or a gate cannot be met,

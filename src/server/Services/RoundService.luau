@@ -18,7 +18,6 @@ local LOAD_TIMEOUT = 30 -- the longest the start waits for the clients to load t
 local LOAD_GRACE = 6 -- once most are ready, how much longer the last ones get
 local Config = require(Shared:WaitForChild("Config"))
 local ManualTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("ManualTiming"))
-local VerdictTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("VerdictTiming"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
 local Trial = require(Shared:WaitForChild("Trial"))
@@ -448,14 +447,6 @@ local function outroPlan(winner: string)
 	local opening = if cutLength > 0 then cutLength else half
 	-- (Ace's spotlight: the Bureau won with no win cutscene of Ace's, and Ace stands at the table)
 	local ace = if winner == "Team" and cutLength == 0 and base > 0 and lead and lead.alive then ACE_SHOT else 0
-	-- (Ace's verdict, full screen, the ending's last beat when the Bureau won: Presenters/Outro)
-	local zero = Match.findRole("L")
-	local verdict = if winner == "Team"
-			and base > 0
-			and zero
-			and CosmeticsService.style(zero.player, "verdict")
-		then VerdictTiming.LENGTH
-		else 0
 	local private = {}
 	for _, ps in ipairs(Match.list) do
 		if ps ~= lead and ps.player and (winner == "Team") ~= Match.isKiraSide(ps) then
@@ -469,10 +460,10 @@ local function outroPlan(winner: string)
 		lead = if lead then lead.userId else nil,
 		leadAlias = if lead then lead.alias else nil,
 		centrepiece = if cutLength > 0 then cut else nil,
-		timing = { opening = opening, book = book, ace = ace, hand = half, verdict = verdict },
+		timing = { opening = opening, book = book, ace = ace, hand = half },
 		aceUserId = if ace > 0 and lead then lead.userId else nil,
 		private = private,
-		length = if base > 0 then opening + book + ace + half + verdict else 0,
+		length = if base > 0 then opening + book + ace + half else 0,
 	}
 end
 
@@ -500,9 +491,8 @@ local function outroData(winner: string)
 		center = meetingCenter(),
 		-- Every name written in the Manual this match (filtered when written), struck once it killed.
 		written = Match.written,
-		-- The case is closed: Diavolo's writing style and Ace's verdict style, for everyone.
+		-- The case is closed: Diavolo's writing style, for everyone.
 		writing = if hand then CosmeticsService.style(hand.player, "writing") else nil,
-		verdict = if zero then CosmeticsService.style(zero.player, "verdict") else nil,
 		duration = math.max(outroLength(), 10),
 	}
 end
@@ -684,7 +674,7 @@ end
 
 -- After a winner: let the last cutscene finish, play the outro, then show the results.
 local function finale()
-	Cues.waitHolds(6 + VerdictTiming.LENGTH)
+	Cues.waitHolds(6)
 	runPhase("Outro", startOutro, nil, { uncuttable = true, length = outroPlan(Match.winner or "Kira").length })
 	reveal()
 end
@@ -836,8 +826,8 @@ local function runMatch(players: { Player })
 		if Match.winner then
 			break
 		end
-		-- Let an arrest's scene play out before free roam starts again (its verdict too, ArrestService).
-		Cues.waitHolds(6 + VerdictTiming.LENGTH)
+		-- Let an arrest's scene play out before free roam starts again.
+		Cues.waitHolds(6)
 	end
 	finale()
 end

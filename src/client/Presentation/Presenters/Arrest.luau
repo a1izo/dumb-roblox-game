@@ -1,9 +1,7 @@
 -- Ace makes an arrest: a huge Aktura "A" slams onto the screen, two faceless operatives in black
 -- close in on the suspect, the cuffs click under flashing light, and a stamp says how it went. The
--- operatives are shadows made on this screen, never anyone's avatar (Ace stays hidden). Then Ace's verdict
--- style plays full screen (Presentation/Verdicts, since 2026-11-16: the gavel, the cuffs, the king, the sugar, the
--- stamp, the lamp, the arrested one's name on the case file): on Ace's screen alone, or on everyone's when the one
--- arrested is Diavolo (the server decides who gets it, and holds the match for it).
+-- operatives are shadows made on this screen, never anyone's avatar (Ace stays hidden). (Ace's verdict styles, which
+-- played after it, left the game on 2026-11-16.)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -21,11 +19,10 @@ local DeathFx = require(script.Parent.Parent.DeathFx)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local StageLight = require(script.Parent.Parent.StageLight)
 local Stage = require(script.Parent.Parent.Stage)
-local Verdicts = require(script.Parent.Parent.Verdicts)
 
 local C = Kit.color
 
-local SHOT = require(Shared:WaitForChild("Presentation"):WaitForChild("VerdictTiming")).ARREST
+local SHOT = 2.6
 
 local function slamZero()
 	local zero = Kit.text({
@@ -148,11 +145,6 @@ return function(cue)
 	stamp:Destroy()
 	removeOutline()
 	stage:destroy()
-	-- Ace's verdict style, full screen, once the cuffs have clicked.
-	local style = if type(data.verdict) == "string" then data.verdict else nil
-	if Verdicts.has(style) then
-		Verdicts.play(style, { named = if type(data.alias) == "string" then data.alias else nil, wait = true })
-	end
 	Cinema.letterbox(false)
 	CameraDirector.release(token)
 end

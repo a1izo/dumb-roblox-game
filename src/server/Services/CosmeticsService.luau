@@ -1,7 +1,7 @@
 -- Puts equipped cosmetics on players: the hat on the character, the notebook
 -- cover and Deathsinger form (its outline colour and what it wears) as player attributes (read
 -- wherever they show), and the title tag over the head in the lobby (never inside a match, where it
--- would give away who is behind an alias). Styles (writing, verdict, death) are never attributes:
+-- would give away who is behind an alias). Styles (writing, death) are never attributes:
 -- the services that play them read them here and send them in their cues (Shared/Cosmetics).
 -- A complete matching set earns its title (Shared/Sets), and owning so many emotes pays coins and a title
 -- once (Progression/Collection).
@@ -65,7 +65,7 @@ local function equipped(player: Player, data, kind: string): Cosmetics.Item?
 	return nil
 end
 
--- The style a player has on for a kind ("writing", "verdict" or "death"): the item's style name, or
+-- The style a player has on for a kind ("writing" or "death"): the item's style name, or
 -- nil (the plain one). Bots and players without a profile have none.
 function CosmeticsService.style(player: any, kind: string): string?
 	if typeof(player) ~= "Instance" then

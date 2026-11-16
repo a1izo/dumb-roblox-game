@@ -182,6 +182,28 @@ return function(t)
 			expect(table.concat(data.deathLoadout, ",")).to.equal("reason_heart,,,")
 			expect(data.equipped.reason).to.equal(nil)
 		end)
+		it("drops Ace's verdict styles from a v10 profile, worn or not, and keeps everything else", function()
+			local old = v1Profile()
+			old.v = 10
+			old.owned = { verdict_gavel = true, verdict_sugar = true, writing_frost = true, hat_cap = true }
+			old.equipped = { verdict = "verdict_gavel", writing = "writing_frost" }
+			old.wishlist = { verdict_lamp = true, book_red = true }
+			old.shopSeen = { verdict_stamp = true, book_red = true }
+			local data = Migrations.migrate(old, START)
+			expect(data.v).to.equal(Migrations.CURRENT)
+			expect(data.owned.verdict_gavel).to.equal(nil)
+			expect(data.owned.verdict_sugar).to.equal(nil)
+			expect(data.owned.writing_frost).to.equal(true)
+			expect(data.owned.hat_cap).to.equal(true)
+			expect(data.equipped.verdict).to.equal(nil)
+			expect(data.equipped.writing).to.equal("writing_frost")
+			expect(data.wishlist.verdict_lamp).to.equal(nil)
+			expect(data.wishlist.book_red).to.equal(true)
+			expect(data.shopSeen.verdict_stamp).to.equal(nil)
+			expect(data.shopSeen.book_red).to.equal(true)
+			local again = Migrations.migrate(data, START)
+			expect(again.owned.writing_frost).to.equal(true)
+		end)
 		it("changes nothing when run twice", function()
 			local once = Migrations.migrate(v1Profile(), START)
 			once.coins = 777
