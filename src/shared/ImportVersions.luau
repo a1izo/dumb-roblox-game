@@ -11,7 +11,7 @@ return {
 	MapsTokyo = 50,
 	ModelsAgency = 18,
 	ModelsCampus = 16,
-	ModelsCore = 40,
+	ModelsCore = 41,
 	ModelsFx = 3,
 	ModelsLobby = 23,
 	ModelsMeeting = 6,

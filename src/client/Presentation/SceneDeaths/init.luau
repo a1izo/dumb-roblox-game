@@ -74,8 +74,19 @@ local MODULES = {
 	dark = "Dark",
 }
 local loaded: { [string]: any } = {}
+-- Scenes of other kinds played the same way, by name (Presentation/Verdicts: Ace's verdict styles, "verdict:<style>").
+-- A def may add `origin` (where it is built), `look` (its LightingPresets.scenes key, else its name) and `fromBlack`
+-- ({ hold, fade } seconds of the black it opens on; a scene death's own is 0.3 and 0.45).
+local registered: { [string]: any } = {}
+
+function SceneDeaths.register(name: string, def: any)
+	registered[name] = def
+end
 
 local function scene(name: string): any
+	if registered[name] then
+		return registered[name]
+	end
 	if loaded[name] then
 		return loaded[name]
 	end
@@ -545,7 +556,7 @@ function SceneDeaths.play(name: string, options: Options?): () -> ()
 	end
 	local ctx = setmetatable({
 		name = name,
-		origin = SceneDeaths.ORIGIN,
+		origin = def.origin or SceneDeaths.ORIGIN,
 		stage = Stage.new(),
 		zero = zero,
 		clockZero = os.clock() - (workspace:GetServerTimeNow() - zero),
@@ -563,7 +574,7 @@ function SceneDeaths.play(name: string, options: Options?): () -> ()
 	SceneDeaths.lastCtx = ctx
 	SceneDeaths.current = name
 	-- (lit by its own look while it plays, not by whatever venue the far-off camera falls in)
-	LightingController.scene(name)
+	LightingController.scene(def.look or name)
 	local done = false
 	local runner: thread? = nil
 	local frameConn: RBXScriptConnection? = nil
@@ -575,7 +586,9 @@ function SceneDeaths.play(name: string, options: Options?): () -> ()
 		done = true
 		if SceneDeaths.current == name then
 			SceneDeaths.current = nil
-			LightingController.scene(nil)
+			if LightingController.currentScene() == (def.look or name) then
+				LightingController.scene(nil)
+			end
 		end
 		if frameConn then
 			frameConn:Disconnect()
@@ -618,11 +631,15 @@ function SceneDeaths.play(name: string, options: Options?): () -> ()
 		veil.Size = UDim2.fromScale(1, 1)
 		veil.ZIndex = 50
 		veil.Parent = gui
-		task.delay(0.3, function()
+		local hold, fade = 0.3, 0.45
+		if type(def.fromBlack) == "table" then
+			hold, fade = def.fromBlack[1], def.fromBlack[2]
+		end
+		task.delay(hold, function()
 			if veil.Parent then
-				TweenService:Create(veil, TweenInfo.new(0.45, Enum.EasingStyle.Sine), { BackgroundTransparency = 1 })
+				TweenService:Create(veil, TweenInfo.new(fade, Enum.EasingStyle.Sine), { BackgroundTransparency = 1 })
 					:Play()
-				task.delay(0.5, function()
+				task.delay(fade + 0.05, function()
 					veil:Destroy()
 				end)
 			end

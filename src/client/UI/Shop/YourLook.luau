@@ -614,9 +614,7 @@ local function preview(self: YourLook, item: Cosmetics.Item)
 			else emotePreview(self, item.emote)
 	elseif item.kind == "writing" and type(item.style) == "string" then
 		self.stopPreview = writePreview(self, item.style)
-	elseif item.kind == "verdict" and type(item.style) == "string" then
-		self.stopPreview =
-			Styles.verdict(item.style, self.viewport, UDim2.fromScale(0.5, 0.62), UDim2.fromScale(0.95, 0.6))
+	-- (a verdict is watched full screen with the card's Preview since 2026-11-16: Presentation/Verdicts)
 	elseif item.kind == "reason" and type(item.style) == "string" and self.copy then
 		self.stopPreview = deathPreview(self, item)
 	end

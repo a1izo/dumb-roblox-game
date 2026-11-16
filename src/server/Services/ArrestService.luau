@@ -15,6 +15,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
 local Net = require(Shared:WaitForChild("Net"))
 local Terms = require(Shared:WaitForChild("Terms"))
+local VerdictTiming = require(Shared:WaitForChild("Presentation"):WaitForChild("VerdictTiming"))
 
 local CosmeticsService = require(script.Parent.CosmeticsService)
 local Cues = require(script.Parent.Cues)
@@ -42,9 +43,11 @@ local function playArrest(ace, suspect, result: string)
 	MeetingService.standUp(suspect)
 	local data = { userId = suspect.userId, alias = suspect.alias, result = result }
 	local verdict = CosmeticsService.style(ace.player, "verdict")
+	-- (the verdict plays full screen after the arrest's shot: the match waits for it too)
+	local withVerdict = 4 + VerdictTiming.LENGTH
 	if verdict and result == "hand" then
 		data.verdict = verdict
-		Cues.fire("arrest", data, { hold = 4 })
+		Cues.fire("arrest", data, { hold = withVerdict })
 	elseif verdict and typeof(ace.player) == "Instance" then
 		local others = {}
 		for _, player in ipairs(Players:GetPlayers()) do
@@ -54,7 +57,7 @@ local function playArrest(ace, suspect, result: string)
 		end
 		local mine = table.clone(data)
 		mine.verdict = verdict
-		local id = Cues.fire("arrest", mine, { hold = 4, to = { ace.player } })
+		local id = Cues.fire("arrest", mine, { hold = withVerdict, to = { ace.player } })
 		Cues.fire("arrest", data, { to = others, sameAs = id })
 	else
 		Cues.fire("arrest", data, { hold = 4 })

@@ -10,8 +10,8 @@
 --            of the cut, a pale edge under the groove, splinters of paper), chalk (dust shaken off as it goes and
 --            falling under the grainy letters), frost (a cold breath where the letters form, crystals blooming
 --            along them). Plain without one. Styles.page and Styles.writeStill: the page, and a finished name on it.
---   verdict  how Ace's arrest lands (Presenters/Arrest, the ending): a small scene over the shot, its impacts drawn
---            over the view (Presentation/ViewFx: flares, rings, dust, sparks, a shake): gavel (struck twice on its
+--   verdict  the card pictures of Ace's verdicts (Styles.verdictStill; the verdicts themselves play full screen since
+--            2026-11-16, Presentation/Verdicts), each a small scene at its moment: gavel (struck twice on its
 --            block), cuffs (snapping shut on the case file with sparks and a glint), checkmate (the king topples
 --            and cracks across), sugar (the top cube flicked off, the tower falling in a puff of sugar), stamp
 --            (GUILTY slammed onto the file), lamp (a lamp on a cord swings in over an empty chair and the room goes
@@ -1397,34 +1397,6 @@ local function verdictView(parent: Instance, props: { [string]: any }): (Viewpor
 	camera.Parent = view
 	view.CurrentCamera = camera
 	return view, world
-end
-
--- Plays a verdict over the screen in a small 3D view (`parent`: a GuiObject or a ScreenGui; `size`
--- and `position` place the view). Returns a function that takes it away.
-function Styles.verdict(style: string?, parent: Instance, position: UDim2?, size: UDim2?): () -> ()
-	if not style then
-		return function() end
-	end
-	local view, world = verdictView(parent, {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = position or UDim2.fromScale(0.78, 0.5),
-		Size = size or UDim2.fromOffset(340, 300),
-		ZIndex = 8,
-	})
-	if style == "lamp" then
-		-- (the lamp's room: seen from lower down and further back, the cord's top out of sight)
-		(view.CurrentCamera :: Camera).CFrame = CFrame.lookAt(Vector3.new(0, 2.2, -6.4), Vector3.new(0, 1.5, 0.5))
-	end
-	verdictScene(world, style, view)
-	if not Motion.isReduced() then
-		local scale = Instance.new("UIScale")
-		scale.Scale = 0.85
-		scale.Parent = view
-		Motion.tween(scale, { Scale = 1 }, 0.25)
-	end
-	return function()
-		view:Destroy()
-	end
 end
 
 -- A verdict at its moment, still, filling `parent` (a card's picture): the gavel just landed, the cuffs shut with a

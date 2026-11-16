@@ -5,7 +5,7 @@
 -- then Death's Manual lies open on every name written in it this match, those that killed struck
 -- through (when any name was written), in the Hand's writing style; when the Bureau won without a cutscene
 -- of Ace's, the lights find Ace at the table; then they find the Hand, and when the Bureau won, Ace's verdict
--- style lands beside them. Winners and losers each hear their own music; the roster and rewards follow on
+-- style plays full screen as the last beat (Presentation/Verdicts, the Hand's name on the case file). Winners and losers each hear their own music; the roster and rewards follow on
 -- the results screen (where another winner's own win cutscene plays first, on their screen alone).
 -- The seconds of each part come from the server (RoundService's plan: data.timing).
 
@@ -22,12 +22,11 @@ local Kit = require(script.Parent.Parent.Parent.UI.Kit)
 local MusicController = require(script.Parent.Parent.Parent.Audio.MusicController)
 local Sfx = require(script.Parent.Parent.Parent.Audio.Sfx)
 local BookStage = require(script.Parent.Parent.BookStage)
-local Screens = require(script.Parent.Parent.Parent.UI.Screens)
 local CameraDirector = require(script.Parent.Parent.CameraDirector)
 local Cinema = require(script.Parent.Parent.Cinema)
 local ShotSolver = require(script.Parent.Parent.ShotSolver)
 local StageLight = require(script.Parent.Parent.StageLight)
-local Styles = require(script.Parent.Parent.Styles)
+local Verdicts = require(script.Parent.Parent.Verdicts)
 local WinCinema = require(script.Parent.Parent.WinCinema)
 
 local C = Kit.color
@@ -85,6 +84,14 @@ return function(cue)
 	local timing = if type(data.timing) == "table" then data.timing else {}
 	local bookTime = if #lines > 0 then tonumber(timing.book) or ManualTiming.OUTRO else 0
 	local aceTime = tonumber(timing.ace) or 0
+	-- (Ace's verdict, the last beat when the Bureau won: the Hand's beat ends that much sooner)
+	local verdict = if not handWon
+			and type(data.verdict) == "string"
+			and Verdicts.has(data.verdict)
+		then data.verdict
+		else nil
+	local verdictTime = if verdict then tonumber(timing.verdict) or 0 else 0
+	local handEnd = endAt - verdictTime
 	local firstShot = tonumber(timing.opening) or (left - bookTime) * 0.5
 	-- (another winner's own win cutscene comes before their results)
 	if participant and won and type(data.private) == "table" then
@@ -185,16 +192,13 @@ return function(cue)
 		if handRoot and handRoot:IsA("BasePart") then
 			table.insert(
 				cleanup,
-				StageLight.dip(handRoot.Position, 45, 0.3, math.max(1, endAt - workspace:GetServerTimeNow()))
+				StageLight.dip(handRoot.Position, 45, 0.3, math.max(1, handEnd - workspace:GetServerTimeNow()))
 			)
 		end
 		local rimColour = if handWon then Color3.fromRGB(255, 52, 60) else Color3.fromRGB(205, 220, 255)
 		table.insert(cleanup, StageLight.rim(hand, handWide.Position, rimColour, 3))
 		CameraDirector.cut(token, handWide, 55)
-		if not handWon and type(data.verdict) == "string" then
-			table.insert(cleanup, Styles.verdict(data.verdict, Screens.cinematic))
-		end
-		local rest = math.max(0.5, endAt - workspace:GetServerTimeNow())
+		local rest = math.max(0.5, handEnd - workspace:GetServerTimeNow())
 		CameraDirector.move(token, ShotSolver.frame(hand, { distance = 5, height = 0.8, angle = 8 }), rest * 0.9, 40)
 	end
 	if type(data.handAlias) == "string" then
@@ -211,7 +215,20 @@ return function(cue)
 		)
 	end
 
-	task.wait(math.max(0, endAt - workspace:GetServerTimeNow() - 0.3))
+	if verdict and verdictTime > 0 then
+		task.wait(math.max(0, handEnd - workspace:GetServerTimeNow()))
+		for index = #cleanup, 1, -1 do
+			cleanup[index]()
+		end
+		cleanup = {}
+		Verdicts.play(verdict, {
+			named = if type(data.handAlias) == "string" then data.handAlias else nil,
+			at = handEnd,
+			wait = true,
+		})
+	else
+		task.wait(math.max(0, endAt - workspace:GetServerTimeNow() - 0.3))
+	end
 	for index = #cleanup, 1, -1 do
 		cleanup[index]()
 	end

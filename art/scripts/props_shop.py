@@ -219,3 +219,138 @@ def marionette_bar():
         parts.append(mk.torus("Hook", 0.05, 0.012, (at[0], at[1], at[2] - 0.04), rot=(90, 0, 0), mat=iron,
                               major_segments=8, minor_segments=3))
     return parts, []
+
+
+# Ace's verdict desk (2026-11-16, the user: "check how verdict styles work and make them way more high quality"): the
+# pieces of the verdicts' insert shots (client Presentation/Verdicts), on the Core desk under a banker's lamp.
+WALNUT_A, WALNUT_B = srgb(34, 20, 12), srgb(78, 48, 30)
+
+
+@prop("SoundBlock", pivot="bottom", material="Wood", collide=False, texture=512, exact=True)
+def sound_block():
+    """A judge's sound block: a round of dark polished walnut, a moulded edge, a brass ring set into its top (Final
+    Gavel strikes it)."""
+    wood = mk.noisy("Sb_Walnut", WALNUT_A, WALNUT_B, roughness=0.3, kind="dark_wood")
+    brass = mk.noisy("Sb_Brass", BRASS_B, BRASS_A, roughness=0.25, metallic=1.0)
+    felt = mk.flat("Sb_Felt", srgb(22, 40, 28), 0.95)
+    profile = [(0.0, 0.0), (0.7, 0.0), (0.74, 0.03), (0.74, 0.08), (0.7, 0.11), (0.72, 0.15), (0.72, 0.24),
+               (0.68, 0.28), (0.6, 0.3), (0.0, 0.3)]
+    return [mk.lathe("Body", profile, mat=wood, segments=40),
+            mk.torus("Inlay", 0.44, 0.012, (0, 0, 0.3), mat=brass, major_segments=40, minor_segments=4),
+            mk.torus("InlayIn", 0.3, 0.008, (0, 0, 0.3), mat=brass, major_segments=36, minor_segments=4),
+            mk.cylinder("Felt", 0.69, 0.008, (0, 0, 0.004), mat=felt, verts=40)], []
+
+
+@prop("RubberStamp", pivot="bottom", material="Wood", collide=False, texture=512, exact=True)
+def rubber_stamp():
+    """An office rubber stamp: a turned walnut handle with a knob, a brass collar, a black block with the red rubber
+    die under it (Guilty Stamp; the word is the game's, printed where it lands)."""
+    wood = mk.noisy("Rs_Walnut", WALNUT_A, WALNUT_B, roughness=0.35, kind="dark_wood")
+    block = mk.noisy("Rs_Block", srgb(16, 16, 18), srgb(40, 38, 40), roughness=0.5)
+    brass = mk.noisy("Rs_Brass", BRASS_B, BRASS_A, roughness=0.3, metallic=1.0)
+    rubber = mk.flat("Rs_Rubber", srgb(120, 20, 26), 0.8, kind="rubber")
+    handle = [(0.0, 0.2), (0.12, 0.2), (0.1, 0.28), (0.08, 0.42), (0.085, 0.56), (0.12, 0.66), (0.17, 0.78),
+              (0.17, 0.86), (0.12, 0.93), (0.0, 0.95)]
+    return [pk.rounded("Block", (0.9, 0.56, 0.12), (0, 0, 0.1), block, r=0.02),
+            mk.box("Die", (0.84, 0.5, 0.04), (0, 0, 0.02), mat=rubber, bevel=0.006),
+            mk.cylinder("Collar", 0.15, 0.05, (0, 0, 0.185), mat=brass, verts=24, bevel=0.008),
+            mk.lathe("Handle", handle, mat=wood, segments=24)], []
+
+
+@prop("InkPad", pivot="bottom", material="Metal", collide=False, texture=512, exact=True)
+def ink_pad():
+    """A tin ink pad open on the desk: the black tin, its lid stood up behind on the hinge, the red-soaked felt in
+    it."""
+    tin = mk.noisy("Ip_Tin", srgb(18, 18, 20), srgb(52, 52, 56), roughness=0.35, metallic=0.8)
+    felt = mk.noisy("Ip_Felt", srgb(70, 8, 14), srgb(130, 18, 26), roughness=0.9, kind="cloth")
+    rim = mk.noisy("Ip_Rim", srgb(70, 70, 74), srgb(120, 120, 126), roughness=0.3, metallic=1.0)
+    gold = mk.flat("Ip_Print", srgb(176, 150, 96), 0.5)
+    parts = [pk.rounded("Tray", (1.0, 0.66, 0.1), (0, 0, 0.05), tin, r=0.02),
+             mk.box("Felt", (0.9, 0.56, 0.02), (0, 0, 0.1), mat=felt, bevel=0.004),
+             pk.rounded("Lid", (1.02, 0.03, 0.68), (0, 0.36, 0.42), tin, r=0.012),
+             mk.cylinder("Hinge", 0.018, 0.96, (0, 0.34, 0.1), rot=(0, 90, 0), mat=rim, verts=8)]
+    # (the brand on the lid's inside, facing the camera at the front)
+    parts.append(pk.text("Brand", "BUREAU", 0.08, (0, 0.343, 0.55), gold, rot=(90, 0, 0)))
+    return parts, []
+
+
+@prop("CaseFolder", pivot="bottom", material="Fabric", collide=False, texture=1024, exact=True)
+def case_folder():
+    """A case file lying open: a worn manila folder and its tab, the typed report on the right with a paper clip and a
+    photo clipped to it, loose sheets in the left cover (the game prints the name on it)."""
+    manila = mk.noisy("Cf_Manila", srgb(176, 148, 96), srgb(214, 188, 132), roughness=0.85, kind="paper")
+    paper = mk.noisy("Cf_Paper", srgb(214, 208, 192), srgb(240, 236, 224), roughness=0.85, kind="paper")
+    ink = mk.flat("Cf_Type", srgb(36, 34, 36), 0.6)
+    photo = mk.noisy("Cf_Photo", srgb(40, 40, 44), srgb(120, 118, 114), roughness=0.3)
+    steel = mk.flat("Cf_Clip", srgb(170, 172, 178), 0.25, metallic=1.0)
+    red = mk.flat("Cf_Red", srgb(140, 22, 30), 0.7)
+    parts = []
+    # the two covers, the left one a little raised at its outer edge where it was opened
+    for side, lift in ((-1, 0.04), (1, 0.0)):
+        grid = []
+        for j in range(5):
+            y = -0.78 + 1.56 * j / 4
+            row = []
+            for i in range(5):
+                u = i / 4
+                row.append((side * (0.02 + 1.14 * u), y, 0.012 + lift * u * u))
+            grid.append(row)
+        parts.append(mk.sheet("Cover", grid, manila, apart=0.008))
+    parts.append(mk.box("Tab", (0.5, 0.18, 0.008), (-0.7, 0.84, 0.012), mat=manila, bevel=0.003))
+    parts.append(mk.box("Spine", (0.04, 1.56, 0.014), (0, 0, 0.007), mat=manila))
+    # the report: two sheets a little askew, typed lines, a red band at its head
+    for k, (dx, rot) in enumerate(((0.58, -2.0), (0.6, 1.0))):
+        parts.append(mk.box("Sheet", (1.0, 1.36, 0.004), (dx, -0.02, 0.02 + 0.004 * k), rot=(0, 0, rot), mat=paper))
+    rng = __import__("random").Random(1116)
+    for r in range(13):
+        y = 0.42 - r * 0.075
+        x = 0.16
+        while x < 0.98:
+            w = rng.uniform(0.05, 0.16)
+            if x + w > 0.98:
+                break
+            parts.append(mk.box("Word", (w, 0.018, 0.003), (x + w / 2, y, 0.031), mat=ink))
+            x += w + rng.uniform(0.025, 0.05)
+    parts.append(mk.box("Band", (0.44, 0.07, 0.003), (0.36, 0.58, 0.031), mat=red))
+    # the photo clipped at the top right, a paper clip over its top edge
+    parts.append(mk.box("Photo", (0.32, 0.4, 0.006), (0.86, 0.44, 0.036), rot=(0, 0, 6), mat=photo, bevel=0.002))
+    parts.append(mk.box("PhotoBorder", (0.36, 0.44, 0.003), (0.86, 0.44, 0.0325), rot=(0, 0, 6), mat=paper))
+    for x in (0.8, 0.83, 0.86):
+        parts.append(mk.tube("Clip", (x, 0.56, 0.042), (x, 0.72, 0.042), 0.006, mat=steel, verts=4))
+    # loose sheets in the left cover
+    for k in range(3):
+        parts.append(mk.box("Loose", (0.96, 1.3, 0.004), (-0.6 + 0.02 * k, -0.05 + 0.015 * k, 0.03 + 0.005 * k),
+                            rot=(0, 0, -3 + 2.5 * k), mat=paper))
+    return parts, []
+
+
+@prop("ChessBoard", pivot="bottom", material="Wood", collide=False, texture=1024, exact=True)
+def chess_board():
+    """A tournament chess board: a walnut frame round 64 inlaid squares of ebony and maple (Endgame's board)."""
+    frame = mk.noisy("Cb_Walnut", WALNUT_A, WALNUT_B, roughness=0.3, kind="dark_wood")
+    dark = mk.noisy("Cb_Ebony", srgb(26, 18, 14), srgb(52, 36, 26), roughness=0.3, kind="dark_wood")
+    light = mk.noisy("Cb_Maple", srgb(196, 166, 120), srgb(230, 206, 160), roughness=0.3, kind="wood")
+    parts = [pk.rounded("Frame", (3.4, 3.4, 0.16), (0, 0, 0.08), frame, r=0.04)]
+    sq = 0.38
+    for i in range(8):
+        for j in range(8):
+            parts.append(mk.box("Square", (sq, sq, 0.01), ((i - 3.5) * sq, (j - 3.5) * sq, 0.165),
+                                mat=dark if (i + j) % 2 == 0 else light))
+    return parts, []
+
+
+@prop("ChessQueen", pivot="bottom", material="SmoothPlastic", collide=False, texture=256)
+def chess_queen():
+    """An ivory chess queen, a crown of points on her head: the piece that gives mate in Endgame."""
+    ivory = mk.noisy("Cq_Ivory", IVORY_A, IVORY_B, roughness=0.25, kind="plastic")
+    felt = mk.flat("Cq_Felt", srgb(30, 50, 34), 0.95)
+    profile = [(0.0, 0.0), (0.4, 0.0), (0.42, 0.06), (0.38, 0.13), (0.28, 0.19), (0.3, 0.25), (0.2, 0.33), (0.14, 0.72),
+               (0.12, 1.0), (0.24, 1.05), (0.25, 1.1), (0.14, 1.14), (0.2, 1.36), (0.24, 1.44), (0.0, 1.42)]
+    parts = [mk.lathe("Body", profile, mat=ivory, segments=20),
+             mk.cylinder("Felt", 0.39, 0.01, (0, 0, 0.004), mat=felt, verts=20),
+             mk.sphere("Top", 0.07, (0, 0, 1.5), mat=ivory, segments=10, rings=6)]
+    for k in range(8):
+        a = 2 * math.pi * k / 8
+        parts.append(mk.sphere("Point", 0.035, (0.22 * math.cos(a), 0.22 * math.sin(a), 1.47), mat=ivory, segments=8,
+                               rings=5))
+    return parts, []

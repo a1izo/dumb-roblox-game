@@ -390,28 +390,111 @@ def tea_tray():
     return parts, []
 
 
-@prop("BureauBadge", pivot="centre", material="Leather", collide=False, texture=256)
+@prop("BureauBadge", pivot="centre", material="Leather", collide=False, texture=1024, exact=True)
 def bureau_badge():
-    """An Operative's badge wallet held open: the gold shield on the right, the ID card on the left
-    (upright, its face to -Y)."""
-    leather = mk.noisy("Badge_Leather", LEATHER_A, LEATHER_B, scale=16, roughness=0.6)
-    gold = mk.noisy("Badge_Gold", BRASS_B, BRASS_A, scale=20, roughness=0.3, metallic=1.0)
-    card = mk.flat("Badge_Card", srgb(236, 238, 240), 0.5)
-    band = mk.flat("Badge_Band", srgb(24, 52, 110), 0.5)
-    photo = mk.flat("Badge_Photo", srgb(90, 92, 98), 0.6)
-    shield = [(0.0, 0.2), (0.12, 0.16), (0.16, 0.04), (0.11, -0.1), (0.0, -0.2), (-0.11, -0.1), (-0.16, 0.04),
-              (-0.12, 0.16)]
-    parts = [
-        mk.box("Left", (0.42, 0.03, 0.6), (-0.22, 0, 0), mat=leather, bevel=0.01),
-        mk.box("Right", (0.42, 0.03, 0.6), (0.22, 0, 0), mat=leather, bevel=0.01),
-        mk.extrude_shape("Shield", shield, 0.03, (0.22, -0.03, 0.02), rot=(90, 0, 0), mat=gold, bevel=0.008),
-        mk.cylinder("Seal", 0.07, 0.02, (0.22, -0.05, 0.03), rot=(90, 0, 0), mat=band, verts=20),
-        mk.box("Card", (0.34, 0.008, 0.5), (-0.22, -0.02, 0), mat=card),
-        mk.box("Band", (0.34, 0.01, 0.08), (-0.22, -0.022, 0.19), mat=band),
-        mk.box("Photo", (0.12, 0.01, 0.15), (-0.31, -0.022, 0.0), mat=photo),
-    ]
-    for k in range(3):
-        parts.append(mk.box("Line", (0.14, 0.01, 0.015), (-0.15, -0.022, 0.04 - 0.05 * k), mat=band))
+    """An Operative's badge wallet held open (upright, its face to -Y), remade 2026-11-16 for the user's "make the badge
+    way more high quality": stitched black leather with a fold; on the right a gold shield with a beaded rim, a
+    scalloped crown, laurels round a blue enamel seal with a star, THE BUREAU on its ribbon and the number on its
+    foot; on the left the ID card in its leather window (its blue band, the photo's silhouette, typed lines, a
+    signature, a silver seal and a bar code)."""
+    import propkit as pk  # (here: propkit imports this module)
+
+    leather = mk.noisy("Badge_Leather", LEATHER_A, LEATHER_B, scale=16, roughness=0.55)
+    thread = mk.flat("Badge_Thread", srgb(96, 84, 70), 0.8)
+    gold = mk.noisy("Badge_Gold", BRASS_B, BRASS_A, scale=20, roughness=0.22, metallic=1.0)
+    bright = mk.noisy("Badge_GoldBright", srgb(170, 136, 66), srgb(226, 194, 118), scale=20, roughness=0.18,
+                      metallic=1.0)
+    enamel = mk.flat("Badge_Enamel", srgb(18, 40, 96), 0.25)
+    card = mk.flat("Badge_Card", srgb(234, 234, 230), 0.5)
+    band = mk.flat("Badge_Band", srgb(20, 46, 104), 0.45)
+    ink = mk.flat("Badge_Ink", srgb(30, 30, 36), 0.6)
+    photo = mk.flat("Badge_Photo", srgb(150, 152, 158), 0.6)
+    figure = mk.flat("Badge_Figure", srgb(46, 48, 54), 0.6)
+    silver = mk.flat("Badge_Silver", srgb(186, 190, 198), 0.2, metallic=1.0)
+    white = mk.flat("Badge_White", srgb(240, 240, 236), 0.5)
+    parts = []
+    # the wallet: two halves with a fold between, stitched round their edges
+    for x in (-0.22, 0.22):
+        parts.append(pk.rounded("Half", (0.42, 0.03, 0.6), (x, 0, 0), leather, r=0.012))
+        w, h, inset = 0.42, 0.6, 0.022
+        corners = [(x - w / 2 + inset, h / 2 - inset), (x + w / 2 - inset, h / 2 - inset),
+                   (x + w / 2 - inset, -h / 2 + inset), (x - w / 2 + inset, -h / 2 + inset)]
+        for k in range(4):
+            (ax, az), (bx, bz) = corners[k], corners[(k + 1) % 4]
+            length = math.hypot(bx - ax, bz - az)
+            count = int(length / 0.03)
+            for n in range(count):
+                u0, u1 = (n + 0.2) / count, (n + 0.75) / count
+                parts.append(mk.tube("Stitch", (ax + (bx - ax) * u0, -0.0155, az + (bz - az) * u0),
+                                     (ax + (bx - ax) * u1, -0.0155, az + (bz - az) * u1), 0.0028, mat=thread,
+                                     verts=4))
+    parts.append(mk.cylinder("Fold", 0.017, 0.6, (0, 0, 0), mat=leather, verts=12))
+    # the shield (right half): a scalloped crown, straight sides, a pointed foot
+    cx, cz = 0.22, -0.005
+    outline = [(-0.165, 0.15), (-0.13, 0.19), (-0.085, 0.175), (-0.045, 0.21), (0.0, 0.235), (0.045, 0.21),
+               (0.085, 0.175), (0.13, 0.19), (0.165, 0.15), (0.16, 0.03), (0.145, -0.07), (0.11, -0.15),
+               (0.06, -0.2), (0.0, -0.235), (-0.06, -0.2), (-0.11, -0.15), (-0.145, -0.07), (-0.16, 0.03)]
+    parts.append(mk.extrude_shape("Shield", outline, 0.016, (cx, -0.024, cz), rot=(90, 0, 0), mat=gold,
+                                  bevel=0.004))
+    # a beaded rim along its edge and a fine line inside it
+    for scale, r, mat in ((0.97, 0.0065, bright), (0.84, 0.0032, bright)):
+        pts = [(cx + px * scale, cz + pz * scale) for px, pz in outline]
+        for k in range(len(pts)):
+            (ax, az), (bx, bz) = pts[k], pts[(k + 1) % len(pts)]
+            parts.append(mk.tube("Rim", (ax, -0.033, az), (bx, -0.033, bz), r, mat=mat, verts=6))
+    # the seal: a blue enamel disc in a gold ring, a five-pointed star on it
+    parts.append(mk.cylinder("Seal", 0.07, 0.008, (cx, -0.034, cz - 0.01), rot=(90, 0, 0), mat=enamel, verts=32))
+    parts.append(mk.torus("SealRing", 0.072, 0.0055, (cx, -0.037, cz - 0.01), rot=(90, 0, 0), mat=bright,
+                          major_segments=32, minor_segments=5))
+    star = []
+    for k in range(10):
+        a = math.pi / 2 + k * math.pi / 5
+        rr = 0.045 if k % 2 == 0 else 0.018
+        star.append((rr * math.cos(a), rr * math.sin(a)))
+    parts.append(mk.extrude_shape("Star", star, 0.006, (cx, -0.04, cz - 0.01), rot=(90, 0, 0), mat=bright,
+                                  bevel=0.0015))
+    # laurels: two arcs of leaves round the seal, meeting under it
+    for side in (-1, 1):
+        for n in range(7):
+            a = math.radians(-100 + n * 26)
+            lx = cx + side * 0.098 * math.cos(a)
+            lz = cz - 0.01 + 0.098 * math.sin(a)
+            # (a leaf: a tapered spindle along the arc, pointing up it)
+            tz = math.cos(a)
+            tx = side * -math.sin(a)
+            parts.append(mk.tube("Leaf", (lx - tx * 0.012, -0.034, lz - tz * 0.012),
+                                 (lx + tx * 0.016, -0.034, lz + tz * 0.016), 0.0065, 0.0015, mat=bright, verts=6))
+    # the ribbon over the seal with THE BUREAU, the number on a plate at the foot
+    parts.append(pk.rounded("Ribbon", (0.25, 0.006, 0.048), (cx, -0.035, cz + 0.115), enamel, r=0.004))
+    parts.append(pk.text("RibbonText", "THE BUREAU", 0.03, (cx, -0.0385, cz + 0.115), bright, depth=0.002))
+    parts.append(pk.rounded("Plate", (0.12, 0.006, 0.04), (cx, -0.035, cz - 0.135), enamel, r=0.004))
+    parts.append(pk.text("Number", "0417", 0.03, (cx, -0.0385, cz - 0.135), bright, depth=0.002))
+    # the ID card (left half) in its leather window (no pane: a bake is opaque and would hide the card)
+    lx = -0.22
+    parts.append(mk.box("Card", (0.34, 0.006, 0.5), (lx, -0.018, 0), mat=card))
+    parts.extend(pk.frame("Window", 0.37, 0.53, 0.025, 0.006, (lx, -0.02, 0), leather))
+    parts.append(mk.box("Band", (0.34, 0.004, 0.085), (lx, -0.0215, 0.205), mat=band))
+    parts.append(pk.text("Header", "THE BUREAU", 0.034, (lx, -0.0235, 0.212), white, depth=0.001))
+    parts.append(pk.text("Sub", "TASK FORCE OPERATIVE", 0.017, (lx, -0.0235, 0.177), white, depth=0.001))
+    # the photo: a grey square, a head-and-shoulders silhouette in it
+    parts.append(mk.box("Photo", (0.12, 0.004, 0.15), (lx - 0.085, -0.0215, 0.06), mat=photo))
+    parts.append(mk.sphere("Head", 0.028, (lx - 0.085, -0.024, 0.085), scale=(1.0, 0.2, 1.15), mat=figure,
+                           segments=12, rings=8))
+    parts.append(mk.box("Shoulders", (0.09, 0.003, 0.045), (lx - 0.085, -0.024, 0.008), mat=figure, bevel=0.01))
+    # typed lines beside the photo and under it, a signature, a silver seal, a bar code
+    for k, w in enumerate((0.13, 0.1, 0.12, 0.08)):
+        parts.append(mk.box("Line", (w, 0.003, 0.012), (lx + 0.01 + w / 2, -0.0225, 0.11 - 0.035 * k), mat=ink))
+    for k, w in enumerate((0.26, 0.2)):
+        parts.append(mk.box("Line", (w, 0.003, 0.012), (lx - 0.145 + w / 2, -0.0225, -0.06 - 0.032 * k), mat=ink))
+    sig = [(lx - 0.14, -0.13), (lx - 0.11, -0.115), (lx - 0.095, -0.14), (lx - 0.07, -0.118), (lx - 0.05, -0.135),
+           (lx - 0.02, -0.12)]
+    for k in range(len(sig) - 1):
+        parts.append(mk.tube("Sign", (sig[k][0], -0.0225, sig[k][1]), (sig[k + 1][0], -0.0225, sig[k + 1][1]), 0.0025,
+                             mat=ink, verts=4))
+    parts.append(mk.cylinder("Holo", 0.032, 0.003, (lx + 0.11, -0.0225, -0.125), rot=(90, 0, 0), mat=silver, verts=20))
+    for k in range(22):
+        wide = 0.004 if k % 3 else 0.007
+        parts.append(mk.box("Bar", (wide, 0.003, 0.04), (lx - 0.14 + k * 0.0105, -0.0225, -0.205), mat=ink))
     return parts, []
 
 
