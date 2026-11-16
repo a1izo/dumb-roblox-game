@@ -30,6 +30,7 @@ local Create = require(Shared:WaitForChild("Create"))
 local ModelLibrary = require(Shared:WaitForChild("ModelLibrary"))
 local Models = require(Shared:WaitForChild("Models"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local TitleMotion = require(Shared:WaitForChild("TitleMotion"))
 local TitleFonts = require(Shared:WaitForChild("TitleFonts"))
 local WorldFont = require(Shared:WaitForChild("WorldFont"))
@@ -779,6 +780,9 @@ local KIND_WORD: { [string]: string } = {
 	writing = "Writing",
 	emote = "Emote",
 	win = "Cutscene",
+	-- (a win cutscene names its side: "SEALED BUREAU WIN", "GODHOOD COVEN WIN")
+	winBureau = Terms.side("Team", "short") .. " win",
+	winCoven = Terms.side("Kira", "short") .. " win",
 	seat = "Seat",
 	chair = "Chair",
 }
@@ -940,7 +944,14 @@ function Card.new(item: Cosmetics.Item, props: { [string]: any }): Card
 		Parent = slot,
 	}) :: Frame
 	Kit.Base.corner(face, 8)
-	local edge = dress(face, item.rarity, if TitleMotion.of(item.id) then "movingTitle" else item.kind)
+	local edge = dress(
+		face,
+		item.rarity,
+		if TitleMotion.of(item.id)
+			then "movingTitle"
+			elseif item.kind == "win" and KIND_WORD[Cosmetics.slotOf(item)] then Cosmetics.slotOf(item)
+			else item.kind
+	)
 	local pictureBox = Kit.Base.make("Frame", {
 		Name = "PictureBox",
 		BackgroundColor3 = C.void,

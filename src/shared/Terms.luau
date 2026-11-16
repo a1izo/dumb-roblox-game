@@ -37,8 +37,8 @@ Terms.ROLE = {
 } :: { [string]: RoleNames }
 
 Terms.SIDE = {
-	Team = { name = "the Bureau", Name = "The Bureau", title = "THE BUREAU" },
-	Kira = { name = "the Coven", Name = "The Coven", title = "THE COVEN" },
+	Team = { name = "the Bureau", Name = "The Bureau", title = "THE BUREAU", short = "Bureau" },
+	Kira = { name = "the Coven", Name = "The Coven", title = "THE COVEN", short = "Coven" },
 }
 
 -- Phase ids come from Config.PHASE_TIME plus "Lobby".
@@ -138,7 +138,7 @@ function Terms.role(roleId: string, form: string?): string
 	return (names :: any)[form or "name"]
 end
 
--- A side's name ("Team" or "Kira") in the given form ("name" by default).
+-- A side's name ("Team" or "Kira") in the given form ("name" by default; "short" has no article: "Bureau").
 function Terms.side(sideId: string, form: string?): string
 	local names = Terms.SIDE[sideId] or Terms.SIDE.Team
 	return (names :: any)[form or "name"]
