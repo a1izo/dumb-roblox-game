@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 local Motion = require(script.Parent.Parent.Parent.UI.Core.Motion)
 local Clock = require(script.Parent.Clock)
 local Ease = require(script.Parent.Ease)
+local Probe = require(script.Parent.Probe)
 
 local Screen = {}
 
@@ -52,6 +53,9 @@ function Screen.shake(amount: number, seconds: number, speed: number?)
 	if Motion.shakeOff() then
 		return
 	end
+	if Probe.on then
+		Probe.screen("shake", seconds, amount)
+	end
 	bind()
 	table.insert(shakes, {
 		began = Clock.now(),
@@ -80,6 +84,9 @@ function Screen.flash(color: Color3, brightness: number, seconds: number)
 	if Motion.isReduced() or Motion.flashesOff() then
 		return
 	end
+	if Probe.on then
+		Probe.screen("flash", seconds, brightness)
+	end
 	local cc = Instance.new("ColorCorrectionEffect")
 	cc.Name = "DGVfxFlash"
 	cc.TintColor = color
@@ -102,6 +109,9 @@ function Screen.punch(degrees: number, seconds: number)
 	if not camera then
 		return
 	end
+	if Probe.on then
+		Probe.screen("punch", seconds, degrees)
+	end
 	local base = camera.FieldOfView
 	Clock.tween(seconds, Ease.outQuint, function(u)
 		if camera.Parent then
@@ -114,6 +124,9 @@ end
 function Screen.impact(bodies: { Model }, seconds: number?)
 	if Motion.isReduced() or Motion.flashesOff() then
 		return
+	end
+	if Probe.on then
+		Probe.screen("impact", seconds or 0.07, nil)
 	end
 	local cc = Instance.new("ColorCorrectionEffect")
 	cc.Name = "DGVfxImpact"

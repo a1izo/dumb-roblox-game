@@ -18,6 +18,7 @@
 
 local Tex = require(script.Parent.Tex)
 local Clock = require(script.Parent.Clock)
+local Probe = require(script.Parent.Probe)
 local Device = require(script.Parent.Parent.Parent.UI.Core.Device)
 local Governor = require(script.Parent.Parent.Parent.World.Governor)
 
@@ -165,6 +166,9 @@ function Emit.make(parent: Instance, spec: Spec): ParticleEmitter
 	end
 	e.Parent = parent
 	Clock.watch(e)
+	if Probe.on then
+		Probe.emit(e, spec)
+	end
 	return e
 end
 
@@ -232,7 +236,11 @@ function Emit.burst(at: CFrame | Vector3, spec: Spec | { any }, count: number?, 
 	for _, entry in ipairs(list) do
 		local s, n = entry[1], entry[2]
 		local e = Emit.make(holder, s)
-		e:Emit(math.max(1, math.floor(n * Emit.share() + 0.5)))
+		local made = math.max(1, math.floor(n * Emit.share() + 0.5))
+		e:Emit(made)
+		if Probe.on then
+			Probe.burst(e, n, made)
+		end
 		longest = math.max(longest, Emit.longest(s))
 	end
 	Clock.after(longest + 0.25, function()

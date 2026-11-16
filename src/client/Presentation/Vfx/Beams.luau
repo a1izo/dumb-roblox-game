@@ -6,6 +6,7 @@
 local Clock = require(script.Parent.Clock)
 local Ease = require(script.Parent.Ease)
 local Emit = require(script.Parent.Emit)
+local Probe = require(script.Parent.Probe)
 local Tex = require(script.Parent.Tex)
 
 local Beams = {}
@@ -65,6 +66,9 @@ function Beams.make(a0: Attachment, a1: Attachment, options: Options, parent: In
 	b.ZOffset = options.z or 0
 	b.Parent = parent
 	Clock.watch(b)
+	if Probe.on then
+		Probe.beam(b, options)
+	end
 	return b
 end
 
