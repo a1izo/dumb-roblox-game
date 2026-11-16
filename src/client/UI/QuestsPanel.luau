@@ -1,5 +1,4 @@
--- Quests and the daily streak. Three daily and three weekly quests (the same for everyone), three
--- Deathsinger quests a day (they only progress in cases you end as a Deathsinger),
+-- Quests and the daily streak. Three daily and three weekly quests (the same for everyone),
 -- progress from finished matches, and one free swap of a daily quest per day. The streak
 -- pops up once per session in the lobby when today's reward is waiting.
 
@@ -214,18 +213,6 @@ local function rebuild()
 	})
 	for _, item in ipairs(profile.quests.weekly.items) do
 		questCard(item, false, nextOrder())
-	end
-	local ghost = profile.quests.ghost
-	if type(ghost) == "table" and type(ghost.items) == "table" and #ghost.items > 0 then
-		Kit.heading({
-			text = "Deathsinger",
-			detail = "Deathsinger only. New in " .. formatTime(profile.nextDayIn or 0),
-			LayoutOrder = nextOrder(),
-			Parent = list,
-		})
-		for _, item in ipairs(ghost.items) do
-			questCard(item, false, nextOrder())
-		end
 	end
 end
 

@@ -109,7 +109,9 @@ local function statGrid(entries: { { string } }, order: number)
 		LayoutOrder = order,
 		Parent = list,
 	})
-	Kit.grid(grid, UDim2.new(0.25, -T.space.s, 0, CELL), T.space.l)
+	-- Four across: the cell leaves room for the three gaps (with only a gap's worth less than a quarter the four
+	-- did not fit, the fourth wrapped, and the frame, sized for two rows, ran into the "Roles" heading, 2026-11-16).
+	Kit.grid(grid, UDim2.new(0.25, -math.ceil(T.space.l * 3 / 4), 0, CELL), T.space.l)
 	for index, entry in ipairs(entries) do
 		local cell = Kit.frame({ Size = UDim2.fromScale(1, 1), LayoutOrder = index, Parent = grid })
 		bigText({ text = entry[2], size = 52, Parent = cell })
@@ -314,7 +316,7 @@ local function rebuild()
 		{ "Case files", tostring(stats.tasks) },
 		{ "Notes found", tostring(stats.notesFound or 0) },
 		{ "Correct votes", tostring(stats.correctVotes or 0) },
-		{ "Lost souls", tostring(stats.duties or 0) },
+		{ "Haunts", tostring(stats.haunts or 0) },
 	}, nextOrder())
 
 	Kit.heading({ text = "Roles", LayoutOrder = nextOrder(), Parent = list })

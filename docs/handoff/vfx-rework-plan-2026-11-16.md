@@ -15,7 +15,7 @@ judging it against a reference. A model that cannot read images must not take th
 
 ## Status (2026-11-16, the day the plan was written)
 
-Nothing is built. No ticket is started. The order is fixed:
+Nothing is built. V0.3 (the texture check) is done: see the Log. The order is fixed:
 
 | Stage | What | Tickets | Gate before the next stage |
 |---|---|---|---|
@@ -521,3 +521,52 @@ verdict where there was a gate.)
   measurements of Part 2, the usage counts of Part 2. Not done: no effect was watched in the game.
 - 2026-11-16, the owner's answer on colour: "Yes, full colour" for shop effects (see "Decided by the owner").
   `docs/vfx.md` rule 1 amended to match.
+- 2026-11-16, V0.3 the texture check (a tool: nothing to sync or import). `art/scripts/vfx/check_textures.py`, run with
+  Blender's Python: `check_textures.py [--calibrate] [--detail] [--table] [--selftest]`. It reads `Vfx*.png` from
+  `art/export/textures` (or the main checkout's folder), judges each by the grid and mode declared in a table at the
+  top (today's textures from `Vfx/Emit.luau` SHEETS and `textures.py`, plan Part 5's new names too) and writes nothing.
+  The five checks are the ticket's. Choices where the ticket was open: fill is judged on the largest cell (a
+  one-shot is born small); tone on the median over cells with 24 or more solid pixels, as the standard deviation of
+  the mean of r, g, b; motion is the mean over the whole cell of (|alpha change| + |premultiplied brightness change|)
+  / 2, and a loop's wrap may be up to 1.5 x the average step (a good smooth loop's wrap is the average give or take
+  noise, so "no bigger than the average" would fail half of them); islands are 8-connected and over 5 px, and a
+  one-shot must have more of them in the last third than in its fullest frame. Beam bands, halos, specks and
+  whole-frame singles (page, feather, slash, spike) are exempt from the checks that do not apply to them, by name in
+  the table. Calibration: VfxSmoke (largest cell 29%, mean 19%), VfxWisp (17%, mean 5%) and VfxCandleFlame (21%, mean
+  20%) fail fill, VfxCrack fails tone (0.000), as the ticket asks (`--calibrate` checks it). The tone numbers in
+  Part 2 (Smoke 0.044, Wisp 0.059, Candle 0.18, Crack 0.005) could not be reproduced by any variant tried (std of the
+  mean, 709 or max brightness, alpha over 0.1 or 0.5, per cell or pooled): this script gets 0.013, 0.000, 0.059 and
+  0.000; every fill figure in Part 2 matches. The "before" table, 2026-11-16, 23 textures, 7 pass, 16 fail (size on
+  legacy sheets is judged against the new 1024 x 1024 rule, so Ash, Chunk, Dust, Moth and Wisp fail it by design):
+
+  | texture | kind | size | fill max (mean) | edge cells | tone | motion | erosion | verdict |
+  |---|---|---|---|---|---|---|---|---|
+  | VfxAsh | 4x4 loop | 256x256 | 24% (18%) | 0/16 | 0.211 | 0.027 wrap 0.017 | - | FAIL <- size, fill |
+  | VfxBurst | single | 1024x1024 | 72% (72%) | 0/1 | 0.167 | - | - | PASS |
+  | VfxCandleFlame | 8x8 loop | 1024x1024 | 21% (20%) | 3/64 | 0.059 | 0.001 | - | FAIL <- fill, edge, tone, motion |
+  | VfxChunk | 2x2 random | 256x256 | 49% (41%) | 0/4 | 0.148 | - | - | FAIL <- size, fill |
+  | VfxCircle | single | 1024x1024 | 96% (96%) | 0/1 | 0.025 | - | - | FAIL <- tone |
+  | VfxColumn | single | 256x256 | - | - | 0.092 | - | - | FAIL <- tone |
+  | VfxCrack | single | 1024x1024 | 50% (50%) | 0/1 | 0.000 | - | - | FAIL <- fill, tone |
+  | VfxDust | 4x4 oneshot | 512x512 | 31% (24%) | 0/16 | 0.198 | 0.014 | cov 20%>15% isl 1>1 | FAIL <- size, fill, erosion |
+  | VfxEmber | single | 128x128 | - | 0/1 | - | - | - | PASS (exempt: fill, tone) |
+  | VfxFeather | single | 128x256 | - | - | 0.110 | - | - | FAIL <- tone |
+  | VfxFlame | 8x8 loop | 1024x1024 | 49% (39%) | 46/64 | 0.257 | 0.008 | - | FAIL <- fill, edge, motion |
+  | VfxFlare | single | 512x512 | - | 0/1 | - | - | - | PASS (exempt: fill, tone) |
+  | VfxGlow | single | 256x256 | - | 0/1 | - | - | - | PASS (exempt: fill, tone) |
+  | VfxMoth | 2x2 loop | 256x256 | 50% (33%) | 0/4 | 0.086 | 0.110 wrap 0.114 | - | FAIL <- size, fill, tone |
+  | VfxPage | single | 256x356 | - | - | 0.102 | - | - | FAIL <- tone |
+  | VfxRing | single | 512x512 | 82% (82%) | 0/1 | 0.034 | - | - | FAIL <- tone |
+  | VfxRingBand | single | 128x1024 | - | - | 0.097 | - | - | FAIL <- tone |
+  | VfxSlash | single | 512x256 | - | - | 0.111 | - | - | FAIL <- tone |
+  | VfxSlashBand | single | 128x1024 | - | - | 0.151 | - | - | PASS (exempt: fill, edge) |
+  | VfxSmoke | 8x8 oneshot | 1024x1024 | 29% (19%) | 0/64 | 0.013 | 0.003 | cov 19%>3% isl 1>2 | FAIL <- fill, tone, motion |
+  | VfxSpike | single | 128x512 | - | - | 0.154 | - | - | PASS (exempt: fill, edge) |
+  | VfxStreak | single | 64x512 | - | - | - | - | - | PASS (exempt: fill, edge, tone) |
+  | VfxWisp | 4x4 oneshot | 512x512 | 17% (5%) | 15/16 | 0.000 | 0.005 | cov 7%>0% isl 1>1 | FAIL <- size, fill, edge, tone, motion, erosion |
+
+  Seen while building it: VfxFlame bleeds into its neighbours (alpha over 0.02 within 3 px of the edge in 46 of 64
+  cells) and its motion is only just under the limit (0.0079, 64 frames at a small step each); VfxMoth's wrap step
+  (0.114) is the same size as its average (0.110), a clean 4-frame loop; VfxCircle and VfxRing are one-tone line
+  drawings (tone 0.025, 0.034); VfxDust and VfxWisp never break into islands (erosion fails: they fade). Not checked:
+  the preview pictures were not looked at, and no flipbook was played in the engine.

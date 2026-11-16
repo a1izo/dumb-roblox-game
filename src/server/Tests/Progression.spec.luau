@@ -88,9 +88,42 @@ return function(t)
 				stats[quest.stat] = true
 			end
 			expect(#Quests.weekly(3000)).to.equal(Quests.PER_PERIOD)
-			expect(#Quests.ghost(20000)).to.equal(Quests.PER_PERIOD)
-			for _, id in ipairs(Quests.ghost(20000)) do
-				expect((Quests.byId(id) :: any).period).to.equal("ghost")
+		end)
+		it("has only daily and weekly quests, and every daily pays at least 80", function()
+			for _, quest in ipairs(Quests.LIST) do
+				expect(quest.period == "daily" or quest.period == "weekly").to.equal(true)
+				expect(quest.coins >= 80 or quest.period == "weekly").to.equal(true)
+			end
+		end)
+		it("counts a quest's conditions: lived, won and lived, and a stat reached in one match", function()
+			local data = Migrations.defaults(0)
+			local now = 20000 * DAY
+			data.quests.daily = {
+				period = 20000,
+				items = {
+					{ id = "d_winalive", progress = 0, done = false },
+					{ id = "d_tasksone", progress = 0, done = false },
+					{ id = "d_tasksalive", progress = 0, done = false },
+				},
+			}
+			ProgressRules.apply(data, summary({ won = true, survived = false, tasks = 7 }), now)
+			local items = data.quests.daily.items
+			expect(items[1].progress).to.equal(0) -- won but died
+			expect(items[2].progress).to.equal(0) -- 7 < 8
+			expect(items[3].progress).to.equal(0) -- died
+			ProgressRules.apply(data, summary({ won = true, survived = true, tasks = 9 }), now)
+			expect(items[1].done).to.equal(true)
+			expect(items[2].done).to.equal(true)
+			expect(items[3].progress).to.equal(1)
+		end)
+		it("deals a fresh list when a profile holds a quest that no longer exists", function()
+			local data = Migrations.defaults(0)
+			local now = 20000 * DAY
+			ProgressRules.ensureQuests(data, now)
+			data.quests.daily.items[1].id = "d_souls3"
+			ProgressRules.ensureQuests(data, now)
+			for _, item in ipairs(data.quests.daily.items) do
+				expect(Quests.byId(item.id) ~= nil).to.equal(true)
 			end
 		end)
 	end)

@@ -30,7 +30,7 @@ export type Summary = {
 	duties: number,
 	reports: number,
 	rigs: number,
-	-- Deathsinger quests (only counted when `ghost`: the player ended the case as a Deathsinger).
+	-- (kept in the summary for the stats: no quest reads them any more)
 	wagersWon: number?,
 	haunts: number?,
 	ghost: boolean?,
@@ -74,14 +74,24 @@ end
 function ProgressRules.ensureQuests(data: any, now: number)
 	local day, week = TimeUtil.day(now), TimeUtil.week(now)
 	local quests = data.quests
-	if quests.daily.period ~= day then
+	-- (a list holding a quest that no longer exists, the lost-soul ones, is dealt again at once)
+	local function stale(list: any): boolean
+		for _, item in ipairs(list.items) do
+			if not Quests.byId(item.id) then
+				return true
+			end
+		end
+		return false
+	end
+	if quests.daily.period ~= day or stale(quests.daily) then
 		quests.daily = { period = day, items = questItems(Quests.daily(day)) }
 	end
-	if quests.weekly.period ~= week then
+	if quests.weekly.period ~= week or stale(quests.weekly) then
 		quests.weekly = { period = week, items = questItems(Quests.weekly(week)) }
 	end
-	if type(quests.ghost) ~= "table" or quests.ghost.period ~= day then
-		quests.ghost = { period = day, items = questItems(Quests.ghost(day)) }
+	-- (the Deathsinger quests are gone, 2026-11-16: an old profile's list is emptied)
+	if type(quests.ghost) ~= "table" or type(quests.ghost.items) ~= "table" or #quests.ghost.items > 0 then
+		quests.ghost = { period = -1, items = {} }
 	end
 end
 
@@ -115,16 +125,30 @@ function ProgressRules.reroll(data: any, questId: string, now: number): boolean
 	return true
 end
 
-local function statFor(summary: Summary, stat: string): number
-	if stat == "matches" then
-		return 1
-	elseif stat == "wins" then
-		return if summary.won then 1 else 0
-	elseif stat == "survived" then
-		return if summary.survived then 1 else 0
+local function statFor(summary: Summary, quest: Quests.Quest): number
+	-- (a quest's condition: the match counts only if you lived, or won and lived)
+	if quest.when == "survived" and not summary.survived then
+		return 0
+	elseif quest.when == "wonAlive" and not (summary.won and summary.survived) then
+		return 0
 	end
-	local value = (summary :: any)[stat]
-	return if type(value) == "number" then value else 0
+	local stat = quest.stat
+	local value: number
+	if stat == "matches" then
+		value = 1
+	elseif stat == "wins" then
+		value = if summary.won then 1 else 0
+	elseif stat == "survived" then
+		value = if summary.survived then 1 else 0
+	else
+		local raw = (summary :: any)[stat]
+		value = if type(raw) == "number" then raw else 0
+	end
+	-- (a quest that wants so much in ONE match counts the match as 1 once the stat reaches it)
+	if quest.each then
+		return if value >= quest.each then 1 else 0
+	end
+	return value
 end
 
 local function unlock(data: any, result: Result, itemId: string?)
@@ -157,6 +181,8 @@ function ProgressRules.apply(data: any, summary: Summary, now: number): Result
 	stats.correctVotes += summary.correctVotes
 	stats.notesFound += summary.notesFound
 	stats.duties += summary.duties
+	-- (the Ferryman achievements read this since the lost souls went: it was never added up before 2026-11-16)
+	stats.haunts = (stats.haunts or 0) + (summary.haunts or 0)
 	stats.reports += summary.reports
 	stats.rigs += summary.rigs
 	if summary.survived then
@@ -189,14 +215,11 @@ function ProgressRules.apply(data: any, summary: Summary, now: number): Result
 	-- Quests.
 	ProgressRules.ensureQuests(data, now)
 	local lists = { data.quests.daily.items, data.quests.weekly.items }
-	if summary.ghost then
-		table.insert(lists, data.quests.ghost.items)
-	end
 	for _, list in ipairs(lists) do
 		for _, item in ipairs(list) do
 			local quest = Quests.byId(item.id)
 			if quest and not item.done then
-				item.progress = math.min(quest.goal, item.progress + statFor(summary, quest.stat))
+				item.progress = math.min(quest.goal, item.progress + statFor(summary, quest))
 				if item.progress >= quest.goal then
 					item.done = true
 					table.insert(result.quests, quest.id)
