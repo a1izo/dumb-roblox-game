@@ -390,7 +390,7 @@ def tea_tray():
     return parts, []
 
 
-@prop("BureauBadge", pivot="centre", material="Leather", collide=False, texture=1024, exact=True)
+@prop("BureauBadge", pivot="centre", material="Leather", collide=False, texture=1024, exact=True, normal=256)
 def bureau_badge():
     """An Operative's badge wallet held open (upright, its face to -Y), remade 2026-11-16 for the user's "make the badge
     way more high quality": stitched black leather with a fold; on the right a gold shield with a beaded rim, a

@@ -226,7 +226,7 @@ def marionette_bar():
 WALNUT_A, WALNUT_B = srgb(34, 20, 12), srgb(78, 48, 30)
 
 
-@prop("SoundBlock", pivot="bottom", material="Wood", collide=False, texture=512, exact=True)
+@prop("SoundBlock", pivot="bottom", material="Wood", collide=False, texture=512, exact=True, normal=256)
 def sound_block():
     """A judge's sound block: a round of dark polished walnut, a moulded edge, a brass ring set into its top (Final
     Gavel strikes it)."""
@@ -241,7 +241,7 @@ def sound_block():
             mk.cylinder("Felt", 0.69, 0.008, (0, 0, 0.004), mat=felt, verts=40)], []
 
 
-@prop("RubberStamp", pivot="bottom", material="Wood", collide=False, texture=512, exact=True)
+@prop("RubberStamp", pivot="bottom", material="Wood", collide=False, texture=512, exact=True, normal=256)
 def rubber_stamp():
     """An office rubber stamp: a turned walnut handle with a knob, a brass collar, a black block with the red rubber
     die under it (Guilty Stamp; the word is the game's, printed where it lands)."""
@@ -257,7 +257,7 @@ def rubber_stamp():
             mk.lathe("Handle", handle, mat=wood, segments=24)], []
 
 
-@prop("InkPad", pivot="bottom", material="Metal", collide=False, texture=512, exact=True)
+@prop("InkPad", pivot="bottom", material="Metal", collide=False, texture=256, exact=True)
 def ink_pad():
     """A tin ink pad open on the desk: the black tin, its lid stood up behind on the hinge, the red-soaked felt in
     it."""
@@ -274,7 +274,7 @@ def ink_pad():
     return parts, []
 
 
-@prop("CaseFolder", pivot="bottom", material="Fabric", collide=False, texture=1024, exact=True)
+@prop("CaseFolder", pivot="bottom", material="Fabric", collide=False, texture=512, exact=True, normal=256)
 def case_folder():
     """A case file lying open: a worn manila folder and its tab, the typed report on the right with a paper clip and a
     photo clipped to it, loose sheets in the left cover (the game prints the name on it)."""
@@ -324,7 +324,7 @@ def case_folder():
     return parts, []
 
 
-@prop("ChessBoard", pivot="bottom", material="Wood", collide=False, texture=1024, exact=True)
+@prop("ChessBoard", pivot="bottom", material="Wood", collide=False, texture=512, exact=True, normal=256)
 def chess_board():
     """A tournament chess board: a walnut frame round 64 inlaid squares of ebony and maple (Endgame's board)."""
     frame = mk.noisy("Cb_Walnut", WALNUT_A, WALNUT_B, roughness=0.3, kind="dark_wood")
