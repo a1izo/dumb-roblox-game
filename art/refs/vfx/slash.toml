@@ -1,0 +1,48 @@
+# Slash. Reference notes for the effects rework (docs/handoff/vfx-rework-plan-2026-11-16.md, ticket V0.4).
+# Words are ours. The sheets beside this file are small contact sheets of frames, kept for internal reference only.
+id = "slash"
+name = "Slash: a crescent that is drawn by one swing"
+family = "slash"
+status = "watched 2026-11-16 in the built-in browser; times are seconds into each clip; frames counted at 30 a second"
+note = "S1 is a game-VFX artist's breakdown of sword slashes: the best source here, because the slash is shown alone on a dark floor. The narration was not heard; descriptions are of the pictures and their on-screen labels."
+
+[[source]]
+id = "S1"
+url = "https://www.youtube.com/watch?v=QyI8ZS-G9nw"
+title = "Anatomy Of A Slash (10 min 39 s)"
+kind = "a VFX artist builds slash effects for swords, shows each element separately, then the finished slashes on ice, fire and plain swords"
+watched = "16 frames every 38 s over the whole video (slash_anatomy_survey.jpg); 12 frames every 1.5 s over 274-290.5 s (slash_basic.jpg); frames at 318-336, 429-438, 545-554 s (slash_fire_ice_views.jpg); 12 frames every 0.25 s over 546.8-549.55 s (slash_ice_fine.jpg)"
+
+[[source]]
+id = "S2"
+url = "https://www.youtube.com/watch?v=S_jGKd9ECjM"
+title = "ALL NEW AURA FARMING EMOTES IN THE NEW JUJUTSU SHENANIGANS UPDATE V1.77 (3 min 50 s)"
+kind = "a Jujutsu Shenanigans emote that throws a white swipe round the player, at 29-33.4 s"
+watched = "12 frames every 0.4 s over 29-33.4 s, cropped (slash_jjs_scarf.jpg); also a 16-frame survey of the whole clip, not kept"
+
+[moment]
+gather = "S1 547.55-547.8 s: the sword turns and cocks back; no effect at all yet, the body is the gather (about 8 frames). 546.8-547.3 s: the sword sits still. S2 29.0-30.6 s: the player raises both arms; nothing is drawn."
+hit = "S1 548.05 s: the whole slash is there at full size in one sample, a three-quarter circle round the blade's path: a bright white band in the middle of the stroke with a cyan edge outside and thin concentric curved streaks inside, a faint wide ring behind it, and a small curled tip at the top with six to eight snowflake specks. The peak white is the brightest thing. 277.0 s (plain slash): a pure white crescent with a thin tapering tail and notches cut into the inner edge, glowing past the floor's brightness."
+body = "S1 548.05-548.30 s (about 8 frames): the crescent holds its shape but turns with the sword and thins; the curled tip lifts and spins. 274.0 and 275.5 s (the slash before it flashes): the same crescent in dim grey, semi-transparent, showing the notched inner edge and a pale gradient down the tail. S1's diagram 278.5-287.5 s: dark navy base shape, a lighter blue lead on the outside, a bright jagged inner edge; drawn once with a blue and once with a red lead. 324 s: the diagram with three thin streak lines trailing behind the crescent. S2 31.0-31.8 s: a flat white ribbon behind the arm, then a big flat white plane across the screen; one layer, no glow."
+breakup = "S1 548.55 s (0.5 s after the hit): the crescent has gone into three thin grey curved lines and a few specks, like wind lines left behind a swing. The break-up is the shape thinning into streaks, then streaks fading; there is no hole-eating. 330 s: the slash drawn with dark brush streaks across the white (ragged strokes), a look that comes apart into strokes. S2 32.2-33.0 s: a thin white crescent beside the arm that shrinks and fades."
+residue = "S1 548.8 s: one faint curved line and two or three white specks; 549.05 s: one speck; 549.3 s: nothing but the sword. About 0.75 s (about 22 frames) of thin leftovers. S2: none."
+
+[layers]
+count = "S1 ice slash: five: the white core band, a cyan outer band, concentric thin streaks inside, a faint ring behind (the shockwave), a curl with specks at the tip. S1 plain slash: two: the crescent and a gradient on its tail. S2: one."
+brightest = "S1: the white core band; it is hotter than the cyan round it."
+colours = "S1: white core, cyan or orange or red body by element, a dark base underneath on the diagrams. S2: pure white only."
+values = "S1: white-hot core, coloured body, dark base: three. S2 has one value and reads as a flat sheet of paper; keep it as the example of cheap."
+
+[timing]
+whole_effect = "S1 ice slash: from the cock-back (547.55) to the last speck (549.3): 1.75 s; the full-size crescent is visible about 0.3 s."
+frames_at_30 = "gather 8, hit 1-2, body 8, break-up 8, residue 22"
+
+[take]
+structure = "A slash is a shape that is born full size on the hit frame, turns with the weapon for a few frames, thins into streaks, then into specks. Its layers are a white-hot band, a coloured band, thin inner streaks, a faint ring behind. An element (ice, fire, shadow) adds one small thing at the tip, not another big shape."
+do_not_copy = "The exact notch pattern of the inner edge and the snowflake curl are that artist's drawing. Draw our own notches (paper tears, glass chips, chalk)."
+
+[weak]
+unverified = "The slash was never shown at 1/60 s resolution; the hit is a one-sample read. The fire slash ('Highlight', 466 s) was seen in one still only (slash_anatomy_survey.jpg): an orange crescent shading to yellow at the bright inner edge over a dark red-brown base; its motion was not sampled. The S2 swipe is a poor reference (flat white); it is here as the thing to beat."
+
+[sheets]
+files = ["slash_anatomy_survey.jpg", "slash_basic.jpg", "slash_fire_ice_views.jpg", "slash_ice_fine.jpg", "slash_jjs_scarf.jpg"]

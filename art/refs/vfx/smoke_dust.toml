@@ -1,0 +1,61 @@
+# Smoke and dust. Reference notes for the effects rework (docs/handoff/vfx-rework-plan-2026-11-16.md, ticket V0.4).
+# Words are ours. The sheets beside this file are small contact sheets of frames, kept for internal reference only.
+id = "smoke_dust"
+name = "Smoke and dust: rolls that curl as they rise, rings that blow out and sag"
+family = "smoke_dust"
+status = "watched 2026-11-16 in the built-in browser; times are seconds into each clip; frames counted at 30 a second"
+
+[[source]]
+id = "S1"
+url = "https://www.youtube.com/watch?v=OJEKr0sO0pY"
+title = "Realistic Rising Smoke Overlay on Black Background (12 s)"
+kind = "real-looking smoke, one plume rising on black"
+watched = "12 frames every 1.0 s over 0.3-11.3 s (smoke_dust_plume.jpg)"
+
+[[source]]
+id = "S2"
+url = "https://www.youtube.com/watch?v=cdzWspoI2mQ"
+title = "Slow Motion Smoke on Black Backdrop (30 s)"
+kind = "real footage: dense smoke filling the frame, very close"
+watched = "12 frames every 2.4 s over 1-27.4 s (smoke_dust_fog.jpg)"
+
+[[source]]
+id = "S3"
+url = "https://www.youtube.com/watch?v=vBQXIBKQVfQ"
+title = "Dust Impact Ground Slam Shockwave Dust Cloud (stock elements, 25 s)"
+kind = "several dust bursts on black (the clip shows a colour half and an alpha half side by side)"
+watched = "12 frames every 2 s over 0.3-22.3 s (smoke_dust_stock_survey.jpg); 8 frames every 0.25 s over 0-1.75 s and 4 frames every 0.5 s over 14-15.5 s, cropped to the colour half (smoke_dust_impact_fine.jpg)"
+
+[[source]]
+id = "S4"
+url = "https://www.youtube.com/watch?v=LZuSLM6LumU"
+title = "All Battlegrounds Impact Frames (30 s), the world after the last blow at 27.6-29.6 s"
+kind = "a game's own dust after a slam, over rubble"
+watched = "see hit_slam.toml and hit_slam_impact_frames_end.jpg"
+
+[moment]
+gather = "S3 0.25 s: nothing then a small beige donut-ring of lumpy cloud, a sixth of the frame wide, a hole in its middle (the start of the blast, already hollow). S1 0.3-1.3 s: empty, then a thin braided stem shoots up (the stem is a twentieth of the frame wide and pointed at its tip). Gather in both is 0 to 1 s of nothing, then a thin fast start. S4: the cloud is a consequence of the cut; nothing precedes it."
+hit = "S3 0.5 s: the ring has become a rosette of cauliflower lumps with radial streaks, a third of the frame wide, still a dark gap in its middle: the burst is hollow and moves outward. S1 2.3-3.3 s: the stem has become a column of stacked rolls, each roll wider than it is tall, the head a cauliflower dome; at 3.3 s the tip leaves the top of the frame. S4 27.94 s: a wide soft cloud, the fullest it gets."
+body = "S1 4.3-7.3 s (about 3 s, 90 frames): a continuous column with curls, rolls in pairs, a growing round billow in the middle (5.3-7.3 s) two and a half times wider than the stem; edges are soft, interior darker between rolls; the brightest part is the denser lower stem (about 70 percent grey) and the shadowed gaps (about 25 percent) give it depth. Smoke rises and slows. S2: no shape, an edgeless mass with slow curls (a curl takes about 3 s to travel its own width), bright on one side and dark on the other, thin filaments at the edges. S3 14.0-14.5 s: a long ground-hugging sheet of dust, a flat wedge with a pointed tail on one side and puffs on the other, a dark streak inside it."
+breakup = "S1 8.3-9.3 s (2 s): the column spreads into a broad soft slab, edges lost, colour almost uniform; at 10.3 s it is a ghost at about 15 percent brightness. It softens by blur and brightness falling; no holes open. S3 0.75-1.25 s: the ring splits into separate clumps that sag downward (the hole closes), the shape barely changes while its brightness falls from about 45 to 15 percent: the dust breaks into lumps first, then fades. S3 15.0-15.5 s: the sheet thins and loses its wedge shape."
+residue = "S1 11.3 s: gone, nothing left. S3 1.75 s: a darker brown ghost of lumps; 15.5 s: a barely visible streak. S4 28.28-29.64 s: the cloud thins slowly over 1.4 s but is still hanging over the rubble at the end; a thin dark smoke thread stays standing in the middle. The real residue is a dim haze that outlives the effect by one to two seconds."
+
+[layers]
+count = "S1: one plume, but read as three: the fast stem, the rolling body, the billow in the middle. S3: a hollow ring plus a flat sheet. S4: a big cloud and a thin dark thread."
+brightest = "S1: the lower stem. S3: the near edge of the rosette, a tan highlight."
+colours = "S1 and S2: pale warm grey. S3: beige and tan, not grey (about 160, 140, 125). S4: pale grey over grey rubble."
+values = "S1: three values (bright stem, mid body, dark gaps between rolls). S3: tan edge, mid body, dark hole."
+
+[timing]
+whole_effect = "S1: 1.3 to 11.3 s, 10 s. S3 ring: 0.25 to 1.75 s, 1.5 s. S3 sheet: 14 to 15.5 s, 1.5 s."
+frames_at_30 = "S3 ring: gather 8, hit 8, body 8 (sagging), break-up 12 to the last. S1: rise 30, body 90, break-up 60"
+
+[take]
+structure = "Smoke starts as a thin fast stem, then rolls over on itself (curls are paired), swells into a billow, then softens and thins into one slab; dust starts as a hollow ring that blows out, splits into lumps and sags, and its colour is the ground's, not grey. Both outlive the hit by one to two seconds as a faint haze."
+do_not_copy = "These are stock overlay clips; borrow their timing and the way rolls pair, not the footage. Our smoke should be baked from a Blender simulation (plan Part 5), not cut from these."
+
+[weak]
+unverified = "S2 is a close-up of an edgeless mass and says little about how smoke leaves a surface. The S3 clip's alpha half was not studied; the crop kept the colour half only. No real footage of a dust cloud from a real impact was found."
+
+[sheets]
+files = ["smoke_dust_plume.jpg", "smoke_dust_fog.jpg", "smoke_dust_stock_survey.jpg", "smoke_dust_impact_fine.jpg", "hit_slam_impact_frames_end.jpg (shared)"]

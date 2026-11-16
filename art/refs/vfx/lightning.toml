@@ -1,0 +1,62 @@
+# Lightning. Reference notes for the effects rework (docs/handoff/vfx-rework-plan-2026-11-16.md, ticket V0.4).
+# Words are ours. The sheets beside this file are small contact sheets of frames, kept for internal reference only.
+id = "lightning"
+name = "Lightning: angular forks over a body, one white frame, then the storm's flicker"
+family = "lightning"
+status = "watched 2026-11-16 in the built-in browser; times are seconds into each clip; frames counted at 30 a second"
+
+[[source]]
+id = "S1"
+url = "https://www.youtube.com/watch?v=3Wop8f0yuSk"
+title = "Kakashi cuts lightning with chidori (anime, 22 s)"
+kind = "the anime's Chidori: a ball of lightning in the hand, arcs round the body, a bolt, a full-white frame"
+watched = "16 frames every 1.3 s over 0.3-19.8 s (lightning_anime_survey.jpg); 12 frames: every 0.4 s over 9.2-12.0 s and at 13.0, 13.7, 14.3, 15.0 s (lightning_anime_fine.jpg)"
+
+[[source]]
+id = "S2"
+url = "https://www.youtube.com/watch?v=RGKnbyHAzOA"
+title = "240 fps slow motion lightning (14 s)"
+kind = "real footage: a night storm over a house, lightning lighting the clouds"
+watched = "16 frames every 0.85 s over 0.3-13.05 s (lightning_real_survey.jpg)"
+
+[[source]]
+id = "S4"
+url = "https://www.youtube.com/watch?v=mHZQM9ZBNb4"
+title = "Slow-motion video of lightning striking a building (26 s; a research clip, Saba et al. 2022, shown at 60 fps and 40,000 fps)"
+kind = "real footage of one strike in high speed: the downward branches, the short upward streamers from rooftops, their connection, the return stroke"
+watched = "16 frames every 1.5 s over 0.5-23 s (lightning_real_strike.jpg); the 21-23 s frames are a photo of the damaged concrete, not lightning. A second 10-minute 103,000 fps clip (qQKhIK4pvYo) was tried but the pane jumped away from it to an unrelated video three times, so it was not read"
+
+[[source]]
+id = "S3"
+url = "https://www.youtube.com/watch?v=LZuSLM6LumU"
+title = "All Battlegrounds Impact Frames (30 s), the frame at 4.1 s"
+kind = "a game's own lightning drawn in the impact frame: white branching cracks running to a star flare at the floor"
+watched = "see hit_slam.toml and hit_slam_impact_frames_survey.jpg"
+
+[moment]
+gather = "S1 9.2-10.8 s: the sphere is small and moving away from the camera, a white-blue starburst about a head across with eight to ten thin forked arcs round it (9.2 s), shrinking to a point of light the size of a coin by 10.4 s, followed by a beige dust cloud along the floor. So the gather is a ball that gets small and bright. S2: a pre-flash: 1.15 s a violet glow in the clouds that grows to 2.85 s, a blue-white patch at the horizon: the light builds before any stroke. S4 0.5 and 2.0 s (the strike's last 25 microseconds before it connects): a thick, bright, many-forked downward branch from the top of the frame, its tips fraying into sprays, and separate short wavy streamers standing up from the rooftops (one about a third of the frame tall, two or three tiny ones): the gather is the sky branch and the ground streamers reaching for each other."
+hit = "S1 13.7 s: a thick angular zigzag of white fills the frame, with blue edges, its corners hard; 14.3 s: the screen is flooded white with ghost bolts still in it; 14.6 s: one all-white frame (at least one frame, about 3 at the sample rate). The hit is the whole screen going white for one to three frames. S4 11.0 s: the whole frame is white; 12.5 s: a washed-out grey-white sky, the clouds just visible; 14.0-15.5 s: the return stroke is one thick, bright, jagged single line from the cloud down to the roof, with a wide soft halo round it and a hot spot at the roof it hits; it holds across two samples (1.5 s of the slowed video; the strike itself lasted far less). S2 6.25 s: the storm's brightest sample, a big violet-white glow under the clouds. S3 4.1 s: white cracks running to a star flare."
+body = "S1 11.2-13.0 s (1.8 s, about 55 frames): four to six arcs wrap round the body, each a straight fork of two to three tines with sharp kinks, a near-white core line and a bright cyan edge, drawn flat over the figure; the arcs jump to new positions between samples (flicker, not smooth motion). 9.2 s has the same arcs but shorter, radiating from the ball. S2 3.7-4.55 s: three or four thin bolts, jagged and branching, pale blue-white, about a twentieth of the frame wide, on the left and in the middle under a cloud ledge."
+breakup = "S1 14.3-15.0 s (0.7 s): the white fades back through a faint pale wash to the dark blue night; the bolt shape does not dissolve, it is simply outshone and then gone. S2 7.1-8.8 s: the light decays in steps over about 1.7 s, from a greyish glow with one thin bolt at the left (7.1 s) to nearly black."
+residue = "S1 15.9 s: the figure kneeling in dark blue light with no sparks left; the dust cloud from the gather (9.6-10.8 s) is still on the floor. S2 10.5-11.35 s: a second softer violet bloom, then dark again at 12.2 s. Real lightning leaves nothing except the room's after-flicker."
+
+[layers]
+count = "S1: arcs (one layer, many strokes), the sphere, a flat wash for the white frame. S2: the glow in the clouds and thin bolts; at least two. S4: the main branching channel, short upward streamers, a wide halo, a hot spot on the roof."
+brightest = "S1: the full-screen white. Then the arcs' core lines. S2: the glow in the cloud base."
+colours = "S1: white core, cyan then deeper blue edge, then a pale blue wash. S2: violet, blue-white."
+values = "S1 arcs: white core, bright cyan body, dark night behind it (a dark scene is what makes them read); there is no dark layer of its own."
+
+[timing]
+whole_effect = "S1: 9.2 to 15.0 s, 5.8 s, mostly arcs. S2: light rises 1 s, flickers 1 to 6 s, decays 2 s."
+frames_at_30 = "S1 gather 50, hit 1-3, body 55, break-up 20, residue 30. S2 flicker steps change every 10 to 25 frames"
+
+[take]
+structure = "Lightning reads when the strokes are straight with sharp kinks, forked in twos and threes, white inside and blue outside; they jump rather than glide; the hit is a white frame, then the pale wash; a stormy scene keeps flickering and decaying in steps. The scene must be darker than the strokes."
+do_not_copy = "The anime's specific zigzag and its blue colour (we use a blue-white only if the effect belongs to a tier that earns it). Do not copy the film's flood white; for another player's screen no full-screen flash is allowed (docs/vfx.md rule 7)."
+
+[weak]
+real = "The 240 fps clip (S2) shows sheet lightning and a few thin bolts only. S4 is the real strike structure, but it is a labelled research clip in grey sampled every 1.5 s, so the speed of each stage is the clip's slowing, not real time. The 103,000 fps video (qQKhIK4pvYo) was not read."
+unverified = "Neither clip was sampled finer than 0.4 s except around the arcs; the flicker's period was not measured."
+
+[sheets]
+files = ["lightning_anime_survey.jpg", "lightning_anime_fine.jpg", "lightning_real_survey.jpg", "lightning_real_strike.jpg", "hit_slam_impact_frames_survey.jpg (shared)"]

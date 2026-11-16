@@ -1,0 +1,55 @@
+# Glints and sparkles. Reference notes for the effects rework (docs/handoff/vfx-rework-plan-2026-11-16.md, ticket V0.4).
+# Words are ours. The sheets beside this file are small contact sheets of frames, kept for internal reference only.
+id = "glints_sparkles"
+name = "Glints and sparkles: a field of points, a few of them grow cross arms and die in under half a second"
+family = "glints_sparkles"
+status = "watched 2026-11-16 in the built-in browser; times are seconds into each clip; frames counted at 30 a second"
+
+[[source]]
+id = "S1"
+url = "https://www.youtube.com/watch?v=mGxKuLxjwTI"
+title = "glint / sparkle overlay, overlays for edits (30 s)"
+kind = "a stock overlay: sparkling points on black"
+watched = "16 frames every 1.9 s over 0.3-28.8 s (glints_field_survey.jpg); 12 frames every 0.1 s over 4.1-5.2 s cropped to one corner (glints_one_life.jpg)"
+
+[[source]]
+id = "S2"
+url = "https://www.youtube.com/watch?v=8TazwsytWK0"
+title = "Stylized fire attack (16 s), the star flare at 2.2 s and 7.9 s"
+kind = "a game-effects showcase; the glint used as the hit flash"
+watched = "see fire_candle.toml and fire_candle_stylised_attack.jpg"
+
+[[source]]
+id = "S3"
+url = "https://www.youtube.com/watch?v=L7BUWXKjUww"
+title = "Disintegration - Tensura S2 (29 s), 2.1 s and the specks through 7.0-11.8 s"
+kind = "an anime spell with golden specks in the air"
+watched = "see light_pillar.toml and light_pillar_spell_survey.jpg"
+
+[moment]
+gather = "S1 0.3 s: a nearly empty frame with five or six points; the stock opens sparse and fills over about 2 s (2.2 s: thirty or forty points). S2 2.2 s: the small orange sparks that stream into the flare before it flashes. S3 2.1 s: dozens of gold specks come out of the dark just before the big ring. A field of glints builds by the count over 1 to 2 s; it does not begin at its full density."
+hit = "S1 4.3-4.4 s: one big glint at its peak: a white core about eight pixels wide with a vertical arm about eighty pixels long and a horizontal arm about forty, the vertical arm clearly the longer. S2 2.2 s: the same shape the size of the frame: two long thin spikes (one horizontal, one diagonal pair), a white-hot centre with a thin gold ring. The glint at its biggest is the brightest thing on the screen."
+body = "S1 4.1-4.4 s (0.3 s, about 9 frames): the big glint swells: at 4.1 s its arms are already long and thin, at 4.2 s brighter, at 4.3 s its arms at full length. In the same sheet most of the other 100 to 150 glints are 2 to 4 pixel dots; about one in seven has cross arms; a few are two or three times the usual size. The sizes are wildly uneven (the biggest are twenty times the smallest). Glints sit still and do not rotate; the whole pattern sags slightly down the frame over a second."
+breakup = "S1 4.4-4.6 s (about 0.2 s, 6 frames): the big glint shrinks back to a dot and its arms vanish; it does not fade as a whole, the arms go first. The star I followed was gone from its place by 4.6 s (another star may have appeared near it; I could not be sure it was the same one). A glint's life from first arms to gone is about 0.4 to 0.5 s."
+residue = "S1: none; the field is steady, new points replace old ones, so there is no residue by itself. S2 7.9 s: orange flecks left hanging round the flare for another 1 s. A single glint leaves nothing; a burst of them leaves a few slow specks."
+
+[layers]
+count = "S1: one sprite family at four sizes (dot, small cross, medium cross, big cross). S2: the star, a thin ring, flecks."
+brightest = "S1: the biggest glints' cores; then the medium ones."
+colours = "S1: white on black. S2: white centre, gold ring, orange flecks. S3: gold."
+values = "S1 has a white core, a grey arm that tapers to black, and a grey halo (about 15 percent) round the core."
+
+[timing]
+whole_effect = "S1: one glint 0.4-0.5 s; the field is steady. S2: the star is on screen at one sample at a time, about 1 s."
+frames_at_30 = "one glint: grow 6, peak 3, die 6"
+
+[take]
+structure = "A glint is a point that grows two arms (one longer) in about 6 frames, holds 3, and drops to a dot in 6; a field of glints is many of them at uneven sizes and random phases, built up over a second or two, not spawned all at full count. A hit flash is the same shape scaled up to the frame."
+do_not_copy = "The exact star silhouette. Use our own: a paper-cut cross, a chip of glass, a crow's eye glint."
+
+[weak]
+unverified = "I could not follow a single glint with certainty: neighbouring stars appear and vanish between the 0.1 s samples. The first and last 0.1 s of a glint's life were not resolved."
+sources = "Only one stock overlay clip gave a real glint life; 'Anime Sparkle' sound clips and After Effects tutorials came up in search but were not opened. No Roblox game's glint (Ink Game, JJS) was identified or sampled."
+
+[sheets]
+files = ["glints_field_survey.jpg", "glints_one_life.jpg", "fire_candle_stylised_attack.jpg (shared)", "light_pillar_spell_survey.jpg (shared)"]

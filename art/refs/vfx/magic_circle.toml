@@ -1,0 +1,49 @@
+# Magic circle on the floor. Reference notes for the effects rework (docs/handoff/vfx-rework-plan-2026-11-16.md, ticket V0.4).
+# Words are ours. The sheets beside this file are small contact sheets of frames, kept for internal reference only.
+# A circle can be one-shot (a spell) or a loop (a standing circle); both are noted.
+id = "magic_circle"
+name = "Magic circle on the floor: a disc lights first, rings rise as a stack, rays curtain the rim"
+family = "magic_circle"
+status = "watched 2026-11-16 in the built-in browser; times are seconds into each clip; frames counted at 30 a second"
+
+[[source]]
+id = "S1"
+url = "https://www.youtube.com/watch?v=L7BUWXKjUww"
+title = "Disintegration - Tensura S2 (29 s), 3.9 s and 22.6-27.4 s"
+kind = "an anime spell: circles overhead, then on a crater floor"
+watched = "7 frames every 0.8 s over 22.6-27.4 s (magic_circle_floor_lift.jpg); the 16-frame survey is light_pillar_spell_survey.jpg"
+
+[[source]]
+id = "S2"
+url = "https://www.youtube.com/watch?v=LPq-OmTyXA8"
+title = "anime style summoning circle (11 s)"
+kind = "a looping 3D magic circle seen at a flat low angle, glyph bands with rays"
+watched = "12 frames every 0.9 s over 0.2-10.1 s (magic_circle_loop.jpg)"
+
+[moment]
+gather = "S1 22.6-23.4 s: the pillar is on and the base is a small golden disc with a dark cracked ring of ground round it; the circle appears as a lit disc before any ring lifts off. 24.2 s: three stacked rings float above the disc, white lines with an orange tick ring, evenly spaced about one disc-width apart, each ring smaller toward the bottom. S2: no ignition in the clip (it loops from the start)."
+hit = "S1 24.2 s: the rings are at their sharpest and brightest and the disc is a gold rosette at full glow; the rings tilt as they lift (the top ring becomes a hexagon at 25.0 s). S2 2.0-2.9 s: the rim's rays turn from magenta to near white for about one sample: the circle's brightest moments."
+body = "S1 25.0-25.8 s (about 1 s): the rings lift and spread apart vertically, turning to look at an angle, the lowest ring still circling the disc. S2 (a loop, 10 s sampled): three or four concentric bands of tiny text-like marks drawn as thin white lines on a magenta glow; a hollow inner ellipse filled with a deeper violet; round the far rim a curtain of vertical streaks about a fifth of the ellipse's height, white at the base turning to magenta at the tips; the brightness of the rim breathes by a little between samples (whiter at 2.0 s and 2.9 s, deeper magenta at 4.7 s and 9.2 s), so a slow pulse of a few seconds, not measured."
+breakup = "S1 25.8 s: the top ring is faint, the lower ones stronger: the stack leaves from the top first; 26.6 s: the rings are gone. S2: a loop, no ending shown."
+residue = "S1 26.6-27.4 s (about 1 s): the cracked hole in the ground with the small gold disc still glowing at the bottom; at 27.4 s a few bright yellow spikes along the crater edge. A scorch or a crater with one lit mark stays behind the circle."
+
+[layers]
+count = "S1: disc, three rings, a crater with cracked ground (real geometry), the pillar beside it. S2: three: glyph bands, an inner violet ellipse, the ray curtain."
+brightest = "S1: the gold disc. S2: the ray bases at the rim and the white lines of the bands."
+colours = "S1: gold, white, orange ticks, brown rock, blue-green at night. S2: white lines, magenta glow, violet fill."
+values = "S2: white lines (hot), magenta body, a dark black floor behind. S1: gold core, orange rings, dark crack lines round it."
+
+[timing]
+whole_effect = "S1 floor part: 22.6-27.4 s, 4.8 s. S2: loop, sampled over 10 s."
+frames_at_30 = "S1 gather 25, hit 6, body 30, break-up 25, residue 30"
+
+[take]
+structure = "A circle is not one picture: a lit disc first, then a stack of thin rings that lift off it in the air, tilt, spread, and fade top first, leaving a scorched mark with one glow. A standing circle is glyph bands on a glow with a curtain of rays at the rim and a slow pulse."
+do_not_copy = "The glyph text, the rosette's exact pattern, the colours. For the game use pages, chalk, apple, crows' feathers as the marks (plan Part 3 point 8)."
+
+[weak]
+unverified = "S2's circle is cropped by the video frame at the sides and the bottom, so its full size and symmetry were not seen. The S1 ring order was read from four stills. A Roblox circle (the ReadyCircle in the game, or a Roblox game's) was not found as a reference."
+sources = "Other search hits (Dr. Strange Magic Circle vGvKqUi3fSw, 'Magic Circles VFX' QvEcJ4G1JYE, a 3-minute spell compilation V3VLlYZmnb4) were not opened."
+
+[sheets]
+files = ["magic_circle_floor_lift.jpg", "magic_circle_loop.jpg", "light_pillar_spell_survey.jpg (shared)"]
