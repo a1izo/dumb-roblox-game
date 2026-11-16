@@ -1,5 +1,8 @@
 # Effects (VFX)
 
+> **A rework of every effect is planned (2026-11-16):** `docs/handoff/vfx-rework-plan-2026-11-16.md`. Work from
+> that file. The house rules below stand; the textures, recipes and the way an effect is made are being replaced.
+
 How the game's effects are made: the Roblox tools and what each is for, the house rules every effect follows, timing,
 the camera, and keeping it cheap. Written at the start of the shop and cosmetics overhaul (Part B, 2026-10-21) from
 the research the brief asked for; `docs/emotes.md` says where each emote's effect lives.

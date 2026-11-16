@@ -98,3 +98,4 @@
 
 - [Bot victim has no body](death-cutscene-bot-victim.md) - 2026-11-15 "death animation doesn't play in a match": Fallen.bodyOf missed debug bots (negative ids), so Presenters/Death had nothing to film; repro probe, fix, what was not seen
 - [Death loadout](death-loadout-2026-11.md) - 2026-11-15 Diavolo equips four custom deaths (profile.deathLoadout, migration v10, ShopService deathSlot, Manual lists ps.deaths); per-name choice, plain causes stay; slot UI not seen in game
+- [VFX rework plan 2026-11](vfx-rework-plan-2026-11.md) - the owner 2026-11-16: every effect looks "horrible and cheap"; the plan (docs/handoff/vfx-rework-plan-2026-11-16.md), what the check found (flat small numpy textures, six plain sprites in 68% of uses, nothing erodes, no picture loop), hard stop after the pilot
