@@ -4228,4 +4228,14 @@ function EmoteFx.wisp(character: Model)
 	end)
 end
 
+-- Every clip id that has an effect, sorted (the debug booth's catalogue, Presentation/Vfx/Catalog, lists them all).
+function EmoteFx.clips(): { string }
+	local list: { string } = {}
+	for clip in pairs(FX) do
+		table.insert(list, clip)
+	end
+	table.sort(list)
+	return list
+end
+
 return EmoteFx
