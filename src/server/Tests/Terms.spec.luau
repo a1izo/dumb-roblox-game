@@ -41,6 +41,10 @@ return function(t)
 				expect(#Terms.side(sideId, "Name") > 0).to.equal(true)
 			end
 		end)
+		it("gives both sides a short name with no article (the shop's win cutscene cards)", function()
+			expect(Terms.side("Team", "short")).to.equal("Bureau")
+			expect(Terms.side("Kira", "short")).to.equal("Coven")
+		end)
 		it("names every phase", function()
 			for phase in pairs(Config.PHASE_TIME) do
 				expect(Terms.PHASE[phase] ~= nil).to.equal(true)

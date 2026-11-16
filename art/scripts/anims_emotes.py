@@ -737,24 +737,6 @@ raise_leg(climb, "lHip", 0.92, 1.15, 1.24, 1.47, J((62, 0, -4), (0, 0.66, -0.14)
 soft(climb, head=1.6, arms=1.4).plant(stance=0.06)
 climb.build()
 
-# Parade March: stiff and upright, arms swinging high and straight in time; standing, marking time, then
-# the high kick straight up and held, then to attention.
-parade = Motion("paradeMarch", 3.2, loop=True, note="Marking time stiffly, then a high kick straight up, held, then attention.")
-for i in range(4):
-    t = i * 0.4
-    s = 1 if i % 2 == 0 else -1
-    parade.key(t, "snap", offset=(0, 0.02, 0), root=(1, 0, 0), neck=(2, 0, 0), rShoulder=J((-40 * s, 0, 4)), lShoulder=J((40 * s, 0, -4)))
-    raise_leg(parade, "rHip" if s > 0 else "lHip", t, t + 0.12, t + 0.22, t + 0.36,
-              J((48, 0, 4 * s), (0, 0.4, -0.08)))
-parade.key(1.6, offset=(0, 0, 0), root=(1, 0, 0), neck=(2, 0, 0), rShoulder=J((0, 0, 4)), lShoulder=J((0, 0, -4)))
-parade.key(1.8, "snap", offset=(0, 0.04, 0.12), root=(10, 0, 0), neck=(-4, 0, 0), rShoulder=J((-10, 0, 30)), lShoulder=J((-10, 0, -30)))
-parade.key(2.3, offset=(0, 0.04, 0.12), root=(10, 0, 0), neck=(-4, 0, 0), rShoulder=J((-10, 0, 30)), lShoulder=J((-10, 0, -30)))
-parade.key(2.6, "snap", offset=(0, 0, 0), root=(1, 0, 0), neck=(2, 0, 0), rShoulder=J((0, 0, 3)), lShoulder=J((0, 0, -3)))
-parade.key(3.2, offset=(0, 0, 0), root=(1, 0, 0), neck=(2, 0, 0), rShoulder=J((0, 0, 3)), lShoulder=J((0, 0, -3)))
-raise_leg(parade, "rHip", 1.62, 1.8, 2.3, 2.58, J((150, 0, 4), (0, 0.12, -0.1)))
-parade.follow(ARMS, 6.0, 0.6).plant(stance=0.04)
-parade.build()
-
 # Griddy (griddy, griddyWalk): rebuilt 2026-10-17 from the dance itself, in emotes/strolls.py.
 
 # Mushroom Stroll: an easy, unbothered walk with a stick over the shoulder (a mushroom tied to it), the
@@ -766,19 +748,6 @@ for t, look in ((0.0, 0), (1.0, 14), (2.0, -4)):  # (a glance to the stick side 
                  rShoulder=STICK_ARM, lShoulder=J((4, 0, -6)))
 soft(mushroom, head=1.4, arms=1.4).plant(stance=0.08)
 mushroom.build()
-
-# Not My Problem: a shrug, then the lazy slouch of somebody walking away from it all, hands in the
-# pockets; standing, the shrug now and then.
-POCKET_R, POCKET_L = J((8, 0, -4), (-0.08, 0.12, -0.02)), J((8, 0, 4), (0.08, 0.12, -0.02))
-shrugger = Motion("notMyProblem", 3.0, loop=True, note="A shrug, palms out, then slouched with hands in the pockets.")
-shrugger.key(0.0, offset=(0, -0.06, 0), root=(-10, 0, 0), neck=(-6, 0, 7), rShoulder=POCKET_R, lShoulder=POCKET_L)
-shrugger.key(0.4, "out", offset=(0, -0.02, 0), root=(-4, 0, 3), neck=(0, 0, 9), rShoulder=J((34, -20, 30), (0.05, 0.2, -0.08)),
-             lShoulder=J((34, 20, -30), (-0.05, 0.2, -0.08)))
-shrugger.key(1.1, offset=(0, -0.02, 0), root=(-4, 0, 3), neck=(0, 0, 8), rShoulder=J((32, -20, 28), (0.05, 0.18, -0.08)),
-             lShoulder=J((32, 20, -28), (-0.05, 0.18, -0.08)))
-shrugger.key(1.6, offset=(0, -0.06, 0), root=(-10, 0, 0), neck=(-6, 0, 7), rShoulder=POCKET_R, lShoulder=POCKET_L)
-soft(shrugger).plant(stance=0.08)
-shrugger.build()
 
 
 # The owner's replacements (2026-10-14) -------------------------------------------------------------------

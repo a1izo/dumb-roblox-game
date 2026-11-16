@@ -1,7 +1,8 @@
 --!strict
 -- Role mastery: experience per role from matches played as it. Ten levels each; level 5
--- unlocks a title that only masters of that role have, level 7 a style for the two roles
--- that have one (Diavolo's The Knife, Ace's Sweet Justice), and level 8 an emote.
+-- unlocks a title that only masters of that role have, level 7 a style for the role that
+-- has one (Diavolo's The Knife), and level 8 an emote. (Ace's verdict styles, and Sweet Justice
+-- with them, left the game on 2026-11-16.)
 
 local Mastery = {}
 
@@ -15,7 +16,7 @@ Mastery.WIN_XP = 30
 Mastery.UNLOCKS = {
 	Kira = { [5] = "title_m_hand", [7] = "writing_knife", [8] = "emote_just_as_planned" }, -- terms:ok (internal role id)
 	Follower = { [5] = "title_m_cultist", [8] = "emote_reapers_cackle" },
-	L = { [5] = "title_m_zero", [7] = "verdict_sugar", [8] = "emote_its_you" },
+	L = { [5] = "title_m_zero", [8] = "emote_its_you" },
 	Watari = { [5] = "title_m_butler", [8] = "emote_strawberry_on_top" }, -- terms:ok (internal role id)
 	TaskForce = { [5] = "title_m_agent", [8] = "emote_forty_seconds" },
 } :: { [string]: { [number]: string } }

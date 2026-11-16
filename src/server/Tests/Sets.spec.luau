@@ -15,7 +15,7 @@ return function(t)
 			expect(Sets.valid()).to.equal(true)
 		end)
 		it("completes a set only when every piece is owned, once", function()
-			local owned = { verdict_lamp = true }
+			local owned = { book_case = true }
 			local function owns(id: string): boolean
 				return owned[id] == true
 			end
@@ -36,7 +36,7 @@ return function(t)
 	describe("Styles and emotes", function()
 		it("gives every style a style and every emote a clip", function()
 			for _, item in ipairs(Cosmetics.ITEMS) do
-				if item.kind == "writing" or item.kind == "verdict" then
+				if item.kind == "writing" then
 					expect(type(item.style)).to.equal("string")
 				elseif item.kind == "emote" then
 					expect(type(item.emote)).to.equal("string")
@@ -46,9 +46,9 @@ return function(t)
 				end
 			end
 		end)
-		it("unlocks The Knife and Sweet Justice at mastery 7", function()
+		it("unlocks The Knife at mastery 7 and no style for Ace", function()
 			expect(Mastery.UNLOCKS.Kira[7]).to.equal("writing_knife") -- terms:ok (internal role id)
-			expect(Mastery.UNLOCKS.L[7]).to.equal("verdict_sugar")
+			expect(Mastery.UNLOCKS.L[7]).to.equal(nil)
 		end)
 	end)
 end

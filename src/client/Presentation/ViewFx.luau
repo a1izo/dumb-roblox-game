@@ -2,8 +2,7 @@
 -- Effects drawn over a 3D view (a ViewportFrame draws no particles, beams or lights): the VFX kit's textures as
 -- images laid over the view at points of its world, the way an anime impact frame is drawn over the shot. Flares,
 -- rings and dust where a gavel lands, sparks off a cuff, a lamp's shaft of light, a flash and a shake of the
--- view's camera. Used by the shop's cards and Your look, and by the verdicts over the arrest's shot
--- (Presentation/Styles).
+-- view's camera. Used by the shop's cards and Your look (Presentation/Styles).
 --
 --   local label = ViewFx.burst(view, Vector3.new(0, 0.5, 0), { tex = "VfxFlare", size = { 0.1, 0.6 }, life = 0.3 })
 --   ViewFx.shake(view, 0.08, 0.25)   ViewFx.flash(view, Color3.new(1, 1, 1), 0.2)

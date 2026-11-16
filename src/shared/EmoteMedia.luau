@@ -82,10 +82,8 @@ EmoteMedia.SOUNDS = {
 	fortySeconds = "",
 	-- The emote pack: strolls (heard for as long as the stroll lasts)
 	theLongClimb = "",
-	paradeMarch = "",
 	griddy = "",
 	mushroomStroll = "",
-	notMyProblem = "",
 	-- The emote pack: duos
 	matchPointServe = "",
 	cuffedLead = "",

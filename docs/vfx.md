@@ -81,7 +81,7 @@ Condemned 2, Godhood 3, a few showpieces a level up), in its tier's colour or it
 1. **Grey world, colour is earned.** Effects live in the game's greys, bone and soft white. Crimson belongs to Godhood
    only; red elsewhere means danger (the UI rule). One emote has its own colour by the owner's call: The Long Climb
    is green, like the show it copies. **Changed 2026-11-16 (the owner: "Yes, full colour"):** this rule now covers
-   world and gameplay effects only. Anything bought in the shop (emotes, covers, writing, verdicts, wins, forms,
+   world and gameplay effects only. Anything bought in the shop (emotes, covers, writing, wins, forms,
    custom deaths) wears its own colour, or its tier's, at full strength.
 2. **No ink.** No pools, splashes, sinking into ink, dripping or ink-coloured wisps (the owner's rule, 2026-10-21).
    Pick dust, ash, smoke, embers, light, glass or paper instead.

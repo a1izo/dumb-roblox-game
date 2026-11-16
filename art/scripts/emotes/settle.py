@@ -101,4 +101,4 @@ def run():
 
 
 # The emotes check_anims.py found below the floor (2026-10-21): a knee or a heel a few hundredths of a stud under.
-FLOOR_FIXES = ("chipAndPen", "smilingLord", "paradeMarch", "glitchStep")
+FLOOR_FIXES = ("chipAndPen", "smilingLord", "glitchStep")

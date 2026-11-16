@@ -25,7 +25,6 @@ local WinCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("WinCuts")) :
 local DeathCuts = require(Shared:WaitForChild("Cinema"):WaitForChild("DeathCuts")) :: any
 local DeathLines = require(Shared:WaitForChild("Presentation"):WaitForChild("DeathLines"))
 local SceneDeaths = require(script.Parent:WaitForChild("SceneDeaths"))
-local Verdicts = require(script.Parent:WaitForChild("Verdicts"))
 
 local Life = require(script.Parent.Parent.Anim.Life)
 local PoseController = require(script.Parent.Parent.Anim.PoseController)
@@ -103,22 +102,10 @@ local function sceneOf(name: string?): string?
 	return nil
 end
 
--- Ace's verdict styles, previewed full screen as "verdict:<style>" (Presentation/Verdicts).
-local function verdictOf(name: string?): string?
-	if type(name) == "string" and string.sub(name, 1, 8) == "verdict:" then
-		local style = string.sub(name, 9)
-		return if Verdicts.has(style) then style else nil
-	end
-	return nil
-end
-
 function WinCinema.get(name: string?): any
 	local style = sceneOf(name)
 	if style then
 		return { kind = "scene", length = SceneDeaths.length(style) }
-	end
-	if verdictOf(name) then
-		return { kind = "scene", length = Verdicts.LENGTH }
 	end
 	return if name then WinCuts[name] or DeathCuts[name] else nil
 end
@@ -137,9 +124,6 @@ function WinCinema.cutOf(item: any): string?
 	end
 	if item.kind == "reason" and DeathCuts[item.id] then
 		return item.id
-	end
-	if item.kind == "verdict" and Verdicts.has(item.style) then
-		return "verdict:" .. item.style
 	end
 	return nil
 end
@@ -1787,23 +1771,6 @@ end
 function WinCinema.preview(name: string, onEnd: (() -> ())?): boolean
 	if previewing or CameraDirector.busy() then
 		return false
-	end
-	-- a verdict: Ace's insert, this player's own name on the case file
-	local verdict = verdictOf(name)
-	if verdict then
-		local stopper = Verdicts.play(verdict, {
-			named = Players.LocalPlayer.DisplayName,
-			wait = false,
-			glideBack = true,
-			onEnd = function()
-				previewing = nil
-				if onEnd then
-					onEnd()
-				end
-			end,
-		})
-		previewing = stopper
-		return true
 	end
 	-- a scene death: its own cutscene starring this player (the patriot's grave: someone else at it, their name on it)
 	local scene = sceneOf(name)

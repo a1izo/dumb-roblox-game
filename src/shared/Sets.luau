@@ -7,7 +7,8 @@
 -- were made up again from what is left, and Ivory Tower from the new pale pieces (Moth Lantern, Frost Script,
 -- Shattered). The hats left the game (2026-10-27): Film Noir, Gilded Age and Seeing Red were made up again a
 -- second time. Ivory Tower's Moth Lantern went off sale with the shop's "The dead" suit (2026-11-16): the
--- Bone Chair took its place.
+-- Bone Chair took its place. Film Noir's Interrogation Lamp (a verdict style) left the game with the verdict styles
+-- (2026-11-16): the Case File cover took its place.
 
 local Cosmetics = require(script.Parent.Cosmetics)
 
@@ -19,7 +20,7 @@ Sets.LIST = {
 	{
 		id = "noir",
 		name = "Film Noir",
-		pieces = { "writing_typewriter", "verdict_lamp" },
+		pieces = { "writing_typewriter", "book_case" },
 		title = "title_set_noir",
 	},
 	{

@@ -1,8 +1,11 @@
 # Death's hand: what comes next
 
+(Ace's verdict styles and the Ace tab left the shop on 2026-11-16, the owner's word: "remove ace shop and verdict
+styles completely". Wherever this page or an older note below says verdict styles, they are gone.)
+
 The shop as it stands (2026-10-23): a table of tarot cards in suits, Today's hand dealt face down with
 the day's deal at a quarter off, matching sets with titles (emote sets too), collection milestones, and
-styles that play in the case itself (writing, verdict, death), Deathsinger forms, hats, Manual covers
+styles that play in the case itself (writing, death), Deathsinger forms, hats, Manual covers
 (each card shows the cover's own design), win cutscenes (one for each side) and seats and chairs for the
 war table. Browsing: search, show and order, "New" ribbons, posed emote cards, a wishlist, Fate's weekly
 draw and the Season ledger's free line; a mannequin by the lobby spawn shows the day's emote. Coins only:

@@ -4,7 +4,7 @@
 -- tinted ghost wearing its form, a title over its head (the words over the view: a 3D view draws no
 -- billboards). Styles and emotes play once when picked (again when picked again): an emote on the
 -- copy, all of it (with its props, sound and face, if it has them), a writing style writing a name on a
--- strip of page, a verdict's little scene, a custom death's acting on the copy (the copy is taken again
+-- strip of page, a custom death's acting on the copy (the copy is taken again
 -- afterwards). The copy is taken once
 -- when the shop opens (and again only when what you wear changes), and it is always put back into
 -- its rest pose: whatever you were doing (walking, a fidget, an emote) never shows. It sways a
@@ -614,7 +614,6 @@ local function preview(self: YourLook, item: Cosmetics.Item)
 			else emotePreview(self, item.emote)
 	elseif item.kind == "writing" and type(item.style) == "string" then
 		self.stopPreview = writePreview(self, item.style)
-	-- (a verdict is watched full screen with the card's Preview since 2026-11-16: Presentation/Verdicts)
 	elseif item.kind == "reason" and type(item.style) == "string" and self.copy then
 		self.stopPreview = deathPreview(self, item)
 	end

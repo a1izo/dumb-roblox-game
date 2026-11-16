@@ -1,11 +1,12 @@
 -- The shop, "Death's hand": a table of tarot cards dealt by Death (Shop/Card). The suits run along the
--- top (Cosmetics.SUITS: Today's hand, Diavolo, Ace, Custom deaths, Emotes, Win cutscenes, Seats, Titles, Robux
+-- top (Cosmetics.SUITS: Today's hand, Diavolo, Custom deaths, Emotes, Win cutscenes, Seats, Titles, Robux
 -- once a product is on sale, and Premium: empty for now, for things bought with Robux); a suit with nothing in it yet is not shown. Today's hand is the day's six
 -- and the day's deal (a card of the shop's own stock, a quarter off: Shared/ShopRotation), dealt face
 -- down (the same for everyone): each is turned over with a click, and stays turned that day (ShopService
 -- "turn"). The other suits lay their cards out by kind (Emotes by its sections: dances, poses, with
--- props, strolls, duo, with how many you own and the next collection milestone). (Fate, the Ledger, the Wishlist
--- and The dead were taken out of the shop on 2026-11-16, the user's word.)
+-- props, strolls, duo, with how many you own and the next collection milestone; Win cutscenes in two groups, one for
+-- each side, each with a line saying when it plays). (Fate, the Ledger, the Wishlist and The dead were taken out of
+-- the shop on 2026-11-16, the user's word, and so were Ace's tab and the verdict styles.)
 --
 -- Over a suit of kinds, a row to browse it (Shared/ShopBrowse): a search, what to show (all, not owned,
 -- can afford, wished) and an order (as dealt, cheapest, dearest, rarest, newest). A card new to the shop
@@ -33,6 +34,7 @@ local Products = require(Shared:WaitForChild("Products"))
 local Rarity = require(Shared:WaitForChild("Rarity"))
 local ShopBrowse = require(Shared:WaitForChild("ShopBrowse"))
 local ShopRotation = require(Shared:WaitForChild("ShopRotation"))
+local Terms = require(Shared:WaitForChild("Terms"))
 local Collection = require(Shared:WaitForChild("Progression"):WaitForChild("Collection"))
 
 local ClientState = require(script.Parent.Parent.ClientState)
@@ -255,6 +257,29 @@ local function emotesOwned(profile): number
 	end)
 end
 
+-- The two sides of the win cutscenes, in the order the shop shows them (Cosmetics `side`), each with its heading and
+-- the line that says when it plays.
+local WIN_SIDES = {
+	{ side = "bureau", title = Terms.f("{Agency}"), line = Terms.f("Plays when {agency} wins.") },
+	{ side = "coven", title = Terms.f("{Circle}"), line = Terms.f("Plays when {circle} wins.") },
+}
+
+-- A win cutscene's lines under Your look: when it plays, and (a paid one) what the other side gets from it. `cross` is
+-- the other side's version of the scene: it plays when that side wins and you use no paid scene of that side
+-- (CosmeticsService.winCut).
+local function winNote(item: Cosmetics.Item): string
+	local bureau = item.side == "bureau"
+	local text = Terms.f(if bureau then "Plays when {agency} wins." else "Plays when {circle} wins.")
+	if type(item.cross) == "string" then
+		local other = if bureau then "Kira" else "Team"
+		text ..= Terms.f(" When {other} wins, a {short} version of it plays, unless you use a {short} scene.", {
+			other = Terms.side(other),
+			short = Terms.side(other, "short"),
+		})
+	end
+	return text
+end
+
 -- Your look -------------------------------------------------------------------------------------------------
 
 local function clearAction()
@@ -450,6 +475,10 @@ local function showAction(profile, item: Cosmetics.Item?)
 			math.floor(ShopRotation.offOf(item.id, os.time()) * 100 + 0.5)
 		) .. actionNote.Text
 	end
+	-- (a win cutscene says which side it is for, ahead of any other note)
+	if item.kind == "win" then
+		actionNote.Text = winNote(item) .. (if actionNote.Text ~= "" then " " .. actionNote.Text else "")
+	end
 end
 
 local function openSheet(open: boolean)
@@ -482,7 +511,7 @@ end
 
 -- The table ------------------------------------------------------------------------------------------------
 
-local function section(title: string?, order: number): Frame
+local function section(title: string?, order: number, line: string?): Frame
 	local holder = Kit.frame({
 		Name = "Section",
 		Size = UDim2.new(1, 0, 0, 0),
@@ -494,11 +523,14 @@ local function section(title: string?, order: number): Frame
 	if title then
 		Kit.heading({ text = title, LayoutOrder = 1, Parent = holder })
 	end
+	if line then
+		Kit.label({ Name = "Line", Text = line, font = "bodyItalic", color = C.dim, LayoutOrder = 2, Parent = holder })
+	end
 	local grid = Kit.frame({
 		Name = "Cards",
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
-		LayoutOrder = 2,
+		LayoutOrder = 3,
 		Parent = holder,
 	})
 	Kit.grid(grid, UDim2.fromOffset(Card.WIDTH, Card.HEIGHT + 10), T.space.m)
@@ -862,10 +894,10 @@ function ShopPanel.rebuild()
 	else
 		local suit = Cosmetics.suit(currentSuit)
 		local order = 0
-		local function lay(title: string, items: { Cosmetics.Item })
+		local function lay(title: string, items: { Cosmetics.Item }, line: string?)
 			if #items > 0 then
 				order += 1
-				local grid = section(title, order)
+				local grid = section(title, order, line)
 				for index, item in ipairs(items) do
 					deal(profile, item, grid, index, false)
 				end
@@ -897,9 +929,23 @@ function ShopPanel.rebuild()
 					end
 					lay(category.name, inSection)
 				end
+			elseif kind == "win" then
+				-- Win cutscenes in two groups, one for each side, each with the line that says when it plays.
+				for _, group in ipairs(WIN_SIDES) do
+					local ofSide = {}
+					for _, item in ipairs(items) do
+						if item.side == group.side then
+							table.insert(ofSide, item)
+						end
+					end
+					lay(group.title, ofSide, group.line)
+				end
 			else
 				lay(Cosmetics.KIND_NAMES[kind] or kind, items)
 			end
+		end
+		if currentSuit == "wins" then
+			noteLabel.Text = "Use one scene for each side."
 		end
 		if currentSuit == "emotes" then
 			local count = emotesOwned(profile)

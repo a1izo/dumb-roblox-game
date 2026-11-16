@@ -8,6 +8,7 @@
 --            collider boxes, role tags, lighting and rain
 --   Show     every shop cutscene in a gallery (anywhere, the lobby too), match cutscene previews, announcements,
 --            the briefing card, results, music and sounds
+--   Effects  any one effect played alone on a dummy in a grey cell far from the map (Debug/FxBooth), held at its beat
 --   Anim     play any animation clip on yourself or on someone, at any speed
 --   Profile  coins, XP, cosmetics, passes, day / week jumps, resets, test purchases
 
@@ -34,11 +35,13 @@ local Toasts = require(script.Parent.Parent.UI.Toasts)
 local AudioCheck = require(script.Parent.Parent.Audio.AudioCheck)
 local MusicController = require(script.Parent.Parent.Audio.MusicController)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
+local Catalog = require(script.Parent.Parent.Presentation.Vfx.Catalog)
 local WinCinema = require(script.Parent.Parent.Presentation.WinCinema)
 local LightingController = require(script.Parent.Parent.World.LightingController)
 local Lightning = require(script.Parent.Parent.World.Lightning)
 local RainController = require(script.Parent.Parent.World.RainController)
 local DebugTools = require(script.Parent.DebugTools)
+local FxBooth = require(script.Parent.FxBooth)
 local UiGallery = require(script.Parent.UiGallery)
 
 local LocalPlayer = Players.LocalPlayer
@@ -66,7 +69,7 @@ local ROLE_COLORS = {
 	TaskForce = Color3.fromRGB(110, 170, 255),
 }
 
-local TABS = { "Match", "People", "Bots", "World", "Show", "UI", "Anim", "Profile" }
+local TABS = { "Match", "People", "Bots", "World", "Show", "Effects", "UI", "Anim", "Profile" }
 
 local remote = Net.event("Debug")
 local snap: any = nil
@@ -971,6 +974,95 @@ builders.Show = function()
 	end
 end
 
+-- The effects booth (Debug/FxBooth): any one effect in the game on a dummy in a grey cell far from the map. A whole scene
+-- (a win cutscene, a scene death, a writing style) plays on this screen's own camera and hides the panel while it runs, as
+-- the cutscene gallery does: F2 brings it back.
+local lastEffect: string? = nil
+
+local function playEffect(id: string)
+	local entry = FxBooth.find(id)
+	if not entry then
+		return
+	end
+	lastEffect = id
+	lastSignature = ""
+	local hides = entry.whole == true
+	if hides then
+		galleryShowAgain = window.Visible
+		window.Visible = false
+	end
+	task.spawn(function()
+		local ok, why = FxBooth.play(id, { onEnd = if hides then galleryDone else nil })
+		if not ok then
+			if hides then
+				galleryDone()
+			end
+			Toasts.show("Could not play " .. entry.label .. ". " .. tostring(why or ""), "bad")
+		end
+	end)
+end
+
+builders.Effects = function()
+	local booth = FxBooth.state()
+	heading("Effects booth")
+	local r = row()
+	button(r, "Backdrop: " .. booth.backdrop, function()
+		FxBooth.set({ backdrop = if booth.backdrop == "dark" then "lit" else "dark" })
+		lastSignature = ""
+	end)
+	button(r, "Camera: " .. booth.camera, function()
+		FxBooth.set({ camera = if booth.camera == "follow" then "close" else "follow" })
+		lastSignature = ""
+	end)
+	toggle(r, "Hold", booth.hold, function()
+		FxBooth.set({ hold = not booth.hold })
+		lastSignature = ""
+	end)
+	r = row()
+	button(r, "Stop", function()
+		task.spawn(FxBooth.stop)
+	end, COLORS.danger)
+	button(r, "Play again", function()
+		if lastEffect then
+			playEffect(lastEffect)
+		end
+	end, COLORS.on)
+	button(r, "Step 0.1 s", function()
+		task.spawn(FxBooth.step, 0.1)
+	end)
+	button(r, "Step 0.5 s", function()
+		task.spawn(FxBooth.step, 0.5)
+	end)
+	button(r, "Release", function()
+		FxBooth.release()
+	end)
+	button(r, "Leave the booth", function()
+		FxBooth.close()
+	end)
+	note(
+		"A button plays that effect alone on a dummy in a grey cell far from the map. Hold freezes it at its main beat."
+			.. " Step runs it on, Release lets it go. Scenes use your own camera and hide this panel: F2 brings it back."
+	)
+	local entries = FxBooth.list()
+	for _, family in ipairs(Catalog.FAMILIES) do
+		local inFamily = {}
+		for _, entry in ipairs(entries) do
+			if entry.family == family then
+				table.insert(inFamily, entry)
+			end
+		end
+		if #inFamily > 0 then
+			note((Catalog.FAMILY_NAMES[family] or family) .. " (" .. #inFamily .. ")")
+			local line = row()
+			for _, entry in ipairs(inFamily) do
+				button(line, entry.label, function()
+					playEffect(entry.id)
+				end, if entry.id == lastEffect then COLORS.pick else nil)
+			end
+		end
+	end
+end
+
 builders.UI = function()
 	heading("Design system")
 	local r = row()
@@ -1292,13 +1384,15 @@ local function build()
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = tabs,
 	})
+	-- (the tabs share the bar's width: nine of them are wider than the window at 62 px each)
+	local tabWidth = math.min(62, math.floor((480 - 16 - 4 * (#TABS - 1)) / #TABS))
 	for index, name in ipairs(TABS) do
 		local b = make("TextButton", {
 			AutoButtonColor = true,
 			BackgroundColor3 = COLORS.button,
-			Size = UDim2.fromOffset(62, 26),
+			Size = UDim2.fromOffset(tabWidth, 26),
 			Font = Enum.Font.GothamBold,
-			TextSize = 12,
+			TextSize = if tabWidth < 56 then 11 else 12,
 			TextColor3 = COLORS.text,
 			Text = name,
 			LayoutOrder = index,
@@ -1403,6 +1497,9 @@ DebugPanel.gallery = {
 	stop = stopGallery,
 	new = NEW_SCENES,
 }
+
+-- The effects booth, for the test harness: the same functions its buttons call (list, play, stop, at, step, release).
+DebugPanel.fx = FxBooth
 
 -- Whether the panel's window shows (the gallery hides it while it plays).
 function DebugPanel.shown(): boolean

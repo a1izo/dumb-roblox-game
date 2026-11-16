@@ -14,7 +14,7 @@ local ReceiptLedger = require(script.Parent.Parent:WaitForChild("Data"):WaitForC
 
 -- Kinds that left the game; Migrations take their ids out of profiles (the trails on 2026-10-21, v5; the ties
 -- with the owner's drops, v6; the hats with the Wardrobe on 2026-10-27, v7).
-local GONE_KINDS = { "hat", "tie", "trail" }
+local GONE_KINDS = { "hat", "tie", "trail", "verdict" }
 
 return function(t)
 	local describe, it, expect = t.describe, t.it, t.expect
@@ -252,8 +252,8 @@ return function(t)
 		end)
 		it("deals every kind in exactly one suit", function()
 			-- (trails and ties left on 2026-10-21; win cutscenes, seats and chairs came; custom deaths on 2026-10-25;
-			-- hats left with the Wardrobe on 2026-10-27)
-			expect(#Cosmetics.KINDS).to.equal(10)
+			-- hats left with the Wardrobe on 2026-10-27; verdict styles on 2026-11-16)
+			expect(#Cosmetics.KINDS).to.equal(9)
 			for _, kind in ipairs(Cosmetics.KINDS) do
 				-- (the specter forms are sold in no suit since "The dead" left the shop, 2026-11-16)
 				local want = if kind == "specter" then 0 else 1

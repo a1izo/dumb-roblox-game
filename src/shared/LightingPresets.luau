@@ -741,15 +741,6 @@ LightingPresets.scenes = {
 		tint = rgb(255, 240, 224),
 		bloom = 0.45,
 	}),
-	-- Ace's verdicts (2026-11-16, client Presentation/Verdicts): a dark office, the desk lit by its banker's lamp alone.
-	verdict = scene({
-		ambient = rgb(20, 18, 17),
-		outdoorAmbient = rgb(18, 18, 22),
-		saturation = -0.12,
-		contrast = 0.22,
-		tint = rgb(255, 238, 220),
-		bloom = 0.4,
-	}),
 	clock = scene({
 		clockTime = 14,
 		ambient = rgb(120, 120, 126),

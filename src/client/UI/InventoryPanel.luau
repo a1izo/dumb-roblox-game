@@ -40,7 +40,6 @@ local TABS = {
 	{ id = "title", label = "Titles" },
 	{ id = "grimoire", label = "Manual covers" },
 	{ id = "writing", label = "Writing styles" },
-	{ id = "verdict", label = "Verdict styles" },
 	{ id = "reason", label = "Custom deaths" },
 	{ id = "specter", label = "Deathsinger forms" },
 	{ id = "chair", label = "Chairs" },
