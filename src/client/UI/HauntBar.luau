@@ -1,7 +1,8 @@
--- Haunting the lobby. For a Specter waiting there (away from the case, hidden), a small bar at the bottom
--- centre: Flicker (the nearest brazier or lamp sputters), Whisper and Mist (at the spot you are looking at,
--- within 25 studs). One shared cooldown for the haunts; the server decides. Every player in the lobby sees and hears a
--- haunt (this module plays them all), and nothing says who did it.
+-- Haunting the living. For a Specter on the case's map (2026-11-16, the user: "make haunt only appear when youre
+-- on the map spectating"; it used to be the lobby's, for a Specter waiting there), a small bar at the bottom centre:
+-- Flicker (the nearest lamp sputters), Whisper and Mist (at the spot you are looking at, within 25 studs). One shared
+-- cooldown for the haunts; the server decides. Every player near it sees and hears a haunt (this module plays them
+-- all), and nothing says who did it.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -167,7 +168,8 @@ end
 -- The bar -----------------------------------------------------------------------------------------------
 
 local function refresh()
-	bar.Visible = ClientState.isAway() and not LobbyChrome.isHidden()
+	-- (on the map: a Specter flying the case while it is being investigated, not away in the lobby)
+	bar.Visible = ClientState.isSpecter() and not ClientState.isAway() and ClientState.phase() == "Investigation"
 end
 
 function HauntBar.init()

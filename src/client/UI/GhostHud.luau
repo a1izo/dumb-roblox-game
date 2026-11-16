@@ -1,8 +1,8 @@
 -- The Specter HUD, a strip under the phase banner for Specters and spectators: follow a
--- living player's view (◀ name ▶) or fly free, and jump between the map and the meeting
--- room. Specters also see the lost souls they gathered and can go back to the lobby until the case closes
--- (hidden there, GhostService "away"); spectators get a Leave button. On
--- touch screens there are up and down buttons for flying.
+-- living player's view (◀ name ▶) or fly free. Specters can go back to the lobby until the case closes
+-- (hidden there, GhostService "away"); spectators get a Leave button. On touch screens there are up and
+-- down buttons for flying. (2026-11-16, the user: the Map and Meeting room jumps, the lost souls and the
+-- wager are gone from it; haunting is on the map now, UI/HauntBar.)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -13,10 +13,8 @@ local FollowCam = require(script.Parent.Parent.Specter.FollowCam)
 local GhostController = require(script.Parent.Parent.Specter.GhostController)
 local Hud = require(script.Parent.Hud)
 local Kit = require(script.Parent.Kit)
-local Router = require(script.Parent.Core.Router)
 local Screens = require(script.Parent.Screens)
 
-local C = Kit.color
 local T = Kit.Tokens
 
 local GhostHud = {}
@@ -26,12 +24,8 @@ local previous: TextButton
 local nextButton: TextButton
 local followLabel: TextLabel
 local followButton: TextButton
-local jumps: Frame
-local souls: Frame
-local soulsLabel: TextLabel
 local leaveButton: TextButton
 local lobbyButton: TextButton
-local wagerButton: TextButton
 local liftPad: Frame
 
 local function refresh()
@@ -40,11 +34,8 @@ local function refresh()
 	local watching = ClientState.isWatching()
 	local following = FollowCam.isFollowing()
 	strip.Visible = show
-	jumps.Visible = show
-	souls.Visible = specter
 	leaveButton.Visible = watching
 	lobbyButton.Visible = specter
-	wagerButton.Visible = specter
 	previous.Visible = following
 	nextButton.Visible = following
 	if following then
@@ -74,18 +65,6 @@ local function holdLift(button: GuiButton, value: number)
 			GhostController.setTouchLift(0)
 		end
 	end)
-end
-
-local function divider(order: number, parent: Instance)
-	Kit.Base.make("Frame", {
-		Name = "Divider",
-		BackgroundColor3 = C.rule,
-		BackgroundTransparency = 0.8,
-		BorderSizePixel = 0,
-		Size = UDim2.fromOffset(1, 28),
-		LayoutOrder = order,
-		Parent = parent,
-	})
 end
 
 function GhostHud.init()
@@ -120,47 +99,6 @@ function GhostHud.init()
 		{ text = "Follow", icon = "eye", variant = "secondary", size = "s", LayoutOrder = 4, Parent = strip },
 		FollowCam.toggle
 	)
-	-- Jumps between the map and the meeting room
-	jumps = Kit.frame({
-		Name = "Jumps",
-		Size = UDim2.fromOffset(0, T.touch),
-		AutomaticSize = Enum.AutomaticSize.X,
-		LayoutOrder = 5,
-		Parent = strip,
-	})
-	Kit.list(jumps, T.space.s, true)
-	divider(1, jumps)
-	Kit.button({ text = "Map", variant = "ghost", size = "s", LayoutOrder = 2, Parent = jumps }, function()
-		FollowCam.stop()
-		GhostController.jump("map")
-	end)
-	Kit.button({ text = "Meeting room", variant = "ghost", size = "s", LayoutOrder = 3, Parent = jumps }, function()
-		FollowCam.stop()
-		GhostController.jump("meeting")
-	end)
-	-- Lost souls (Specters only)
-	souls = Kit.frame({
-		Name = "Souls",
-		Size = UDim2.fromOffset(0, T.touch),
-		AutomaticSize = Enum.AutomaticSize.X,
-		LayoutOrder = 6,
-		Parent = strip,
-	})
-	Kit.list(souls, T.space.s, true)
-	divider(1, souls)
-	Kit.icon({ name = "ghost", size = 20, color = C.specter, LayoutOrder = 2, Parent = souls })
-	soulsLabel = Kit.label({
-		Text = "Lost souls 0/8",
-		font = "label",
-		size = "small",
-		color = C.specter,
-		TextWrapped = false,
-		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.fromOffset(0, T.touch),
-		LayoutOrder = 3,
-		Parent = souls,
-	})
-	Kit.pad(souls, 0, T.space.xxs)
 	-- Spectators go back to the lobby from here.
 	leaveButton = Kit.button({
 		text = "Leave",
@@ -173,19 +111,6 @@ function GhostHud.init()
 	}, function()
 		FollowCam.stop()
 		Net.event("Watch"):FireServer({ action = "leave" })
-	end)
-
-	-- Death's wager (UI/WagerPanel).
-	wagerButton = Kit.button({
-		text = "Wager",
-		icon = "real",
-		variant = "secondary",
-		size = "s",
-		Visible = false,
-		LayoutOrder = 6,
-		Parent = strip,
-	}, function()
-		Router.toggle("wager")
 	end)
 
 	-- Specters can wait in the lobby (hidden) and come back in from its menu.
@@ -229,9 +154,6 @@ function GhostHud.init()
 	holdLift(up, 1)
 	holdLift(down, -1)
 
-	GhostController.DutiesChanged:Connect(function(done, max)
-		soulsLabel.Text = string.format("Lost souls %d/%d", done, max)
-	end)
 	FollowCam.Changed:Connect(refresh)
 	ClientState.PublicChanged:Connect(refresh)
 	ClientState.WatchChanged:Connect(refresh)

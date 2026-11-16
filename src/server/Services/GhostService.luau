@@ -48,6 +48,8 @@ GhostService.DUTY_RANGE = 8
 GhostService.DUTY_COOLDOWN = 4
 GhostService.DUTY_MAX = 8
 local ACTIVE_WISPS = 3
+-- (2026-11-16, the user: the lost souls are removed: none are made, on the map or in the lobby)
+local LOST_SOULS = false
 
 -- How far past its walls the watchdog lets a ghost stray before bringing it back.
 local STRAY = Vector3.new(2, 4, 2)
@@ -248,6 +250,9 @@ local function sendDuties(player: Player, ghost: Ghost)
 end
 
 local function fillWisps(ghost: Ghost)
+	if not LOST_SOULS then
+		return
+	end
 	local done = ghost.ps.stats.duties or 0
 	local count = 0
 	for _ in pairs(ghost.wisps) do
@@ -390,6 +395,9 @@ local function sendAwayDuties(player: Player, away: Away)
 end
 
 local function fillAwayWisps(away: Away)
+	if not LOST_SOULS then
+		return
+	end
 	local done = away.ps.stats.duties or 0
 	local count = 0
 	for _ in pairs(away.wisps) do
@@ -437,20 +445,22 @@ local HAUNT_RANGE = 25
 local HAUNT_COOLDOWN = 20
 local HAUNTS = { flicker = true, whisper = true, mist = true }
 
--- The lobby's light nearest to `position` (a PointLight, SpotLight or Fire), within HAUNT_RANGE.
+-- The light nearest to `position` (a PointLight, SpotLight or Fire) on the case's map or in the lobby, within
+-- HAUNT_RANGE.
 local function nearestLight(position: Vector3): Instance?
-	local lobby = workspace:FindFirstChild("LGameLobby")
-	if not lobby then
-		return nil
-	end
 	local best, bestDistance = nil, HAUNT_RANGE
-	for _, item in ipairs(lobby:GetDescendants()) do
-		if item:IsA("PointLight") or item:IsA("SpotLight") or item:IsA("Fire") then
-			local holder = item.Parent
-			if holder and holder:IsA("BasePart") then
-				local distance = (holder.Position - position).Magnitude
-				if distance < bestDistance then
-					best, bestDistance = item, distance
+	for _, name in ipairs({ "LGameMap", "LGameLobby" }) do
+		local place = workspace:FindFirstChild(name)
+		if place then
+			for _, item in ipairs(place:GetDescendants()) do
+				if item:IsA("PointLight") or item:IsA("SpotLight") or item:IsA("Fire") then
+					local holder = item.Parent
+					if holder and holder:IsA("BasePart") then
+						local distance = (holder.Position - position).Magnitude
+						if distance < bestDistance then
+							best, bestDistance = item, distance
+						end
+					end
 				end
 			end
 		end
@@ -466,7 +476,7 @@ local function onHaunt(player: Player, away: Away, payload: any)
 		return
 	end
 	local now = os.clock()
-	if now - away.lastHaunt < HAUNT_COOLDOWN then
+	if now - (away.lastHaunt or 0) < HAUNT_COOLDOWN then
 		return
 	end
 	local origin = root.Position
@@ -678,8 +688,6 @@ local function onRequest(player: Player, payload: any)
 	if away then
 		if payload.action == "collect" and Match.active then
 			onAwayCollect(player, away, payload.id)
-		elseif payload.action == "haunt" and Match.active then
-			onHaunt(player, away, payload)
 		end
 		return
 	end
@@ -698,6 +706,9 @@ local function onRequest(player: Player, payload: any)
 	end
 	if payload.action == "collect" then
 		onCollect(player, ghost, payload.id)
+	elseif payload.action == "haunt" and Match.active and Match.phase == "Investigation" then
+		-- (2026-11-16: haunting is on the map now, for a Specter flying the case)
+		onHaunt(player, ghost :: any, payload)
 	elseif jump then
 		moveTo(ghost, payload.venue)
 	end
