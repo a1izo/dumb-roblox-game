@@ -120,9 +120,15 @@ return function(t)
 			for _, season in pairs(Ledger.SEASONS) do
 				for tier, id in pairs(season.items) do
 					local item = Cosmetics.byId(id) :: any
-					-- (the season's own things, pieces from the shop, or the titles now earned as achievements)
+					-- (the season's own things, pieces from the shop, the titles now earned as achievements, or a specter
+					-- form no longer sold since The dead left the shop)
 					local earned = item ~= nil
-						and (item.source == "season" or item.source == "achievement" or item.price ~= nil)
+						and (
+							item.source == "season"
+							or item.source == "achievement"
+							or item.source == "retired"
+							or item.price ~= nil
+						)
 					expect(earned and tier <= Ledger.TIERS and tier % 3 == 0).to.equal(true)
 				end
 			end

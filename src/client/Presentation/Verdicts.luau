@@ -33,9 +33,10 @@ Verdicts.LENGTH = VerdictTiming.LENGTH
 local ORIGIN = CFrame.new(-6000, 650, 6600)
 
 local TOP = 3 -- the desk's top, studs off the floor
-local WALNUT = Color3.fromRGB(46, 28, 18)
-local WALNUT_DARK = Color3.fromRGB(26, 16, 10)
-local BLOTTER = Color3.fromRGB(26, 40, 30)
+-- (lighter than the wood itself: under one lamp a true walnut read black in a play test, 2026-11-16)
+local WALNUT = Color3.fromRGB(104, 66, 42)
+local WALNUT_DARK = Color3.fromRGB(62, 40, 26)
+local BLOTTER = Color3.fromRGB(44, 70, 52)
 local ROOM = Color3.fromRGB(16, 14, 13)
 local PAPER = Color3.fromRGB(226, 220, 204)
 local TYPE = Color3.fromRGB(34, 32, 34)
@@ -119,8 +120,9 @@ end
 -- A sheet of typed paper lying on the desk (scene space, its head away from the camera), with `lines` typed on it: the
 -- first in capitals as a heading, the name larger. Returns the sheet and its gui.
 local function sheet(ctx: any, cf: CFrame, size: Vector2, lines: { string }): (BasePart, SurfaceGui)
-	local p = ctx:part({ size = Vector3.new(size.X, 0.012, size.Y), color = PAPER, material = Enum.Material.Fabric })
-	p.CFrame = ctx.origin * cf
+	-- (turned a quarter so the gui's lines run across the frame, left to right, their tops away from the camera)
+	local p = ctx:part({ size = Vector3.new(size.Y, 0.012, size.X), color = PAPER, material = Enum.Material.Fabric })
+	p.CFrame = ctx.origin * cf * CFrame.Angles(0, math.rad(90), 0)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Top
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
@@ -210,9 +212,13 @@ local function office(ctx: any, fileAt: CFrame?): SpotLight
 			material = Enum.Material.Glass,
 		})
 	end
-	local key = spot(ctx, Vector3.new(-2.6, TOP + 2.9, 1.9), Vector3.new(0.2, TOP, 0.2), LAMP, 16, 3.2, 70)
+	-- (the lamp's pool falls on the blotter from above and a little in front, so what lies on it shows its face to the
+	-- camera; seen in a play test 2026-11-16: from behind the desk it left every face black)
+	local key = spot(ctx, Vector3.new(-1.4, TOP + 3.6, -0.6), Vector3.new(0.6, TOP, 0.5), LAMP, 18, 4.5, 80)
 	ctx:light(Vector3.new(-3.4, TOP + 1.5, 2.1), LAMP, 7, 0.8)
 	spot(ctx, Vector3.new(3.5, TOP + 3.5, 5.5), Vector3.new(0, TOP + 0.4, 0), RIM, 16, 1.1, 50)
+	-- a dim warm fill from the camera's side
+	spot(ctx, Vector3.new(0.8, TOP + 1.8, -5), Vector3.new(0.2, TOP + 0.3, 0.3), LAMP, 12, 0.55, 60)
 	-- the room beyond the lamp falls off to black: a faint warm bounce off the wall behind
 	ctx:light(Vector3.new(0, TOP + 2, 8), Color3.fromRGB(90, 66, 50), 14, 0.25)
 	-- dust turning in the lamp's light
@@ -281,7 +287,7 @@ local function hit(ctx: any, at: Vector3, hard: number, tint: Color3?, chips: Co
 		Vfx.Emit.burst(CFrame.new(world), {
 			tex = "VfxChunk",
 			color = chips,
-			size = { 0.05, 0.08 },
+			size = { { 0, 0.08 }, { 1, 0.05 } },
 			life = { 0.4, 0.7 },
 			speed = { 3, 6 },
 			spread = 70,
@@ -392,8 +398,8 @@ local function gavel(ctx: any)
 		kick(ctx, key, s[1], 0.6 * s[2])
 	end
 	-- 1: low on the block, the head coming down into the frame from above
-	ctx:shot(0, strike + Vector3.new(0.75, 0.2, -2.5), strike + Vector3.new(-0.15, 0.35, 0), 30, {
-		eye = strike + Vector3.new(0.65, 0.16, -2.15),
+	ctx:shot(0, strike + Vector3.new(1.2, 0.45, -3.6), strike + Vector3.new(-0.2, 0.45, 0), 30, {
+		eye = strike + Vector3.new(1.05, 0.4, -3.1),
 	})
 	-- 2: from the block's far side along the desk, the gavel rising and coming down again, the file behind it soft
 	ctx:shot(1.08, strike + Vector3.new(2.3, 0.75, -1.3), strike + Vector3.new(-0.5, 0.3, 0.2), 34, {
@@ -732,12 +738,15 @@ local function stamp(ctx: any)
 	end
 	-- the print: GUILTY in a red box, a little crooked and patchy, on the sheet with the name
 	local print = ctx:part({
-		size = Vector3.new(0.84, 0.002, 0.5),
+		size = Vector3.new(0.5, 0.002, 0.84),
 		color = PAPER,
 		alpha = 1,
 		cast = false,
 	})
-	print.CFrame = ctx.origin * CFrame.new(onFile + Vector3.new(0, 0.026, 0)) * CFrame.Angles(0, math.rad(-6), 0)
+	print.CFrame = ctx.origin
+		* CFrame.new(onFile + Vector3.new(0, 0.026, 0))
+		* CFrame.Angles(0, math.rad(-6), 0)
+		* CFrame.Angles(0, math.rad(90), 0)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Top
 	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
@@ -770,7 +779,7 @@ local function stamp(ctx: any)
 		Vfx.Emit.burst(CFrame.new(ctx:world(onFile + Vector3.new(0, 0.04, 0))), {
 			tex = "VfxDust",
 			color = INK_RED,
-			size = { 0.025, 0.05 },
+			size = { { 0, 0.05 }, { 1, 0.025 } },
 			life = { 0.25, 0.4 },
 			speed = { 2, 4 },
 			spread = 85,
