@@ -278,12 +278,13 @@ footwork.apply(shot)  # (the feet planted where they come down, stepping after t
 
 # The cameras ------------------------------------------------------------------------------------------------
 CUT_A2, CUT_B = 1.7, 3.3  # the hands: an insert on the tray, then the walk
-# A: from beyond the counter's west end, above the marble: the old man bent over the tray, a fist straightening a cup.
-shot.pan(0.0, CUT_A2, "self", (PX + 5.4, 4.8, -0.6), aim="Torso", dy=1.3, fov=56, drift=(-0.4, 0.0, -0.2), operator=True, seed=1,
-         shake=0.5, fov_to=42, ease_move=True)
-# A2: close and high from the west over the tray: the two fists taking it by its ends, the lift.
-shot.pan(CUT_A2, CUT_B, "self", (PX - 4.6, 6.2, -2.9), aim="Torso", dy=-0.9, fov=46, cut=True, drift=(0.3, 0.0, 0.0), operator=True,
-         seed=6, shake=0.5, fov_to=38, ease_move=True)
+# A: wide from beyond the counter's west end, his left (the hanging, idle) side to us so the working arm is the far one: the old man bent over the
+# tray in profile, the marble and the pantry round him, a fist straightening a cup.
+shot.pan(0.0, CUT_A2, "self", (PX - 6.2, 4.9, -3.9), aim="Torso", dy=1.1, fov=52, drift=(0.4, 0.0, 0.2), operator=True, seed=1,
+         shake=0.5, fov_to=48, ease_move=True)
+# A2: from over the counter's west end, high and to the tray's side (the tray and its cups in the frame beside his head, his near arm a small shape): the hands rise, come down on the tray, lift it.
+shot.pan(CUT_A2, CUT_B, "self", (PX - 4.0, 6.1, -5.4), aim="Torso", dy=0.8, fov=52, cut=True, drift=(0.4, 0.0, 0.1), operator=True,
+         seed=6, shake=0.5, fov_to=48, ease_move=True)
 # B: from the pantry's far corner, high behind him as he goes, down its length to the lit door and the dark beyond.
 shot.pan(CUT_B, T_DOOR, "self", (PX + 6.4, 5.8, 2.0), aim="Torso", dy=0.3, fov=46, cut=True, back=True, drift=(-1.2, -0.2, -0.4),
          operator=True, seed=2, shake=0.5, ease_move=True)
