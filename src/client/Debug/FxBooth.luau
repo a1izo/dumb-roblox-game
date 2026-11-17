@@ -22,6 +22,7 @@ local RunService = game:GetService("RunService")
 local Catalog = require(script.Parent.Parent.Presentation.Vfx.Catalog)
 local CameraDirector = require(script.Parent.Parent.Presentation.CameraDirector)
 local LightingController = require(script.Parent.Parent.World.LightingController)
+local Probe = require(script.Parent.Parent.Presentation.Vfx.Probe)
 local Stage = require(script.Parent.Parent.Presentation.Stage)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
 
@@ -486,6 +487,9 @@ function FxBooth.play(id: string, opts: Options?): (boolean, string?)
 		run.startedAt = Clock.now()
 	end
 	current = run
+	if Probe.on then
+		Probe.restart(Clock.now()) -- (the effect report counts its seconds from here)
+	end
 	local started, stopOrError = pcall(entry.play, stage)
 	if not started then
 		warn("[FxBooth] " .. id .. " failed: " .. tostring(stopOrError))
@@ -523,6 +527,208 @@ function FxBooth.at(id: string, seconds: number, opts: Options?): (boolean, stri
 		return false, "a whole scene cannot be held"
 	end
 	return FxBooth.holdAt(run.entry.hit + seconds), nil
+end
+
+-- The effect report (the plan's ticket V0.5) ---------------------------------------------------------------------------------
+
+local REACH = 250 -- studs from the dummy: what the kit makes further out is another system's, and is left out
+
+-- The textures the report names (Vfx names first: a stand-in that several share is called by the first).
+local TEXTURES = {
+	"VfxGlow",
+	"VfxEmber",
+	"VfxFlare",
+	"VfxStreak",
+	"VfxRingBand",
+	"VfxRing",
+	"VfxSmoke",
+	"VfxDust",
+	"VfxFlame",
+	"VfxCandleFlame",
+	"VfxWisp",
+	"VfxAsh",
+	"VfxChunk",
+	"VfxMoth",
+	"VfxBurst",
+	"VfxCircle",
+	"VfxColumn",
+	"VfxCrack",
+	"VfxFeather",
+	"VfxPage",
+	"VfxSlash",
+	"VfxSlashBand",
+	"VfxSpike",
+	"AuraGlow",
+	"AuraSpecks",
+	"AuraTwinkle",
+	"AuraHalo",
+	"AuraCrescent",
+	"AuraSpikeRing",
+	"AuraWisp",
+	"AuraBolt",
+}
+
+-- A function from a texture string (an asset id) back to the kit's name for it.
+local function textureNamer(): (string) -> string
+	local names: { [string]: string } = {}
+	for _, name in ipairs(TEXTURES) do
+		local ok, id = pcall(Vfx.Tex.id, name)
+		if ok and id ~= "" and names[id] == nil then
+			names[id] = name
+		end
+	end
+	return function(texture: string): string
+		return names[texture] or (if texture == "" then "none" else "other")
+	end
+end
+
+-- Plays the effect `id` with the probe on, for as long as it is worth watching (its length, and at least a second and a
+-- half past its hit), then judges what the kit recorded (Probe.judge) and prints one line: PASS or FAIL with the reasons.
+-- Returns { id, family, tier, verdict, rows } (nil and why when it would not play). Yields: call it from its own thread.
+function FxBooth.report(id: string, opts: Options?): ({ [string]: any }?, string?)
+	local entry = Catalog.byId(id)
+	if not entry then
+		return nil, "no effect called " .. id
+	end
+	FxBooth.stop()
+	settle()
+	local merged: Options = if opts then table.clone(opts) else {}
+	merged.hold = false
+	local kept = state.hold
+	Probe.begin(Clock.now, if entry.whole == true then nil else ORIGIN, REACH)
+	local namer = textureNamer()
+	local watcher = workspace.DescendantAdded:Connect(function(inst)
+		if inst:IsA("ParticleEmitter") or inst:IsA("Beam") or inst:IsA("Light") then
+			Probe.raw(inst, namer)
+		end
+	end)
+	local ok, why = FxBooth.play(id, merged)
+	state.hold = kept
+	local watched = math.max(entry.length, entry.hit + 1.6) + 0.3
+	local endT = 0
+	if ok then
+		local deadline = os.clock() + watched * 3 + 5
+		while Clock.now() - Probe.origin < watched and os.clock() < deadline do
+			RunService.Heartbeat:Wait()
+		end
+		endT = Clock.now() - Probe.origin
+	end
+	watcher:Disconnect()
+	Probe.finish()
+	local rows = Probe.rows
+	FxBooth.stop()
+	if not ok then
+		return nil, why
+	end
+	local verdict = Probe.judge(rows, {
+		hit = entry.hit,
+		length = entry.length,
+		tier = entry.tier,
+		budget = entry.budget,
+		loop = entry.loop == true,
+		estimated = entry.estimated == true,
+		endT = endT,
+	})
+	print(Probe.line(id, verdict))
+	return { id = id, family = entry.family, tier = entry.tier, verdict = verdict, rows = rows }, nil
+end
+
+-- The results as a Markdown table (one row each).
+function FxBooth.reportTable(results: { { [string]: any } }): string
+	local lines = {
+		"| effect | family | tier | result | reasons | layers | dots | particles | big | emitters | lights |",
+		"|---|---|---|---|---|---|---|---|---|---|---|",
+	}
+	for _, result in ipairs(results) do
+		local v = result.verdict
+		if v then
+			local s = v.stats
+			table.insert(
+				lines,
+				string.format(
+					"| %s | %s | %s | %s | %s | %d | %d%% | %d%s | %d | %d | %d |",
+					result.id,
+					result.family,
+					result.tier,
+					if v.pass then "PASS" else "FAIL",
+					table.concat(v.fails, "; "),
+					s.layers,
+					math.floor(s.dotShare * 100 + 0.5),
+					s.peakParticles,
+					if s.unseen > 0 then " (+" .. s.unseen .. " by hand)" else "",
+					s.peakBig,
+					s.peakEmitters,
+					s.peakLights
+				)
+			)
+		else
+			table.insert(
+				lines,
+				string.format(
+					"| %s | %s | %s | ERROR | %s | | | | | | |",
+					result.id,
+					result.family,
+					result.tier,
+					tostring(result.error)
+				)
+			)
+		end
+	end
+	return table.concat(lines, "\n")
+end
+
+-- Reports every effect in the catalogue (or the families / ids given: { families = {...}, ids = {...}, skip = {...} }),
+-- one after another, then prints the table. Yields for minutes: call it from its own thread, in a booth nobody else is using.
+function FxBooth.reportAll(
+	filter: { families: { string }?, ids: { string }?, skip: { string }? }?
+): ({ { [string]: any } }, string)
+	local results: { { [string]: any } } = {}
+	for _, item in ipairs(FxBooth.list()) do
+		local wanted = true
+		if filter then
+			if filter.families and not table.find(filter.families, item.family) then
+				wanted = false
+			end
+			if filter.ids and not table.find(filter.ids, item.id) then
+				wanted = false
+			end
+			if filter.skip and table.find(filter.skip, item.id) then
+				wanted = false
+			end
+		end
+		if wanted then
+			local ok, result, why = pcall(FxBooth.report, item.id)
+			if ok and result then
+				result.rows = nil -- (a long run keeps the verdicts, not every row)
+				table.insert(results, result)
+			else
+				local reason = if ok then why else result
+				warn("[FxReport] " .. item.id .. " could not be reported: " .. tostring(reason))
+				table.insert(results, { id = item.id, family = item.family, tier = item.tier, error = reason })
+			end
+		end
+	end
+	local text = FxBooth.reportTable(results)
+	local passed = 0
+	for _, result in ipairs(results) do
+		if result.verdict and result.verdict.pass then
+			passed += 1
+		end
+	end
+	print(string.format("[FxReport] %d of %d pass. The table:", passed, #results))
+	local chunk, count = {}, 0
+	for line in string.gmatch(text, "[^\n]+") do
+		table.insert(chunk, line)
+		count += 1
+		if count >= 25 then
+			print(table.concat(chunk, "\n"))
+			chunk, count = {}, 0
+		end
+	end
+	if #chunk > 0 then
+		print(table.concat(chunk, "\n"))
+	end
+	return results, text
 end
 
 -- Leaves the booth: stops, gives the camera and the lighting back, takes the cell away.

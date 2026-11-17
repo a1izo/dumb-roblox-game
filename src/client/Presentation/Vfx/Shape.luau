@@ -14,6 +14,7 @@ local ModelLibrary = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChi
 local Clock = require(script.Parent.Clock)
 local Ease = require(script.Parent.Ease)
 local Emit = require(script.Parent.Emit)
+local Probe = require(script.Parent.Probe)
 local Tex = require(script.Parent.Tex)
 
 local Shape = {}
@@ -205,6 +206,9 @@ function Shape.grow(kind: Kind, at: CFrame, options: Options): BasePart
 	local rise = options.rise or 0
 	local after = options.grow or 1
 	local total = seconds + hold + fade
+	if Probe.on then
+		Probe.shape(kind, options, at, total, hidden)
+	end
 	local function place(scale: number, t: number)
 		local size = sizeFor(kind, full * scale, if fullHeight then fullHeight * scale else nil)
 		if not source and (part :: Part).Shape == Enum.PartType.Cylinder then

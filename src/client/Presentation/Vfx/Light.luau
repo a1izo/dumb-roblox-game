@@ -5,6 +5,7 @@
 local Clock = require(script.Parent.Clock)
 local Ease = require(script.Parent.Ease)
 local Emit = require(script.Parent.Emit)
+local Probe = require(script.Parent.Probe)
 
 local Light = {}
 
@@ -17,6 +18,9 @@ function Light.flash(at: Vector3, color: Color3, range: number, brightness: numb
 	light.Brightness = brightness
 	light.Shadows = shadows == true
 	light.Parent = p
+	if Probe.on then
+		Probe.light("flash", light, seconds, brightness)
+	end
 	Clock.tween(seconds, Ease.outQuad, function(u)
 		light.Brightness = brightness * (1 - u)
 		light.Range = range * (1 - 0.3 * u)
@@ -39,6 +43,9 @@ function Light.hold(
 	light.Brightness = 0
 	light.Shadows = false
 	light.Parent = parent
+	if Probe.on then
+		Probe.light("hold", light, nil, brightness)
+	end
 	Clock.tween(fadeIn or 0.3, Ease.outQuad, function(u)
 		light.Brightness = brightness * u
 	end)

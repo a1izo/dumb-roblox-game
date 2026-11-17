@@ -116,3 +116,4 @@
 - [Fx file v4 export](fx-file-v4-export.md) - 2026-11-17: ModelsFx 4 = meshes.py alone (no Core/Props.blend), version in two places, check_fx_export.py, Tex.FALLBACK, budget exception (+23 MP, +11 MB in every scene), V1.2 not in it
 - [Fire and flame textures](fire-flame-textures.md) - V1.2 tex_fire.py (2026-11-17): 4 px clear is cell-size dependent (0.93 for 128 px), tongues from spines not noise cones, candle fill comes from its halo
 - [Booth lighting nil in play tests](booth-fx-play-uninitialised-lighting.md) - fx.play 'TweenService:Create ... Instance is null' = command-bar copy of LightingController never init()ed, not Recipes.impact; FxBooth.applyLook guarded (2026-11-17)
+- [Effect report](vfx-effect-report.md) - 2026-11-16 ticket V0.5: Vfx/Probe + FxBooth.report / reportAll print PASS or FAIL per effect (dots, moments, pops, values, light, cost against Part 9); what it cannot see (hand Emit counts, parts, sounds); needs Studio for the table
