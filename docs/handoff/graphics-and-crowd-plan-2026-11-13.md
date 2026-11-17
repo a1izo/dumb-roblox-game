@@ -328,6 +328,16 @@ One kind of thing per commit. Read the frame rate before and after with a whole 
 
 **Done when.** Standing still for ten seconds anywhere in the three finished rooms, at least two things move.
 
+**Status 2026-11-17 (code written, committed, not pushed, not yet seen in Studio).** Built as `World/MapLife` plus kinds in
+`World/Life` (see `docs/agent-memory/map-life-phase-13.md`): HQ ceiling fans in the sergeant's office and the break room,
+desk monitors that change picture, standby lights, server-rack LEDs, a tired archive tube (buzz sound slot ready, no
+sound exists); University breath puffs, snow sliding off eaves, a blinking alarm lamp on each fume hood, a tired
+science-hall lamp, heater embers; Tokyo neon stutter on three signs, sway of noren, chochin and lantern strings,
+turning mirror balls, vending, arcade and claw screens that cycle, steam off the ramen counter and grills, drips off
+awnings in the rain. Skipped (baked in the meshes, needs a re-export): HQ blinds that sway, a clock's moving hand,
+vents. Already there before: rain running on HQ's glass, the CCTV screens, the clock tower's hands, snow off
+trees. To judge: stand ten seconds in each of the three rooms, then read the frame rate before and after.
+
 ## Phase 14: characters
 
 **Why.** The game is about staring at faces, and the characters are the plainest thing on screen. R6 stays (the
