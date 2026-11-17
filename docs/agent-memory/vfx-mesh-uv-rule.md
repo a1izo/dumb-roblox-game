@@ -22,4 +22,4 @@ into Blender drops the back twins (validate removes duplicates), so it cannot sh
 
 **Why:** a texture that flows when the mesh turns needs u round and v up. **How to apply:** put no texture on a kit mesh
 whose UVs you have not seen on the sheet; a texture for VfxShell keeps its top and bottom 1/16 of rows quiet (the pole
-cap). The Studio SurfaceAppearance test and the ModelsFx 3 to 4 bump were still open when this was written.
+cap). The ModelsFx 3 to 4 export was done the same day (see [[fx-file-v4-export]]); the Studio SurfaceAppearance test is still open (it needs Studio).

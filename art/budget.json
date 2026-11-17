@@ -105,6 +105,12 @@
       "approved": "2026-11-16",
       "megapixels": 2.6,
       "megabytes": 0.7
+    },
+    {
+      "what": "The VFX rework's new texture library in the Fx file (ModelsFx 4: 22 new 1024 px sheets, the smoke, dust, mist, impact, shock, glint, spark, slash, arc, wisp, ash, shard, paper, feather, crack, scorch and sigil textures, and three new shapes, V1.1 to V1.7), loaded in every scene beside Core, for the owner's 'currently anything that uses vfx ... look horrible and cheap' and the rework plan that followed (2026-11-16). The size (23.1 megapixels, 11.3 megabytes, nearly three times the kit's old 8.3) was NOT shown to the owner; flagged for a veto. Stage 5 deletes the old sheets that no caller uses, which gives 8.3 megapixels back",
+      "approved": "2026-11-17",
+      "megapixels": 23.1,
+      "megabytes": 11.4
     }
   ]
 }
