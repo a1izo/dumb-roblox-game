@@ -281,13 +281,13 @@ return {
 		tris = 1552,
 	},
 	BureauBadge = {
-		size = { 0.86, 0.6, 0.06 },
+		size = { 0.86, 0.6, 0.075 },
 		pivot = "centre",
 		material = "Leather",
 		collide = false,
-		color = { 16, 14, 12 },
+		color = { 102, 91, 71 },
 		set = "Core",
-		tris = 8112,
+		tris = 5078,
 	},
 	BureauBench = {
 		size = { 5.85, 3.296, 1.676 },

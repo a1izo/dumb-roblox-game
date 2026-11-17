@@ -105,6 +105,12 @@
       "approved": "2026-11-16",
       "megapixels": 2.6,
       "megabytes": 0.7
+    },
+    {
+      "what": "The Operative's badge remade a second time (Core 42: BureauBadge's normal map 256 to 512 px for the leather grain and the engraving, its colour map still 1024 px) for the user's 'redo the operative cutscene completely and make the badge way more high quality' (2026-11-16); flagged in the report for a veto",
+      "approved": "2026-11-17",
+      "megapixels": 0.2,
+      "megabytes": 0.1
     }
   ]
 }
