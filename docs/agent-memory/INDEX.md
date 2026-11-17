@@ -107,3 +107,4 @@
 - [Parade March and Not My Problem removed](emotes-parade-notmyproblem-removed.md) - 2026-11-16 owner: both strolls gone completely, migration v12, three strolls left; their Blender actions orphaned in Animations.blend
 - [Griddy one-leg hop](griddy-one-leg-hop.md) - 2026-11-16 Griddy rebuilt (4 hops a 2 s bar, both arms thrown up on the fourth); a stroll cycle can be longer than a step (stride/stance rules), the 7 s lab loop, splice-only commit, the shared browser pane trap
 - [Route E noise-cut traps](route-e-noise-cut-traps.md) - V1.3 tex_impact.py (2026-11-17): bite-only noise, alpha = g/aaw, weak taper so rays dash, islands rule, angular gap mask for rings, sparks head up
+- [Slash, arc and wisp textures](slash-arc-wisp-textures.md) - V1.4 tex_slash.py (2026-11-17): stroke coordinates (s along, dr across), NaN wedge trap, loop-exact periodic noise, TEX_QUICK look switch
