@@ -89,14 +89,14 @@ SIM["VfxSmokePlume"] = dict(
 )
 
 SIM["VfxDustRoll"] = dict(
-    # NOT a gas simulation (said in the Log): five baked sims of a floor burst (a ball, two jets, jets under a low
-    # ceiling, a slumping block, a heavy block) each rolled the dust up into lobes, a bush or a film instead of
-    # along the floor. So this is the volume route: a cast of billowing cloudlets flown out along the floor with
-    # drag (the fast ones are the head, the slow ones the body, long wisps trail), lit, eroded and packed like the
-    # others.
-    grid=8, mode="oneshot", cell=128, procedural="dust", frames=64, dims=(260, 36, 104),
+    # NOT a gas simulation (said in the Log): six baked sims of a floor burst (a ball, jets, jets under a ceiling,
+    # slumping blocks) all rolled the dust up into lobes or a bush, or slumped it into a film. So this is the volume
+    # route: a slam at the left sends a rolling wave to the right. The head is a ring of cloudlets orbiting a core
+    # (a torus seen from the side, the top turning forward), a low tapering body is left behind with wisps, spray
+    # stands over the head, and the rising cut eats it into islands. Lit and packed like the others.
+    grid=8, mode="oneshot", cell=128, procedural="dust", frames=64, dims=(240, 36, 152),
     look=dict(
-        sigma=lambda life: 0.24, sun=1.0, amb=0.55, fill=0.18, k_sun=0.5, k_amb=0.12, follow="floor", fit=0.82,
+        sigma=lambda life: 0.24, sun=1.0, amb=0.55, fill=0.18, k_sun=0.5, k_amb=0.12, follow="floor", fit=0.92,
         box_alpha=0.15,
     ),
 )
@@ -450,96 +450,106 @@ def mist_volume(k, n, dims):
 
 
 _DUST = {}
+DUST_X = (-0.1, 2.3)  # the grid's x range in the dust's own units (the hit is at x = 0, the wave runs to the right)
+DUST_Z = 1.45
 
 
-def dust_puffs(seed=4):
-    """The made-up cast of a dust roll, fixed by a seed: per side a run of cloudlets that leave the hit at different
-    speeds (so the fastest are the head and the slow ones are the body), the front ones bigger and rising, plus long
-    low wisps trailing behind. Each is (x end, radius end, rise, launch, speed, hardness, lump offset, kind)."""
+def dust_cast(seed=31):
+    """The made-up parts of the roll, fixed by a seed: the head is a ring of cloudlets that orbits a core (a rolling
+    torus seen from the side), the body is low flat sheets and long wisps that the head leaves behind, and a few puffs
+    of spray stand over the head."""
     rng = np.random.default_rng(seed)
-    cast = []
-    for side, scale in ((1.0, 1.0), (-1.0, 0.86)):
-        for i in range(22):
-            far = rng.uniform(0.22, 1.0) ** 0.8  # how far it ends (1 = the head)
-            cast.append(dict(side=side, kind="puff", x=0.70 * scale * far + rng.normal(0, 0.03),
-                             r=0.05 + 0.17 * far ** 0.9 * rng.uniform(0.65, 1.25), rise=0.30 * far ** 2.2 * rng.uniform(0.4, 1.2),
-                             t0=rng.uniform(0.0, 0.07), tau=rng.uniform(0.12, 0.2), y=rng.normal(0, 0.07),
-                             amp=rng.uniform(0.75, 1.0), off=rng.uniform(0, 60, 3)))
-        for i in range(9):  # the body: low flat sheets of dust between the hit and the head
-            far = rng.uniform(0.12, 0.62)
-            cast.append(dict(side=side, kind="sheet", x=0.70 * scale * far, r=0.07 + 0.04 * rng.random(), rise=0.02 * rng.random(),
-                             t0=rng.uniform(0.0, 0.08), tau=rng.uniform(0.14, 0.22), y=rng.normal(0, 0.08),
-                             amp=rng.uniform(0.55, 0.8), off=rng.uniform(0, 60, 3)))
-        for i in range(10):  # the trailing wisps: long, low, faint, left behind
-            far = rng.uniform(0.2, 0.8)
-            cast.append(dict(side=side, kind="wisp", x=0.72 * scale * far, r=0.045 + 0.04 * rng.random(), rise=0.03 * rng.random(),
-                             t0=rng.uniform(0.02, 0.16), tau=rng.uniform(0.14, 0.24), y=rng.normal(0, 0.08),
-                             amp=rng.uniform(0.35, 0.6), off=rng.uniform(0, 60, 3)))
-    return cast
+    ring = [dict(th=2 * np.pi * i / 20 + rng.normal(0, 0.12), rr=rng.uniform(0.85, 1.15), y=rng.normal(0, 0.09),
+                 sz=rng.uniform(0.8, 1.25), off=rng.uniform(0, 60, 3)) for i in range(20)]
+    sheets = [dict(x=rng.uniform(0.15, 1.0), R=0.0, t0=rng.uniform(0.0, 0.1), tau=rng.uniform(0.14, 0.24),
+                   y=rng.normal(0, 0.1), amp=rng.uniform(0.6, 0.9), off=rng.uniform(0, 60, 3), kind="sheet") for i in range(16)]
+    for sh in sheets:
+        sh["R"] = 0.06 + 0.10 * sh["x"]
+    wisps = [dict(x=rng.uniform(0.05, 0.85), R=0.05 + 0.04 * rng.random(), t0=rng.uniform(0.04, 0.2),
+                  tau=rng.uniform(0.14, 0.26), y=rng.normal(0, 0.1), amp=rng.uniform(0.35, 0.6), off=rng.uniform(0, 60, 3),
+                  kind="wisp") for i in range(10)]
+    spray = [dict(ang=np.radians(rng.uniform(-10, 85)), dist=rng.uniform(1.15, 1.6), R=rng.uniform(0.06, 0.12),
+                  y=rng.normal(0, 0.1), amp=rng.uniform(0.7, 1.0), off=rng.uniform(0, 60, 3), lag=rng.uniform(0.0, 0.1))
+             for i in range(8)]
+    return dict(ring=ring, body=sheets + wisps, spray=spray)
 
 
 def dust_volume(k, n, dims):
-    """Frame k of n of dust rolling along the floor from a hit at the middle. The cast of cloudlets (dust_puffs) is
-    flown out along the floor with drag (fast ones stop far, slow ones near), each growing and billowing with lumps
-    that belong to it, thinning as it spreads; the hit's own puff stands over the origin and sinks; then the rising
-    cut eats the whole thing from its thin parts first into islands. Index order (x, depth, up); z = 0 is the floor."""
-    if "lump" not in _DUST:
+    """Frame k of n of dust rolling along the floor from a slam at the left, seen from the side: the front runs to the
+    right and billows up into a tall rolling curl (a ring of cloudlets orbiting a core, top turning forward), the body
+    it leaves behind is a long low wedge that tapers to the left and sinks into wisps; lumps belong to each cloudlet;
+    the rising cut at the end eats the whole thing from its thin parts into islands. Index (x, depth, up), z = 0 floor."""
+    if "cast" not in _DUST:
+        _DUST["cast"] = dust_cast()
         _DUST["lump"] = lump_tile(9)
-        _DUST["cast"] = dust_puffs()
-    tile, cast = _DUST["lump"], _DUST["cast"]
+    cast, tile = _DUST["cast"], _DUST["lump"]
     nx, ny, nz = dims
     tau = k / (n - 1)
-    gx = np.linspace(-1.3, 1.3, nx, dtype=np.float32)
-    gy = np.linspace(-0.3, 0.3, ny, dtype=np.float32)
-    gz = np.linspace(0.0, 1.04, nz, dtype=np.float32)
-    free = np.ones((nx, ny, nz), dtype=np.float32)  # 1 - (union of cloudlets): they merge instead of adding up
+    gx = np.linspace(DUST_X[0], DUST_X[1], nx, dtype=np.float32)
+    gy = np.linspace(-0.35, 0.35, ny, dtype=np.float32)
+    gz = np.linspace(0.0, DUST_Z, nz, dtype=np.float32)
+    free = np.ones((nx, ny, nz), dtype=np.float32)  # 1 - the union of the cloudlets: they merge instead of adding
     sx, sy, sz = gx[1] - gx[0], gy[1] - gy[0], gz[1] - gz[0]
 
-    def splat(cx, cy, cz, rx, ry, rz, amp, off, lumpy_scale):
-        x0, x1 = max(0, int((cx - 2.3 * rx + 1.3) / sx)), min(nx, int((cx + 2.3 * rx + 1.3) / sx) + 2)
-        y0, y1 = max(0, int((cy - 2.3 * ry + 0.3) / sy)), min(ny, int((cy + 2.3 * ry + 0.3) / sy) + 2)
-        z0, z1 = 0, min(nz, int((cz + 2.3 * rz) / sz) + 2)
-        if x1 <= x0 or y1 <= y0 or z1 <= z0:
+    def splat(cx, cy, cz, rx, ry, rz, amp, off, scale):
+        x0, x1 = max(0, int((cx - 2.3 * rx - DUST_X[0]) / sx)), min(nx, int((cx + 2.3 * rx - DUST_X[0]) / sx) + 2)
+        y0, y1 = max(0, int((cy - 2.3 * ry + 0.35) / sy)), min(ny, int((cy + 2.3 * ry + 0.35) / sy) + 2)
+        z1 = min(nz, int((cz + 2.3 * rz) / sz) + 2)
+        if x1 <= x0 or y1 <= y0 or z1 <= 0:
             return
         X = (gx[x0:x1] - cx)[:, None, None]
         Y = (gy[y0:y1] - cy)[None, :, None]
-        Z = (gz[z0:z1] - cz)[None, None, :]
+        Z = (gz[0:z1] - cz)[None, None, :]
         r2 = (X / rx) ** 2 + (Y / ry) ** 2 + (Z / rz) ** 2
-        # the lumps belong to the cloudlet: a noise cube looked up relative to its centre and size
-        qx = ((X / rx * lumpy_scale + off[0]).astype(np.int64)) % TILE_N
-        qy = ((Y / ry * lumpy_scale + off[1]).astype(np.int64)) % TILE_N
-        qz = ((Z / rz * lumpy_scale + off[2]).astype(np.int64)) % TILE_N
+        qx = ((X / rx * scale + off[0]).astype(np.int64)) % TILE_N
+        qy = ((Y / ry * scale + off[1]).astype(np.int64)) % TILE_N
+        qz = ((Z / rz * scale + off[2]).astype(np.int64)) % TILE_N
         n3 = tile[qx, qy, qz]
-        body = np.exp(-r2 * (0.9 + 1.7 * (1.0 - n3)))  # the lumps pinch the surface in, so the edge is cauliflower
+        body = np.exp(-r2 * (0.9 + 1.7 * (1.0 - n3)))  # the lumps pinch the surface in: a torn, cauliflower edge
         d = amp * np.clip(body * (0.35 + 1.3 * n3), 0, 1.4)
-        free[x0:x1, y0:y1, z0:z1] *= np.clip(1.0 - np.clip(d, 0, 1), 0, 1)
+        free[x0:x1, y0:y1, 0:z1] *= np.clip(1.0 - np.clip(d, 0, 1), 0, 1)
 
-    for c in cast:
+    # --- the head: a ring of cloudlets orbiting a core that runs forward
+    g = min(tau / 0.26, 1.0)
+    hs = 0.10 + 0.90 * (1 - (1 - g) ** 2.2)  # born small, full by about a fifth of the life
+    run = min(tau / 0.36, 1.0)
+    head_x = 0.10 + 0.95 * (1 - (1 - run) ** 2.0) + 0.07 * tau
+    Rh, rc = 0.40 * hs, 0.21 * hs
+    head_z = 0.95 * Rh + 0.07
+    spin = 2 * np.pi * 1.15 * min(tau, 0.85)  # the top turns forward, the underside back along the floor
+    for c in cast["ring"]:
+        th = c["th"] - spin
+        cx = head_x + Rh * c["rr"] * np.cos(th)
+        cz = head_z + Rh * c["rr"] * np.sin(th) * 1.28  # a little taller than wide: a curl, not a wheel
+        R = rc * c["sz"]
+        splat(cx, c["y"], cz, R * 1.15, R * 1.3, R * 0.95, 1.0, c["off"], 13.0)
+    splat(head_x, 0.0, head_z, Rh * 0.62, Rh * 0.8, Rh * 0.62, 0.62, np.array([3.0, 7.0, 11.0]), 11.0)  # the core, thin
+    for c in cast["spray"]:  # puffs flung up and ahead from the head's top
+        t = max(0.0, tau - c["lag"])
+        sc = min(t / 0.2, 1.0)
+        cx = head_x + np.cos(c["ang"]) * Rh * c["dist"] * sc
+        cz = head_z + np.sin(c["ang"]) * Rh * 1.2 * c["dist"] * sc + 0.02
+        if sc > 0:
+            splat(cx, c["y"], cz, c["R"] * hs * 2.2, c["R"] * hs * 2.4, c["R"] * hs * 2.0, c["amp"] * min(1.0, sc * 3), c["off"], 14.0)
+    # --- the body the head leaves behind: low sheets and wisps, nearer the origin the thinner
+    for c in cast["body"]:
         t = tau - c["t0"]
         if t <= 0:
             continue
         move = 1 - np.exp(-t / c["tau"])
-        cx = c["side"] * (0.02 + (c["x"] - 0.02) * move)
-        grow = 1 - np.exp(-t / (c["tau"] * 1.3))
-        R = 0.02 + (c["r"] - 0.02) * grow
-        cz = 0.7 * R + c["rise"] * move
-        if c["kind"] == "puff":
-            amp = c["amp"] * min(1.0, t / 0.025) * (0.03 / R) ** 0.55 * 1.9
-            splat(cx, c["y"], cz, R * 1.15, R * 1.3, R * 0.95, amp, c["off"], 13.0)
-        elif c["kind"] == "sheet":
-            amp = c["amp"] * min(1.0, t / 0.03) * (0.06 / R) ** 0.4
-            splat(cx, c["y"], 0.8 * R + c["rise"] * move, R * 3.4, R * 1.5, R * 1.25, amp, c["off"], 14.0)
-        else:  # a wisp: stretched along the floor and thin
-            amp = c["amp"] * min(1.0, t / 0.04) * (0.05 / R) ** 0.4
-            splat(cx, c["y"], 0.5 * R, R * 3.2, R * 1.2, R * 0.55, amp, c["off"], 16.0)
-    # the hit's own puff over the origin: stands up fast, then sinks into the roll
-    hz = 0.09 + 0.10 * np.exp(-tau * 6.0)
-    splat(0.0, 0.0, hz, 0.13 + 0.05 * tau, 0.15, hz * 1.1, 1.15 * (1 - smoothstep(0.08, 0.34, tau)), np.array([5.0, 9.0, 13.0]), 8.0)
+        cx = 0.04 + (c["x"] * min(1.0, head_x / 1.05)) * move
+        R = 0.02 + (c["R"] - 0.02) * (1 - np.exp(-t / (c["tau"] * 1.3)))
+        if c["kind"] == "sheet":
+            splat(cx, c["y"], 0.8 * R, R * 3.4, R * 1.5, R * 1.25, c["amp"] * min(1.0, t / 0.03) * (0.07 / R) ** 0.35, c["off"], 14.0)
+        else:
+            splat(cx, c["y"], 0.5 * R, R * 3.6, R * 1.2, R * 0.55, c["amp"] * min(1.0, t / 0.04), c["off"], 16.0)
+    # the slam's own puff over the origin: stands up fast and sinks into the body
+    hz = 0.08 + 0.10 * np.exp(-tau * 6.0)
+    splat(0.06, 0.0, hz, 0.12, 0.14, hz * 1.1, 1.1 * (1 - smoothstep(0.06, 0.32, tau)), np.array([5.0, 9.0, 13.0]), 9.0)
     d = 1.0 - free
-    # the rising cut: eaten from its thin parts first, in lumps, islands at the end
-    if tau > 0.40:
-        cut = 3.4 * ((tau - 0.40) / 0.60) ** 1.1
-        eat = N.fbm3(gx[:, None, None] * 4.0 + 3.0 * tau, gz[None, None, :] * 5.0, gy[None, :, None] * 4.0, octaves=4, seed=77)
+    if tau > 0.42:  # eaten from its thin parts first, in lumps, islands at the end
+        cut = 3.2 * ((tau - 0.42) / 0.58) ** 1.1
+        eat = N.fbm3(gx[:, None, None] * 3.5 + 3.0 * tau, gz[None, None, :] * 4.5, gy[None, :, None] * 4.0, octaves=4, seed=77)
         d = np.maximum(d - cut * (0.12 + 0.55 * (0.5 + eat)), 0.0)
     return blur3(d.astype(np.float32))
 
