@@ -7,8 +7,10 @@ shadow), then reframed, eroded where a one-shot has to break into islands, close
 and packed into a 1024 x 1024 sheet with vfx/draw.py. White and grey, so the game tints it; the grey is the smoke's own
 light and shade. (Why not Cycles: a headless Cycles render of the fluid domain showed nothing from the baked cache, so
 the baked density is rendered by this file's own ray-marcher. The simulation itself is Blender's.)
-VfxMist is the exception: a fog bank is a 3D noise volume whose noise orbits (it closes the loop exactly), not a
-simulation; it is lit and packed by the same code.
+VfxMist and VfxDustRoll are the exceptions: the mist is a layered 3D noise volume whose noise drifts a whole period
+per loop (it closes exactly), and the dust is a made-up cast of billowing cloudlets flown out along the floor (six
+baked sims of a floor burst all rolled up instead of along). Neither is a simulation; both are lit and packed by the
+same code.
 
     blender -b --factory-startup --python art/scripts/vfx/tex_smoke.py -- [names] [--sim] [--post] [--cache DIR]
 
@@ -87,25 +89,24 @@ SIM["VfxSmokePlume"] = dict(
 )
 
 SIM["VfxDustRoll"] = dict(
-    grid=8, mode="oneshot", cell=128,
-    sim=dict(
-        domain_scale=(1.0, 0.7, 0.8), res=160, vorticity=0.35, buoy_density=1.0, buoy_heat=0.0, time_scale=1.3,
-        dissolve=0, frames=64, floor=True,
-        flows=[dict(pos=(0.0, 0.0, -0.8), radius=0.28, scale=(1.7, 1.7, 0.9), density=1.0, temperature=0.0,
-                    v_normal=4.5, v_random=1.0, on=1, off=11, grow=(1, 9, 0.2, 1.0))],
-        forces=[dict(type="TURBULENCE", strength=0.8, size=0.3, flow=0.5)],
-    ),
+    # NOT a gas simulation (said in the Log): six baked sims of a floor burst (a ball, jets, jets under a ceiling,
+    # slumping blocks) all rolled the dust up into lobes or a bush, or slumped it into a film. So this is the volume
+    # route: a slam at the left sends a rolling wave to the right. The head is a ring of cloudlets orbiting a core
+    # (a torus seen from the side, the top turning forward), a low tapering body is left behind with wisps, spray
+    # stands over the head, and the rising cut eats it into islands. Lit and packed like the others.
+    grid=8, mode="oneshot", cell=128, procedural="dust", frames=64, dims=(240, 36, 152),
     look=dict(
-        sigma=lambda life: 0.16, blur=3, lump=(0.9, 1.1), blur_after=2, stretch_z=1.5, follow="x", fit_until=0.55,
-        erode=lambda life: 0.0 if life < 0.4 else 1.25 * ((life - 0.4) / 0.6) ** 1.2,
+        sigma=lambda life: 0.24, sun=1.0, amb=0.55, fill=0.18, k_sun=0.5, k_amb=0.12, follow="floor", fit=0.92,
+        box_alpha=0.15,
     ),
 )
 
 SIM["VfxMist"] = dict(
     # (not a gas simulation: fog does not come out of one. A baked smoke sim of a fog bank came out as cigarette
     # streaks, so the bank is a 3D noise volume whose noise orbits through space, which closes the loop exactly.)
-    grid=4, mode="loop", cell=256, procedural=True, frames=16, dims=(144, 20, 144),
-    look=dict(sigma=lambda life: 0.15, sun=1.0, amb=0.85, fill=0.22, k_sun=0.55, k_amb=0.12),
+    grid=4, mode="loop", cell=256, procedural=True, frames=16, dims=(192, 16, 172),
+    look=dict(sigma=lambda life: 0.11, sun=1.0, amb=0.9, fill=0.55, k_sun=0.13, k_amb=0.05, fit=0.97, tone=(0.28, 1.0), box_alpha=0.1, flatten=(0.0, 0.6),
+        calm_thin=(0.08, 0.5)),
 )
 
 
@@ -146,7 +147,8 @@ def build_domain(sim, cache):
         ds.dissolve_speed = sim["dissolve"]
         ds.use_dissolve_smoke_log = True
     for side in ("front", "back", "right", "left", "top", "bottom"):
-        setattr(ds, f"use_collision_border_{side}", side == "bottom" and sim.get("floor", False))
+        setattr(ds, f"use_collision_border_{side}",
+                (side == "bottom" and sim.get("floor", False)) or (side == "top" and sim.get("ceiling", False)))
     ds.use_adaptive_timesteps = True
     ds.cfl_condition = sim.get("cfl", 4.0)
     for k, v in sim.get("domain", {}).items():
@@ -170,7 +172,7 @@ def add_flows(sim):
             bpy.context.active_object.scale = f["size"]
         obj = bpy.context.active_object
         obj.name = f.get("name", "Flow")
-        base = tuple(f.get("scale", (1.0, 1.0, 1.0)))
+        base = tuple(f.get("scale", f.get("size", (1.0, 1.0, 1.0))))
         obj.scale = base
         if "grow" in f:  # (frame0, frame1, s0, s1): the source swells (a puff is born small; a ring spreads out)
             f0, f1, s0, s1 = f["grow"]
@@ -412,30 +414,159 @@ def erosion_field(dims, seed=11):
 
 
 def mist_volume(k, n, dims):
-    """Frame k of n of the fog bank: soft billows from layered noise that orbits (so frame n is frame 0 again),
-    inside a wobbly elliptical bank that is thin front to back and thicker low down. Index order (x, depth, up)."""
+    """Frame k of n of a bank of fog: several soft horizontal layers of different thickness and height, each broken
+    into long patches by noise that is stretched along the bank, the layers drifting in different directions (one
+    whole noise period per loop, so frame n is frame 0 again), all fading to nothing before the cell's edge so the
+    bank has no outline. Index order (x, depth, up)."""
     nx, ny, nz = dims
-    th = 2 * math.pi * k / n
     x = np.linspace(-1.0, 1.0, nx, dtype=np.float32)[:, None, None]
-    y = np.linspace(-0.3, 0.3, ny, dtype=np.float32)[None, :, None]
+    y = np.linspace(-0.25, 0.25, ny, dtype=np.float32)[None, :, None]
     z = np.linspace(-0.9, 0.9, nz, dtype=np.float32)[None, None, :]
     xx, yy, zz = np.broadcast_arrays(x, y, z)
-    big = N.fbm3(xx * 1.35 + 0.8 * math.cos(th), zz * 1.35 + 0.8 * math.sin(th), yy * 2.5 + 0.15 * math.sin(2 * th),
-                 octaves=3, seed=21, period=(None, None, None))
-    mid = N.fbm3(xx * 3.0 - 0.6 * math.cos(2 * th + 1.0), zz * 3.0 + 0.6 * math.sin(2 * th + 1.0),
-                 yy * 4.0 - 0.2 * math.cos(th), octaves=3, seed=57)
-    fine = N.fbm3(xx * 9.0 + 0.4 * math.sin(3 * th), zz * 9.0 + 0.4 * math.cos(3 * th), yy * 7.0, octaves=2, seed=93)
-    n01 = 0.50 + 0.66 * big + 0.24 * mid + 0.03 * fine
-    wob = N.fbm2(x[:, 0, :] * 1.3 + 3.0, z[:, 0, :] * 1.3 - 2.0, octaves=3, seed=5)[:, None, :]  # fixed: the bank's outline
-    r = np.sqrt((xx / 0.94) ** 2 + (zz / (0.70 + 0.10 * wob)) ** 2) * (1.0 + 0.34 * wob)
-    env = smoothstep(1.0, 0.15, r)
-    depth = np.exp(-((yy / 0.22) ** 2))
-    low = 1.0 + 0.40 * np.clip(-zz / 0.8, -1, 1)  # a little denser towards the ground
-    d = (env * depth * low * smoothstep(0.05, 0.95, n01)).astype(np.float32)
-    return blur3(blur3(blur3(d)))
+    u = (xx + 1.0) * 2.0  # four lattice cells across; the period is 2 cells = half the bank per loop
+    t = k / n
+    layers = (  # (height, thickness, strength, drift in periods per loop, noise seed, wobble phase)
+        (-0.50, 0.30, 0.85, 1, 11, 0.0),
+        (-0.12, 0.24, 0.65, -1, 23, 1.7),
+        (0.22, 0.30, 0.85, 1, 37, 3.1),
+        (0.58, 0.24, 0.55, -1, 51, 4.4),
+    )
+    total = np.zeros(xx.shape, dtype=np.float32)
+    for height, thick, strength, drift, seed, ph in layers:
+        # long patches along x (low frequency in x, higher in z), drifting one period per loop
+        patch = N.fbm3(u * 0.6 + 2.0 * drift * t, zz * 0.7 + seed, yy * 0.8, octaves=2, seed=seed,
+                       period=(2, None, None))
+        wave = 0.05 * N.fbm3(u * 0.5 + 2.0 * drift * t + 5.0, zz * 0.0 + seed, yy * 0.0, octaves=2, seed=seed + 5,
+                             period=(2, None, None)) + 0.03 * math.sin(2 * math.pi * (t * drift) + ph)
+        band = np.exp(-(((zz - height - wave) / thick) ** 2))
+        total += strength * band * smoothstep(-0.55, 0.6, patch)
+    veil = 0.10 * smoothstep(-0.3, 0.5, N.fbm3(u * 0.5 - 2.0 * t, zz * 1.0, yy, octaves=2, seed=3, period=(2, None, None)))
+    total = total + veil * np.exp(-((zz / 0.85) ** 2))
+    depth = np.exp(-((yy / 0.2) ** 2))
+    edge_x = smoothstep(1.0, 0.45, np.abs(xx)) ** 1.5  # fades to nothing before the side edges
+    edge_z = smoothstep(0.9, 0.4, np.abs(zz))
+    d = (total * depth * edge_x * edge_z).astype(np.float32)
+    return blur3(blur3(d))
+
+
+_DUST = {}
+DUST_X = (-0.1, 2.3)  # the grid's x range in the dust's own units (the hit is at x = 0, the wave runs to the right)
+DUST_Z = 1.45
+
+
+def dust_cast(seed=31):
+    """The made-up parts of the roll, fixed by a seed: the head is a ring of cloudlets that orbits a core (a rolling
+    torus seen from the side), the body is low flat sheets and long wisps that the head leaves behind, and a few puffs
+    of spray stand over the head."""
+    rng = np.random.default_rng(seed)
+    ring = [dict(th=2 * np.pi * i / 20 + rng.normal(0, 0.12), rr=rng.uniform(0.85, 1.15), y=rng.normal(0, 0.09),
+                 sz=rng.uniform(0.8, 1.25), off=rng.uniform(0, 60, 3)) for i in range(20)]
+    sheets = [dict(x=rng.uniform(0.15, 1.0), R=0.0, t0=rng.uniform(0.0, 0.1), tau=rng.uniform(0.14, 0.24),
+                   y=rng.normal(0, 0.1), amp=rng.uniform(0.6, 0.9), off=rng.uniform(0, 60, 3), kind="sheet") for i in range(16)]
+    for sh in sheets:
+        sh["R"] = 0.06 + 0.10 * sh["x"]
+    wisps = [dict(x=rng.uniform(0.05, 0.85), R=0.05 + 0.04 * rng.random(), t0=rng.uniform(0.04, 0.2),
+                  tau=rng.uniform(0.14, 0.26), y=rng.normal(0, 0.1), amp=rng.uniform(0.35, 0.6), off=rng.uniform(0, 60, 3),
+                  kind="wisp") for i in range(10)]
+    spray = [dict(ang=np.radians(rng.uniform(-10, 85)), dist=rng.uniform(1.15, 1.6), R=rng.uniform(0.06, 0.12),
+                  y=rng.normal(0, 0.1), amp=rng.uniform(0.7, 1.0), off=rng.uniform(0, 60, 3), lag=rng.uniform(0.0, 0.1))
+             for i in range(8)]
+    return dict(ring=ring, body=sheets + wisps, spray=spray)
+
+
+def dust_volume(k, n, dims):
+    """Frame k of n of dust rolling along the floor from a slam at the left, seen from the side: the front runs to the
+    right and billows up into a tall rolling curl (a ring of cloudlets orbiting a core, top turning forward), the body
+    it leaves behind is a long low wedge that tapers to the left and sinks into wisps; lumps belong to each cloudlet;
+    the rising cut at the end eats the whole thing from its thin parts into islands. Index (x, depth, up), z = 0 floor."""
+    if "cast" not in _DUST:
+        _DUST["cast"] = dust_cast()
+        _DUST["lump"] = lump_tile(9)
+    cast, tile = _DUST["cast"], _DUST["lump"]
+    nx, ny, nz = dims
+    tau = k / (n - 1)
+    gx = np.linspace(DUST_X[0], DUST_X[1], nx, dtype=np.float32)
+    gy = np.linspace(-0.35, 0.35, ny, dtype=np.float32)
+    gz = np.linspace(0.0, DUST_Z, nz, dtype=np.float32)
+    free = np.ones((nx, ny, nz), dtype=np.float32)  # 1 - the union of the cloudlets: they merge instead of adding
+    sx, sy, sz = gx[1] - gx[0], gy[1] - gy[0], gz[1] - gz[0]
+
+    def splat(cx, cy, cz, rx, ry, rz, amp, off, scale):
+        x0, x1 = max(0, int((cx - 2.3 * rx - DUST_X[0]) / sx)), min(nx, int((cx + 2.3 * rx - DUST_X[0]) / sx) + 2)
+        y0, y1 = max(0, int((cy - 2.3 * ry + 0.35) / sy)), min(ny, int((cy + 2.3 * ry + 0.35) / sy) + 2)
+        z1 = min(nz, int((cz + 2.3 * rz) / sz) + 2)
+        if x1 <= x0 or y1 <= y0 or z1 <= 0:
+            return
+        X = (gx[x0:x1] - cx)[:, None, None]
+        Y = (gy[y0:y1] - cy)[None, :, None]
+        Z = (gz[0:z1] - cz)[None, None, :]
+        r2 = (X / rx) ** 2 + (Y / ry) ** 2 + (Z / rz) ** 2
+        qx = ((X / rx * scale + off[0]).astype(np.int64)) % TILE_N
+        qy = ((Y / ry * scale + off[1]).astype(np.int64)) % TILE_N
+        qz = ((Z / rz * scale + off[2]).astype(np.int64)) % TILE_N
+        n3 = tile[qx, qy, qz]
+        body = np.exp(-r2 * (0.9 + 1.7 * (1.0 - n3)))  # the lumps pinch the surface in: a torn, cauliflower edge
+        d = amp * np.clip(body * (0.35 + 1.3 * n3), 0, 1.4)
+        free[x0:x1, y0:y1, 0:z1] *= np.clip(1.0 - np.clip(d, 0, 1), 0, 1)
+
+    # --- the head: a ring of cloudlets orbiting a core that runs forward
+    g = min(tau / 0.26, 1.0)
+    hs = 0.10 + 0.90 * (1 - (1 - g) ** 2.2)  # born small, full by about a fifth of the life
+    run = min(tau / 0.36, 1.0)
+    head_x = 0.10 + 0.95 * (1 - (1 - run) ** 2.0) + 0.07 * tau
+    Rh, rc = 0.40 * hs, 0.21 * hs
+    head_z = 0.95 * Rh + 0.07
+    spin = 2 * np.pi * 1.15 * min(tau, 0.85)  # the top turns forward, the underside back along the floor
+    for c in cast["ring"]:
+        th = c["th"] - spin
+        cx = head_x + Rh * c["rr"] * np.cos(th)
+        cz = head_z + Rh * c["rr"] * np.sin(th) * 1.28  # a little taller than wide: a curl, not a wheel
+        R = rc * c["sz"]
+        splat(cx, c["y"], cz, R * 1.15, R * 1.3, R * 0.95, 1.0, c["off"], 13.0)
+    splat(head_x, 0.0, head_z, Rh * 0.62, Rh * 0.8, Rh * 0.62, 0.62, np.array([3.0, 7.0, 11.0]), 11.0)  # the core, thin
+    for c in cast["spray"]:  # puffs flung up and ahead from the head's top
+        t = max(0.0, tau - c["lag"])
+        sc = min(t / 0.2, 1.0)
+        cx = head_x + np.cos(c["ang"]) * Rh * c["dist"] * sc
+        cz = head_z + np.sin(c["ang"]) * Rh * 1.2 * c["dist"] * sc + 0.02
+        if sc > 0:
+            splat(cx, c["y"], cz, c["R"] * hs * 2.2, c["R"] * hs * 2.4, c["R"] * hs * 2.0, c["amp"] * min(1.0, sc * 3), c["off"], 14.0)
+    # --- the body the head leaves behind: low sheets and wisps, nearer the origin the thinner
+    for c in cast["body"]:
+        t = tau - c["t0"]
+        if t <= 0:
+            continue
+        move = 1 - np.exp(-t / c["tau"])
+        cx = 0.04 + (c["x"] * min(1.0, head_x / 1.05)) * move
+        R = 0.02 + (c["R"] - 0.02) * (1 - np.exp(-t / (c["tau"] * 1.3)))
+        if c["kind"] == "sheet":
+            splat(cx, c["y"], 0.8 * R, R * 3.4, R * 1.5, R * 1.25, c["amp"] * min(1.0, t / 0.03) * (0.07 / R) ** 0.35, c["off"], 14.0)
+        else:
+            splat(cx, c["y"], 0.5 * R, R * 3.6, R * 1.2, R * 0.55, c["amp"] * min(1.0, t / 0.04), c["off"], 16.0)
+    # the slam's own puff over the origin: stands up fast and sinks into the body
+    hz = 0.08 + 0.10 * np.exp(-tau * 6.0)
+    splat(0.06, 0.0, hz, 0.12, 0.14, hz * 1.1, 1.1 * (1 - smoothstep(0.06, 0.32, tau)), np.array([5.0, 9.0, 13.0]), 9.0)
+    d = 1.0 - free
+    if tau > 0.42:  # eaten from its thin parts first, in lumps, islands at the end
+        cut = 3.2 * ((tau - 0.42) / 0.58) ** 1.1
+        eat = N.fbm3(gx[:, None, None] * 3.5 + 3.0 * tau, gz[None, None, :] * 4.5, gy[None, :, None] * 4.0, octaves=4, seed=77)
+        d = np.maximum(d - cut * (0.12 + 0.55 * (0.5 + eat)), 0.0)
+    return blur3(d.astype(np.float32))
 
 
 def render_frames(name, work, spec):
+    if spec.get("procedural") == "dust":
+        look = spec["look"]
+        n = spec["frames"]
+        rads, alphas = [], []
+        for k in range(n):
+            d = dust_volume(k, n, spec["dims"])
+            sigma = d * look["sigma"](k / n)
+            rad, alpha = march(sigma, light_depth(sigma), look)
+            rads.append(rad)
+            alphas.append(alpha)
+            print(f"[tex_smoke] {name} lit {k + 1}/{n}", flush=True)
+        return np.stack(rads), np.stack(alphas), {}
     if spec.get("procedural"):
         look = spec["look"]
         n = spec["frames"]
@@ -541,7 +672,7 @@ def frame_images(rads, alphas, spec, cell):
     follow = look.get("follow", "")
     until = max(1, int(n * look.get("fit_until", 1.0)))  # the window is fitted to the frames up to here
     sized = [b for b in boxes[:until] if b]
-    if follow:
+    if follow in ("xy", "x"):
         side = max(max((b[1] - b[0]) * stretch_x, (b[3] - b[2]) * stretch) for b in sized) / fit
     else:
         ux0, ux1 = min(b[0] for b in good), max(b[1] for b in good)
@@ -559,11 +690,14 @@ def frame_images(rads, alphas, spec, cell):
         pad = np.concatenate([np.repeat(v[:1], r), v, np.repeat(v[-1:], r)])
         return np.convolve(pad, np.ones(2 * r + 1) / (2 * r + 1), mode="valid")
 
-    if follow:
+    if follow in ("xy", "x"):
         cxs, cys = smooth(cxs), smooth(cys)
         if follow == "x":
             floor = max(b[3] for b in good)
             cys = np.full(n, floor + 0.04 * side / stretch - side / stretch / 2)
+    elif follow == "floor":  # one fixed window, the floor (the lowest row ever lit) kept just above the cell's bottom
+        cxs = np.full(n, (ux0 + ux1) / 2)
+        cys = np.full(n, uy1 + 0.04 * side / stretch - side / stretch / 2)
     else:
         cxs = np.full(n, (ux0 + ux1) / 2 + look.get("shift", (0, 0))[0] * side)
         cys = np.full(n, (uy0 + uy1) / 2 + look.get("shift", (0, 0))[1] * side)
@@ -576,6 +710,36 @@ def frame_images(rads, alphas, spec, cell):
         r = resample(ra[k], ox, oy, step, cell, stretch, stretch_x)
         rgb = np.clip(r / np.maximum(a, 1e-4), 0, 4)
         out.append(np.concatenate([np.repeat(rgb[..., None], 3, axis=2), a[..., None]], axis=-1))
+    return out
+
+
+def flatten(frames, amount, vgrad):
+    """Fog is lit softly and evenly: pull each frame's grey toward its own mean (so deep shadow pockets do not make
+    the thin edge look like a bright outline) and add a gentle lighter-above, darker-below slope."""
+    out = []
+    for f in frames:
+        a = f[..., 3]
+        mean = (f[..., 0] * a).sum() / max(a.sum(), 1e-4)
+        v = mean + (f[..., 0] - mean) * (1 - amount)
+        h = f.shape[0]
+        slope = 1.0 + vgrad * (0.5 - (np.arange(h, dtype=np.float32) / h))[:, None]
+        g = f.copy()
+        g[..., :3] = (v * slope)[..., None]
+        out.append(g)
+    return out
+
+
+def calm_thin(frames, a0, a1):
+    """The thin edge of a cloud is lit with nothing in front of it, so it comes out brighter than the body and, once
+    the game lays it over a floor, shows as a bright rim round the sprite. Thin parts take the frame's own mean grey."""
+    out = []
+    for f in frames:
+        a = f[..., 3]
+        mean = (f[..., 0] * a).sum() / max(a.sum(), 1e-4)
+        k = smoothstep(a0, a1, a)
+        g = f.copy()
+        g[..., :3] = (f[..., 0] * k + mean * (1 - k))[..., None]
+        out.append(g)
     return out
 
 
@@ -605,6 +769,10 @@ def build_sheet(name, work, spec):
     cell = SHEET // spec["grid"]
     rads, alphas, meta = render_frames(name, work, spec)
     frames = frame_images(rads, alphas, spec, cell)
+    if "calm_thin" in spec["look"]:
+        frames = calm_thin(frames, *spec["look"]["calm_thin"])
+    if "flatten" in spec["look"]:
+        frames = flatten(frames, *spec["look"]["flatten"])
     frames = tonemap(frames, spec["look"])
     win = edge_window(cell)
     for f in frames:

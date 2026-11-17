@@ -40,6 +40,10 @@ TEXTURES = [
     "VfxFlame", "VfxCandleFlame", "VfxGlow", "VfxFlare", "VfxEmber", "VfxStreak", "VfxSpike", "VfxBurst", "VfxRing",
     "VfxRingBand", "VfxColumn", "VfxSlash", "VfxSlashBand", "VfxWisp", "VfxDust", "VfxSmoke", "VfxCrack", "VfxCircle",
     "VfxPage", "VfxFeather", "VfxMoth", "VfxChunk", "VfxAsh",
+    # the new library (V1.1 to V1.6, the Fx file from ModelsFx 4); each wears an old name in Vfx/Tex.luau until imported
+    "VfxSmokePuff", "VfxSmokePlume", "VfxDustRoll", "VfxMist", "VfxImpactA", "VfxImpactB", "VfxImpactC", "VfxShock",
+    "VfxGlint", "VfxSparks", "VfxSlashA", "VfxSlashB", "VfxArc", "VfxEnergyWisp", "VfxAshFlakes", "VfxShards",
+    "VfxPaper", "VfxFeatherTumble", "VfxCrackA", "VfxCrackB", "VfxScorch", "VfxSigil",
 ]
 
 

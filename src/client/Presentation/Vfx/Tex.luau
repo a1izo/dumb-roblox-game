@@ -21,6 +21,35 @@ local STAND_IN: { [string]: string } = {
 }
 local SPARKLE = "rbxasset://textures/particles/sparkles_main.dds"
 
+-- The new library's names (V1.1 to V1.6, in the Fx props file from ModelsFx 4) and the OLD texture each one wears while
+-- the place has only ModelsFx 3: the closest look among the old names, so the live place never shows a sparkle while it
+-- waits for the import. Every value is an old name (never another key here), so one step always ends at an old texture,
+-- which is the real one when the place has the old file and a Roblox stand-in when it has nothing.
+Tex.FALLBACK = {
+	VfxSmokePuff = "VfxSmoke",
+	VfxSmokePlume = "VfxSmoke",
+	VfxDustRoll = "VfxDust",
+	VfxMist = "VfxSmoke",
+	VfxImpactA = "VfxBurst",
+	VfxImpactB = "VfxBurst",
+	VfxImpactC = "VfxBurst",
+	VfxShock = "VfxRing",
+	VfxGlint = "VfxFlare",
+	VfxSparks = "VfxStreak",
+	VfxSlashA = "VfxSlash",
+	VfxSlashB = "VfxSlash",
+	VfxArc = "VfxStreak",
+	VfxEnergyWisp = "VfxWisp",
+	VfxAshFlakes = "VfxAsh",
+	VfxShards = "VfxChunk",
+	VfxPaper = "VfxPage",
+	VfxFeatherTumble = "VfxFeather",
+	VfxCrackA = "VfxCrack",
+	VfxCrackB = "VfxCrack",
+	VfxScorch = "VfxSmoke",
+	VfxSigil = "VfxCircle",
+} :: { [string]: string }
+
 local found: { [string]: string } = {}
 
 -- The texture's id ("" for none at all).
@@ -36,6 +65,10 @@ function Tex.id(name: string): string
 	if id and id ~= "" then
 		found[name] = id
 		return id
+	end
+	local old = Tex.FALLBACK[name]
+	if old then
+		return Tex.id(old)
 	end
 	return STAND_IN[name] or SPARKLE
 end
