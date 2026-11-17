@@ -6,7 +6,9 @@
 --
 -- A spec (all optional but tex):
 --   tex     texture name (Vfx/Tex), grid = 8 | {x, y} for a flipbook, fps, mode = "Loop" | "OneShot" | "PingPong" |
---           "Random", blend (blend flipbook frames), startRandom
+--           "Random", blend (blend flipbook frames), startRandom, variants (true: one random cell, held; the 2x2 and 4x4
+--           random sheets do it unasked). The new sheets (Vfx/Sheets) need none of grid, fps and mode: a one-shot's rate
+--           is set from the life so its last frame lands at the death
 --   color   Color3 | ColorSequence | { {t, Color3}, ... }
 --   size    number | { {t, size, envelope?}, ... };  alpha  { {t, transparency}, ... } (0 = solid)
 --   life    {min, max} | number;  speed {min, max} | number;  spread  number | {x, y};  dir  Enum.NormalId
@@ -18,6 +20,7 @@
 
 local Tex = require(script.Parent.Tex)
 local Clock = require(script.Parent.Clock)
+local Sheets = require(script.Parent.Sheets)
 local Probe = require(script.Parent.Probe)
 local Device = require(script.Parent.Parent.Parent.UI.Core.Device)
 local Governor = require(script.Parent.Parent.Parent.World.Governor)
@@ -68,18 +71,6 @@ local function colorSeq(value: any): ColorSequence
 	end
 	return ColorSequence.new(keys)
 end
-
--- The flipbook sheets (art/scripts/vfx): their grid and the rate they play at when an effect does not say.
-local SHEETS: { [string]: { grid: number, fps: number } } = {
-	VfxFlame = { grid = 8, fps = 30 },
-	VfxCandleFlame = { grid = 8, fps = 30 },
-	VfxSmoke = { grid = 8, fps = 24 },
-	VfxWisp = { grid = 4, fps = 12 },
-	VfxDust = { grid = 4, fps = 12 },
-	VfxChunk = { grid = 2, fps = 0 },
-	VfxMoth = { grid = 2, fps = 14 },
-	VfxAsh = { grid = 4, fps = 16 },
-}
 
 local function range(value: any, default: number): NumberRange
 	if value == nil then
@@ -145,10 +136,13 @@ function Emit.make(parent: Instance, spec: Spec): ParticleEmitter
 		e.ShapePartial = spec.shapePartial or 1
 	end
 	-- (a flipbook sheet always plays as one: before 2026-11-12 an effect that forgot its grid drew the whole sheet,
-	-- sixteen little clouds in rows, on every particle; the user's "dotted" dissolve in Dead by selection and Iron Man)
-	local sheet = SHEETS[spec.tex or ""]
-	local grid = spec.grid or (sheet and sheet.grid)
-	if grid then
+	-- sixteen little clouds in rows, on every particle; the user's "dotted" dissolve in Dead by selection and Iron Man.
+	-- Vfx/Sheets decides the grid, mode and rate: the new sheets by their declared mode once their picture is in the
+	-- place, a look-alike old texture by its own grid until then)
+	local name = spec.tex or ""
+	local plan = Sheets.plan(spec, if Sheets.NEW[name] then Tex.real(name) else true, Tex.FALLBACK)
+	if plan then
+		local grid = plan.grid
 		if type(grid) == "number" then
 			e.FlipbookLayout = if grid == 2
 				then Enum.ParticleFlipbookLayout.Grid2x2
@@ -159,10 +153,10 @@ function Emit.make(parent: Instance, spec: Spec): ParticleEmitter
 			e.FlipbookSizeX = grid[1]
 			e.FlipbookSizeY = grid[2]
 		end
-		e.FlipbookMode = (Enum.ParticleFlipbookMode :: any)[spec.mode or "Loop"]
-		e.FlipbookFramerate = range(spec.fps or (sheet and sheet.fps), 30)
-		e.FlipbookStartRandom = spec.startRandom == true or (spec.grid == nil and sheet ~= nil)
-		e.FlipbookBlendFrames = spec.blend ~= false
+		e.FlipbookMode = (Enum.ParticleFlipbookMode :: any)[plan.mode]
+		e.FlipbookFramerate = range(plan.fps, 30)
+		e.FlipbookStartRandom = plan.startRandom
+		e.FlipbookBlendFrames = plan.blend
 	end
 	e.Parent = parent
 	Clock.watch(e)

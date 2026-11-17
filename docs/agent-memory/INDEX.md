@@ -117,3 +117,4 @@
 - [Fire and flame textures](fire-flame-textures.md) - V1.2 tex_fire.py (2026-11-17): 4 px clear is cell-size dependent (0.93 for 128 px), tongues from spines not noise cones, candle fill comes from its halo
 - [Booth lighting nil in play tests](booth-fx-play-uninitialised-lighting.md) - fx.play 'TweenService:Create ... Instance is null' = command-bar copy of LightingController never init()ed, not Recipes.impact; FxBooth.applyLook guarded (2026-11-17)
 - [Effect report](vfx-effect-report.md) - 2026-11-16 ticket V0.5: Vfx/Probe + FxBooth.report / reportAll print PASS or FAIL per effect (dots, moments, pops, values, light, cost against Part 9); what it cannot see (hand Emit counts, parts, sounds); needs Studio for the table
+- [Sheets and fallback grid](vfx-sheets-fallback-grid.md) - V2.2 (2026-11-17): Emit plays new flipbook sheets by Vfx/Sheets only when Tex.real; before the import the old texture's own grid
