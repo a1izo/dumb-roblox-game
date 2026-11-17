@@ -194,7 +194,9 @@ local function paint()
 end
 
 local function applyLook()
-	if cell then
+	-- (a copy of LightingController that was never init()ed, as a command-bar require makes, has no effects to blend:
+	-- it would fail on a nil Instance in TweenService:Create and then think the look was set)
+	if cell and (LightingController.atmosphere() :: Atmosphere?) then
 		LightingController.scene(LOOKS[state.backdrop] or LOOKS.dark)
 	end
 end
