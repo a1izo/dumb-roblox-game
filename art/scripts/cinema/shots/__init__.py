@@ -8,4 +8,4 @@ from cinema.shots import role_follower  # noqa: F401
 from cinema.shots import role_ace  # noqa: F401  (role_l.py is the old one, kept until the owner approves the rebuild)
 from cinema.shots import role_watari  # noqa: F401
 from cinema.shots import role_taskforce  # noqa: F401
-from cinema.shots import meeting_intro  # noqa: F401
+from cinema.shots import meeting_arrival  # noqa: F401  (meeting_intro.py is the old one, kept until the owner approves the rebuild)

@@ -301,7 +301,7 @@ end
 
 -- Short cutscenes between phases, played to everyone while the match loop waits for them (not while
 -- the debug panel is skipping ahead). Their lengths are the shots' (art/scripts/cinema/shots).
-local MEETING_INTRO = 6
+local MEETING_INTRO = 7.8
 
 local function interlude(kind: string, data: { [string]: any }, seconds: number)
 	if Match.debugSkipTo then

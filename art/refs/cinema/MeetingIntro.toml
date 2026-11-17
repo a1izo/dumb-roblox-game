@@ -1,0 +1,85 @@
+# The meeting intro (shot MeetingIntro): the survivors arrive at the war room. Reference notes, kept the way
+# art/refs/cinema/RoleAce.toml keeps its own.
+id = "MeetingIntro"
+name = "The war room fills"
+status = "rebuilt 2026-11-17 (item 6 of docs/handoff/list-2026-11-16.md; plan note 1d of docs/handoff/animation-cutscene-plan-2026-11-13.md)"
+
+[scene]
+sentence = "Twelve people hurry into a dark war room one after another, each by a different way and each with their own business (a coat shrugged off, a file carried in, a chair gripped, a glance across the table), and by the time the last one is in, every one of them stands at their own place round the table under the one light, facing the middle, and nobody has spoken."
+action = "The arrival of people: staggered, from the dark edge of the room into the pool of light, each person ending the same move, a turn on the spot to face the table and one step into the place, so the meeting starts exactly where the walk ends."
+mood = "Dread and haste, not comedy (cutscene-quality-bar round 14): slow steady cameras, figures cut out against the lit table, the light from above."
+
+[origin]
+what = "The war rooms of film: Dr. Strangelove's round table under its ring of light, and the long table of the Five Families in The Godfather. Both show the same things we need: a dark room, one hard light over the table, faces lit from above, newcomers coming out of the dark into the pool of it while the seated turn their heads."
+recognisable = "A dark room with a bright ring of light over a round table; people standing in a dark foreground as cut-out shapes; the one who comes in and is met at the door; a wide from high with every place filled round the glowing ring; long lenses along the table with shoulders in the foreground."
+ours = "The war room is ours (maps/venues/meeting: twelve places at 17 studs, chairs at 19.6, one door, the records door in the east wall, closed). The film shows people already seated, so the arrivals, the file dropped, the coat and the chair are ours, made from how the film's people hold themselves at the table."
+
+[source]
+url = "https://www.youtube.com/watch?v=3Y3Rrvh3FwE"
+title = "Dr. Strangelove (Kubrick 1964) War Room Scene w/ Russian Ambassador"
+kind = "the film scene (S1)"
+watched = "2026-11-17: frame sheets every 3 s over 0-48 s, then every 1.3 s over 29-47 s (113 s clip), in the built-in browser"
+mirror = false
+
+[source2]
+url = "https://www.youtube.com/watch?v=GQ5v1bbn7kM"
+title = "Dr. Strangelove (1964) - The War Room"
+kind = "the film scene (S2)"
+watched = "2026-11-17: frame sheet every 4 s over 2-62 s (417 s clip)"
+mirror = false
+
+[source3]
+url = "https://www.youtube.com/watch?v=DF30eGXDIVU"
+title = "The Godfather (1972) - The Meeting of the Five Families"
+kind = "the film scene (S3)"
+watched = "2026-11-17: frame sheet every 3 s over 1-46 s (357 s clip); a second cut (2D_zITtVJGA) every 2.2 s over 0-35 s; both start with everyone already seated, so they gave the seats' business and the light, not the arrival"
+mirror = false
+
+[seen_in_game]
+before = "2026-11-17 offline (check_motion.py, run_cinema.py --lint): 10 of 12 seat clips FAIL the motion report (both arms mirror images for the whole of every held pose; seats 8 and 9 also frozen 2.5 s); lint: 2 [shape] notes (seats 4 and 2: both arms hidden in the torso's outline) and 1 [end] (seat 5 still moving at 1.3 studs a second at the end). Six of the twelve walk in from the door's side in cuts of 1.5 s; the other six stand from the first frame with a head turn; 8 locked camera keys, two events."
+found_in_code = "RoundService.meetingCast casts only the living players: seats 0..n-1 in a normal match (n is 6 to 12); any seat nobody is cast in gets a faceless stand-in (ShotPlayer: Stage.figure). MeetingService.gather() has already put the real players standing at their places (radius 17 facing the table) when the shot plays; gather(true) sits them in the chairs when the Meeting phase opens. The shot's actors are clones."
+
+# The beats, each with the source (S1 = 3Y3Rrvh3FwE, S2 = GQ5v1bbn7kM, S3 = DF30eGXDIVU) and its time.
+
+[[beat]]
+src = "S1 0.5-27"
+pose = "the dark with shafts of haze light: two figures cut out as black shapes with hard rims against the light, one in a hat, standing apart, doing small things with their hands (cups, a tray)"
+[[beat]]
+src = "S1 29.0-30.3"
+pose = "from the dark foreground: a big black back and shoulder fill the left of the frame, beyond it the lit table with a ring of faces under the halo of light; the newcomer is met by the one who stands at the table's end"
+[[beat]]
+src = "S1 31.6-32.9"
+pose = "at the threshold two men meet: one turns square to the other, the host steps in with a hand out, the other half turned away; the people at the table turn their heads one after another"
+[[beat]]
+src = "S1 34.2-35.5"
+pose = "high wide: the whole ring of light, and below it the people along the table's near side, heads at different heights and turns, one with a chin on a hand, the glow ring reflecting on the table"
+[[beat]]
+src = "S1 40.7-42.0"
+pose = "a lone figure at the edge of the room against a wall of lit panels, the arms down, the shoulders square, the whole room's light behind him"
+[[beat]]
+src = "S1 44.6-48.5"
+pose = "the man in the hat crosses the room along the table; the camera tracks sideways with him, the ring of light a bright line behind his head, the seated small beyond"
+[[beat]]
+src = "S2 2.0-18.0"
+pose = "very high wide from the room's end: every place filled round the ring, the faces a ring of pale dots under the halo of light, the map wall dark above; held, hardly moving"
+[[beat]]
+src = "S2 22.0-46.0"
+pose = "long lens along the table from its end: a shoulder dark in the foreground, a row of faces beyond it each at its own height and turn, papers in front of the near man, the light from above"
+[[beat]]
+src = "S3 7.0-22.0"
+pose = "each man in his own seat, his own business: one with a cigar at the lips, one with the chin on a hand, one rubbing the back of his neck; the light from the front and above, faces warm, the room behind dark"
+[[beat]]
+src = "S3 37.0-46.0"
+pose = "a man leaning forward with an elbow on the table, another leaning back with the head tipped, a glass and a bowl in front; nobody's two arms are alike"
+
+[timing]
+length = 7.8
+fit = "Four cuts of 1.9 to 2.3 s, none under 1.4 s, every camera held by hand and drifting: A 0.0-1.9 from over the table's north-east, long lens, the first man comes in out of the dark between the chairs by the records door side, tugging his collar, the pinned case wall behind him; B 1.9-4.1 low over the table's top at the east side, seat 3 stops at his place, swings his arm and skids a case file across the lit wood (the file lands on the table at 3.6 s and slides to 9 studs from the middle), the pulse and a light focus on the throw; C 4.1-5.5 from over the table's south side, looking south, seats 11, 0 and 1 come in to their places (a cuff pulled, a tie touched); D 5.5-7.8 high and wide from the south-west corner under the ring chandelier, the last ones come in (seats 8 and 1) and the ring is full: every place holds someone facing the middle, heads moving, for 1.4 s. Eight walk in (seats 4, 3, 5, 2, 11, 0, 8, 1, stopping at 2.9, 3.2, 4.2, 4.5, 4.7, 5.1, 5.5 and 6.3 s, each 1.0 s or more behind the one who shares their gap); four are already in their places in the dark (seats 6, 7, 9, 10) and turn to watch."
+lens = "Long lenses (fov 28 to 42 from 8 to 16 studs) for the arrivals, so a body is not all arm; one wide at fov 52 from 11 studs up for the end; the table is the foreground of A, B and C (a bright band under the people), its far edge hides the legs of whoever stands at a place."
+light = "The preset's key over the table is kept; on top of it the shot's own lights, per cut: a cold key spot from above and in front on the people the cut films and a warm rim spot from behind and above, shadows off; a grade of contrast +0.18, saturation -0.2, brightness +0.05 and a cool tint lifts the picture a little; skin never glows."
+
+[r6]
+notes = "R6 has no elbows or knees: a coat shrugged off is both shoulders rolled back and the arm slid down the body; a file carried is an arm bent forward with the fist at the chest on a mark (body_reach), put down by turning the shoulder, not by reaching; both arms never alike; the head leads each turn and the body follows two to four frames later; heads stay up in close shots."
+
+[check]
+by = "run_cinema --clear 0 problems; --lint with the [end] notes and the shape lint; motion report PASS on every clip; spacing strips of the arrivals; stills of every cut and from several seats; the last frame is every actor at radius 17 facing the middle, as MeetingService.gather() leaves the real bodies"

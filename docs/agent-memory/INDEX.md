@@ -113,3 +113,5 @@
 - [Smoke sims headless](smoke-sim-headless.md) - 2026-11-17 V1.1: tex_smoke.py bakes Mantaflow headless, reads density with openvdb, lights it in numpy; REPLAY cache bakes 1 frame, noise upres writes empty, Cycles shows nothing, np.roll wraps
 - [Floor textures: cracks, scorch, sigil](floor-textures-cracks-scorch-sigil.md) - V1.6 tex_floor.py (2026-11-17): cracks shaded from a height field (groove, bevel, chips), per-bbox segment raster, brush-stroke sigil, glyphs that must not read as letters
 - [Vfx mesh UV rule](vfx-mesh-uv-rule.md) - V1.7 (2026-11-17): u once round, v up on every kit mesh; VfxSlashArc/Twister/Shell; doubled faces had zero normals (fixed); check_meshes.py and its sheet
+- [Meeting intro: cast and places](meeting-intro-cast-and-places.md) - 2026-11-17: seat:k = place k, cast = seats 0..n-1, uncast seats are faceless stand-ins, real bodies stand at radius 17 during the shot, MEETING_INTRO must equal the shot's length
+- [War room chair gaps](war-room-chair-gaps.md) - 2026-11-17: chairs 3.2 boxes, gaps 6.4 to 7.4 wide, lane at radius 15.8, 1.3 s between two walkers in a gap, ~20k acting characters per footwork walker
