@@ -122,3 +122,4 @@
 - [Colour ramps](vfx-palette-ramps.md) - V2.4 (2026-11-17): Vfx/Palette ramps {core, body, edge}; Emit spec ramp = ...; shop full colour, world greys, danger red
 - [Fresh recipes](vfx-fresh-recipes.md) - V2.5 (2026-11-17): the 15 remade recipes in Presentation/Vfx/Fresh beside the old Recipes/FxKit, declared in Fresh/Defs, listed in the booth as recipe_new_*; not exported from Vfx/init and no caller yet
 - [One-shot sheet life](vfx-oneshot-sheet-life.md) - a one-shot flipbook sheet needs particle lives of frames / 30 s or more (4x4: 0.55 s, 8x8: 2.1 s), because the flipbook rate caps at 30
+- [Shape textures off](vfx-shape-textures-off.md) - V2.6 (2026-11-17): Shape.grow knows slashArc, twister, shell; the textured opt-in stays off (Shape.TEXTURED = false) until the Studio SurfaceAppearance test of V1.7 is run

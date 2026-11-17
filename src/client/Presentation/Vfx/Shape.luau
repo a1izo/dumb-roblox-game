@@ -1,7 +1,9 @@
 --!strict
--- The VFX kit's solid shapes: a ring, a dome, a tube, a cone, a swirl, a crescent, a sphere, spikes, a shard, a rock
--- and a page (the Fx props import's VfxRing ... VfxPage, art/scripts/vfx/meshes.py; before it is imported a ball stands
--- in for a sphere or a dome and the rest wait for it), grown from small to full on a curve, held, and faded, glowing
+-- The VFX kit's solid shapes: a ring, a dome, a tube, a cone, a swirl, a crescent, a sphere, spikes, a shard, a rock,
+-- a page, a slash arc, a twister and a shell (the Fx props import's VfxRing ... VfxShell, art/scripts/vfx/meshes.py; the
+-- last three came with ModelsFx 4: VfxSlashArc flat like the crescent, VfxTwister standing on its foot like the cone,
+-- VfxShell centred like the sphere; before it is imported a ball stands in for a sphere, a dome or a shell and the rest
+-- wait for it), grown from small to full on a curve, held, and faded, glowing
 -- (Neon) or shimmering (ForceField) in a colour, or wearing a VFX texture. Each mesh is made 2 studs across (radius 1)
 -- round its up, from its foot up where it has a height; Shape.grow sizes it in studs.
 --
@@ -19,6 +21,13 @@ local Tex = require(script.Parent.Tex)
 
 local Shape = {}
 
+-- Textured meshes are NOT the default yet (the plan's V2.6): the Studio test of V1.7 (does a SurfaceAppearance with AlphaMode
+-- Transparency on a kit mesh fade with the part's Transparency, tint from a script, glow with EmissiveStrength?) has not been
+-- run. When it says yes, fill TEXTURES with the texture each kind wears and turn TEXTURED on; until then a shape wears a
+-- texture only when its caller names one (`texture`), as it always has, and `textured = true` does nothing.
+Shape.TEXTURED = false
+Shape.TEXTURES = {} :: { [string]: string }
+
 export type Kind =
 	"ring"
 	| "dome"
@@ -31,6 +40,9 @@ export type Kind =
 	| "shard"
 	| "rock"
 	| "page"
+	| "slashArc"
+	| "twister"
+	| "shell"
 
 export type Options = {
 	size: number, -- studs across at full size (twice the radius)
@@ -43,6 +55,7 @@ export type Options = {
 	color: Color3?,
 	material: Enum.Material?, -- Neon (default), ForceField, SmoothPlastic...
 	texture: string?, -- a VFX texture to wear (then lit by the scene; Transparency still fades it)
+	textured: boolean?, -- opt in to the kind's own texture (Shape.TEXTURES); does nothing while Shape.TEXTURED is off
 	transparency: number?, -- how see-through at its most solid (0.15)
 	spin: number?, -- degrees it turns about its up while it lives
 	rise: number?, -- studs it rises while it lives
@@ -62,6 +75,9 @@ local MADE: { [string]: Vector3 } = {
 	VfxShard = Vector3.new(0.32, 0.22, 1),
 	VfxRock = Vector3.new(1, 1, 0.75),
 	VfxPage = Vector3.new(1, 0.12, 1.4),
+	VfxSlashArc = Vector3.new(2, 2, 0.1), -- (flat, like the crescent: 100 degrees of a blade in the ground plane)
+	VfxTwister = Vector3.new(2, 2, 2), -- (stands on its foot, like the cone)
+	VfxShell = Vector3.new(2, 2, 2), -- (centred, like the sphere)
 }
 
 local KEYS: { [string]: string } = {
@@ -76,6 +92,9 @@ local KEYS: { [string]: string } = {
 	shard = "VfxShard",
 	rock = "VfxRock",
 	page = "VfxPage",
+	slashArc = "VfxSlashArc",
+	twister = "VfxTwister",
+	shell = "VfxShell",
 }
 
 local templates: { [string]: BasePart | false } = {}
@@ -122,9 +141,9 @@ local function standIn(kind: string): BasePart
 	p.CastShadow = false
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
-	if kind == "sphere" or kind == "dome" then
+	if kind == "sphere" or kind == "dome" or kind == "shell" then
 		p.Shape = Enum.PartType.Ball
-	elseif kind == "ring" or kind == "tube" or kind == "cone" or kind == "swirl" then
+	elseif kind == "ring" or kind == "tube" or kind == "cone" or kind == "swirl" or kind == "twister" then
 		p.Shape = Enum.PartType.Cylinder
 	end
 	return p
@@ -184,12 +203,18 @@ function Shape.grow(kind: Kind, at: CFrame, options: Options): BasePart
 	end
 	-- (before the Fx import only a ball stands in, for a sphere or a dome: a block or a disc in place of spikes, a ring
 	-- or a crescent reads worse than nothing, so those stay unseen and the effect's other layers carry it)
-	local hidden = not source and kind ~= "sphere" and kind ~= "dome"
+	local hidden = not source and kind ~= "sphere" and kind ~= "dome" and kind ~= "shell"
 	part.Name = "DGVfx_" .. kind
 	part.Color = options.color or Color3.new(1, 1, 1)
 	part.Material = options.material or Enum.Material.Neon
-	if options.texture and part:IsA("MeshPart") then
-		(part :: MeshPart).TextureID = Tex.id(options.texture)
+	-- (a texture: asked for by name, or the kind's own when the caller opts in with `textured` AND the kit's switch is on; the
+	-- switch stays off until the Studio test of V1.7 says how a SurfaceAppearance behaves on a kit mesh)
+	local wear = options.texture
+	if wear == nil and options.textured == true and Shape.TEXTURED then
+		wear = Shape.TEXTURES[kind]
+	end
+	if wear and part:IsA("MeshPart") then
+		(part :: MeshPart).TextureID = Tex.id(wear)
 		part.Material = options.material or Enum.Material.SmoothPlastic
 	end
 	local solid = options.transparency or 0.15
@@ -219,7 +244,13 @@ function Shape.grow(kind: Kind, at: CFrame, options: Options): BasePart
 		part.Size = size
 		local u = if total > 0 then t / total else 1
 		-- (a shape with a height stands on its foot at `at`: its middle half its height up)
-		local lift = if MADE[key].Z > 0 and kind ~= "sphere" and kind ~= "spikes" then size.Y / 2 else 0
+		local lift = if MADE[key].Z > 0
+				and kind ~= "sphere"
+				and kind ~= "shell"
+				and kind ~= "spikes"
+				and kind ~= "slashArc"
+			then size.Y / 2
+			else 0
 		part.CFrame = at * CFrame.new(0, lift + rise * u, 0) * CFrame.Angles(0, spin * u, 0) * turn
 	end
 	place(from, 0)
