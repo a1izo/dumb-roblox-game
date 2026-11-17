@@ -1,0 +1,83 @@
+# The Butler's role scene (shot RoleButler). Reference notes, kept the way art/refs/emotes/*.toml keep theirs.
+id = "RoleButler"
+name = "The Butler: the tea carried in, and the question"
+status = "rebuilt 2026-11-17 (item 4 of docs/handoff/list-2026-11-16.md, the plan's step 1c); the old module art/scripts/cinema/shots/role_watari_old.py is kept, unimported"
+
+[scene]
+sentence = "The old servant Watari sets his tea tray straight with small exact movements in his pantry, carries it level and unhurried into the dark room of the one he serves, sets it down with a small bow, his hand flat on his chest, and, seeing that the crouched shape among the screens is silent, asks gently: 'Is something the matter? Hmm? ... What's wrong?'"
+action = "The tray: taken up with exact hands, carried level on a still upper body through the door, lowered and put down (one small dip), and the hand to the chest with the head inclined as he asks. Stillness above the belt, tidiness below it."
+mood = "Quiet and kind, a little uneasy. Warm pantry light against the cold screen glow of the other room; slow held cameras, nothing sudden; the answer never comes."
+
+[origin]
+what = "Watari (Death Note): the old gentleman who is L's servant and handler. Seen in the anime when he introduces himself to the Japanese task force (episode 6, 'Unraveling': he stands behind L's armchair, touches the brim of his hat, takes it off and lays his hand flat on his chest with a small bow, then opens the case of badges on a little round table and hands each one over between two fingers), and in every scene where the tea things stand on the low table beside L."
+recognisable = "Grey-white hair brushed back, round glasses, a white moustache, the dark suit with a white shirt and a thin black tie; very upright; the head inclined a little; eyes nearly closed in a gentle smile; a hand held flat against the chest; the hands joined low in front of the belt when he stands; things given with two fingers."
+ours = "The set stays (maps/venues/sets/ace.py: the pantry and Ace's room beside it) and so does the line (the Butler's: 'Is something the matter? Hmm? ... What's wrong?'). Everything acted, shot and lit is new: the tray taken up, the carry through the door, the table, the hand to the chest, the question, the release."
+
+[source]
+url = "https://www.youtube.com/watch?v=C2ZxMzpz6s0"
+title = "I Am Watari (51 s, the episode 6 scene)"
+kind = "the anime scene"
+watched = "2026-11-17: frame sheets every 4.2 s over 1-48 s and every 0.9 s over 3-13 s (50 s clip), in the built-in browser"
+mirror = false
+
+[source2]
+url = "https://www.youtube.com/watch?v=-Ucc7VETymw"
+title = "death note (watari) (8:48 compilation)"
+kind = "the anime scenes, cut together"
+watched = "2026-11-17: frame sheets every 26 s over 5-500 s, every 12 s over 100-232 s, every 3 s over 92-122 s and 138-171 s, in the built-in browser"
+mirror = false
+
+[source3]
+url = "https://www.youtube.com/watch?v=h79mQiR6ZLo"
+title = "How to carry a tray | Episode 13 of How to be a butler"
+kind = "a filmed butler showing how to carry a tray (the walk itself is not shown; also used by RoleAce)"
+watched = "2026-11-15 (the earlier session): frame sheets at 20, 45 and 70 s"
+mirror = false
+
+# The poses, each with its source (S1 = the episode 6 clip, S2 = the compilation, S3 = the tray film) and its time.
+
+[[beat]]
+src = "S1 3.0-4.8"
+pose = "from behind, wide: the old man standing quite still facing the room, a dark brimmed hat over the top third of the frame, the shoulders level, nothing moving"
+[[beat]]
+src = "S1 5.7"
+pose = "wide, beside the crouched L: the right hand rises to the brim of his hat; the body stays upright and does not lean"
+[[beat]]
+src = "S1 6.6-8.4"
+pose = "the hat is off; the right hand is laid flat on his chest, the head inclined a little, the body upright and still; this is the 'I serve you' gesture and the one the scene ends on"
+[[beat]]
+src = "S1 17.8-22.0"
+pose = "close, from a little below: the face square on, round glasses, moustache, eyes nearly closed, a gentle smile, nothing else moves"
+[[beat]]
+src = "S1 26.2-30.4"
+pose = "close from below: the smile, the head tipped a little back, the eyes closed; a long still hold"
+[[beat]]
+src = "S1 38.8"
+pose = "wide, low: bent a little at the waist over a small round table, both hands on the silver case, setting it down; beside him L crouched in the armchair, dark curtains behind"
+[[beat]]
+src = "S2 138.0"
+pose = "medium, from the side: a hand on the lid of the case on the round table, the body turned half away, bent from the hips, the other arm hanging"
+[[beat]]
+src = "S2 147-150"
+pose = "wide from behind the watching men: standing very straight in front of white curtains, the hands joined low in front of the belt, looking down at what they hold"
+[[beat]]
+src = "S2 153"
+pose = "insert: two fingers of one hand give a badge, the other hand cupped under it; the fingers precise and slow"
+[[beat]]
+src = "S2 156-159"
+pose = "medium: standing upright, one hand low at the belly with a badge between finger and thumb, the head tilted a little to one side, the gentle smile"
+[[beat]]
+src = "S3 20-70"
+pose = "the butler's tray carry: upright, the head level and steady, the tray flat and level on the raised palm, the free arm relaxed beside him, small even steps (R6 cannot bend an elbow: both forearms forward at the belt, the tray welded level between them)"
+
+[timing]
+length = 12.0
+fit = "6 cuts, none under 1.5 s: A 0.0-1.7 low from the pantry's east end, wide (fov 56), the old man bent over the tray, a fist touching a cup straight, the doorway and the dark room's armchair in the distance behind him; A2 1.7-3.3 an insert close and high from the west over the tray: the two fists taking it by its ends, the lift (the teapot and the cups lit in the foreground); B 3.3-6.3 high from the pantry's far corner behind him as he goes, down its length to the lit door and the faceless one in the chair beyond; C 6.3-8.5 from the dark room, low, past the armchair, back along the line to the door: he comes through carrying the tray on one hand and the question begins; D 8.5-10.2 from the front-left, the old man stopped, the tray held, the head inclined, the left hand flat on his chest on 'What's wrong?'; E 10.2-12.0 from inside the pantry through its two doorways: him small and still, looking to the screens, the faceless one not answering; a cut to black at 11.65. The line starts at 6.0 s as he reaches the doorway and ends about 9.6 s."
+lens = "Low (about the servant's chest to eye height), fov 30 to 40 for him, 46 to 50 only for the rooms; every camera creeps or drifts by hand (shot.pan operator), none locked; something in the foreground in most cuts (the counter's edge, the trolley, the chair's back)."
+light = "The pantry's own warm pendant; a key on his face from the counter side, a cool rim from behind in the dark room so his outline separates from the wall; the screens' glow is the room's own; the warm spill of the door follows him in."
+
+[r6]
+notes = "R6 has no elbows or fingers: the tray is carried between both forearms held forward at the belt, welded level (keep_arm); the hand to the chest is a fist put on a mark on the torso with body_reach; the exact hands are fists put on marks (the cup's handle, the tray's ends); the head stays up (a bowed head is only hair), the bow is the whole body dipping 12 degrees and the neck level; the walk is slower than the game's (3 studs a second), eased in and out, the heading turned into the table over the last seconds (a curve, no pivot after the stop), never both arms alike."
+
+[check]
+by = "run_cinema --clear 0 problems; --lint (no [shape] or [end] notes, only intended [frame] notes); motion report and spacing strip; stills of every cut; a game watch of the REAL briefing (a forced Butler role) from the first frame to the role card"

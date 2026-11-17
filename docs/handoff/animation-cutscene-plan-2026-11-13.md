@@ -626,3 +626,4 @@ the bottom of this file.
   and the method checks above. The real briefing in the game ended on time and restored everything: "not exiting" was read as the
   ending. Verdict pending.
 
+- 2026-11-17, RoleButler (item 4 of the 2026-11-16 list, step 1c, rebuild), branch worktree-agent-a54c29b52d540c8ac: new module art/scripts/cinema/shots/role_butler.py (the old role_watari.py kept as role_watari_old.py, unimported), reference art/refs/cinema/RoleButler.toml (Watari, episode 6; 11 beats). The line is unchanged. Motion report RoleButler_self FAIL (glides 2.7 s, symmetry 100 percent) before, PASS after (symmetry 21 percent, frozen 0.7 s); RoleButler_ace PASS both. `--clear` 0, `--lint` no [shape] or [end] notes (1 shape and 3 end notes before), only the intended [frame] notes of the hands insert, acting file 24,712 characters. Not done: the game watch (no Studio was free), the real briefing, the owner verdict.
