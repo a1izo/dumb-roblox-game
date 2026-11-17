@@ -1,0 +1,56 @@
+# Hit and slam. Reference notes for the effects rework (docs/handoff/vfx-rework-plan-2026-11-16.md, ticket V0.4).
+# Words are ours. The sheets beside this file are small contact sheets of frames, kept for internal reference only.
+id = "hit_slam"
+name = "Hit and slam: the frame a blow lands, and what is left after"
+family = "hit_slam"
+status = "watched 2026-11-16 in the built-in browser; times are seconds into each clip; frames are counted at 30 a second"
+note = "Moments are a read of sampled frames (every 0.3 to 1.8 s), not frame-by-frame, so the shortest moments (the hit) are known only as 'under the gap between two samples'."
+
+[[source]]
+id = "S1"
+url = "https://www.youtube.com/watch?v=LZuSLM6LumU"
+title = "All Battlegrounds Impact Frames (30 s)"
+kind = "Roblox fighting-game cutaways, each blow shown as a full-screen high-contrast drawing, then back to the world"
+watched = "16 frames every 1.8 s over 0.5-29.3 s (hit_slam_impact_frames_survey.jpg), then 12 frames every 0.34 s over 25.9-29.6 s (hit_slam_impact_frames_end.jpg)"
+
+[[source]]
+id = "S2"
+url = "https://www.youtube.com/watch?v=45TFcrhc0LQ"
+title = "ALL EMOTES SHOWCASE IN INK GAME (14 min 38 s)"
+kind = "Ink Game's S Rank emote, a flip landing, at 379-388 s"
+watched = "12 frames every 0.9 s over 379-389.9 s, cropped round the player (hit_slam_ink_srank.jpg)"
+
+[[source]]
+id = "S3"
+url = "https://www.youtube.com/watch?v=vBQXIBKQVfQ"
+title = "Dust Impact Ground Slam Shockwave Dust Cloud (stock element, 25 s)"
+kind = "a dust-cloud element on black, the shape of the cloud after a slam; sheets are filed under smoke_dust (smoke_dust_impact_fine.jpg)"
+watched = "see smoke_dust.toml"
+
+[moment]
+gather = "S1 has no wind-up: the cut itself is the warning. Before each blow the picture sits in the ordinary world for a beat, then jumps. S1 0.5-2.3 s: a player in the plain lit world, nothing else on screen. S2 379.0 s: the player stands with arms up, no effect at all; the flip starts at 379.9 s. So the gather is the body's pose and a hard cut, not a particle. Count: 0 particle layers."
+hit = "S1: the hit is a full-screen swap to two tones, black and white only (sometimes with one thin teal or red edge). 4.1 s: a black wedge over a white floor with white branching cracks all running to one bright star flare on a thin flat disc at the floor. 5.9 s: a white field, a dark fist shape, black spikes fanning out from the right edge. 9.5 s: white with teal-edged curved lines and one dense black cluster of radial spikes. 14.9 s, 16.7 s, 20.3 s: nearly all white with one small dark mark (the target) or a few spikes at the screen edge. The frame is the brightest and the busiest thing in the whole clip, and each one lasts under 1.8 s (less than 54 frames; the shortest were not caught between samples). S2: 379.9 s the landing is one pale double ripple on the floor under the body (see body)."
+body = "S1: radial speed lines are the body of the effect, thick and black on white, thinning toward the centre (9.5 s, 13.1 s, 25.7 s: fans and starbursts of 20 to 60 hard strokes). 11.3 s: two dense black starbursts joined by a thin long horizontal line and a vertical line (a crosshair). 22.1 s: a grainy white fist on black (texture is noisy, not smooth). 26.24 s: a white radial burst round a line-drawn skull. 26.92 s: a dark-red spiral with a bright core and curved blades. All hard-edged; no soft glow in any of them. S2 (379.9-381.7 s): two or three thin concentric pale curves on the floor, expanding from the landing spot; one low-contrast layer."
+breakup = "S1 27.26 s: the white screen is eaten from the corners by dark brown-black smoke masses with grainy, noisy edges (not a smooth fade): the picture returns to the world through noise. Duration about 0.34 s (one sample gap). S2 381.7 s: the ripple has gone; nothing erodes, it simply thins out."
+residue = "S1 27.6-29.64 s (2 s, about 60 frames): back in the world, a wide pale grey cloud of dust hangs over a field of broken pale blocks, the player crouched at its foot. 27.94 s the cloud is at its fullest; 28.28 s it has begun to settle (the rubble shows through); 28.96-29.3 s a thin dark smoke thread stands up from the middle of the pile; 29.64 s the cloud is thin but still there. A few tiny white specks (snow) drift through. S2: none; the floor is clean one second after."
+
+[layers]
+count = "S1 world after-hit: 3 layers (rubble pile as real geometry, a big soft cloud, a thin dark smoke thread). S1 impact frames: 2 tones with line work only. S2: 1."
+brightest = "S1: the whole-screen white frame. S2: nothing stands out; the ripple is fainter than the floor texture."
+colours = "S1: black and white, one teal edge (9.5 s), one blood-red (16.7 s, 26.92 s). S3 and the S1 cloud: grey-beige. Nothing is saturated except the one coloured edge."
+values = "Three values in S1's world frame: near-white dust, mid grey rubble, near-black smoke thread."
+
+[timing]
+whole_effect = "S1 impact cutaway: well under 1.8 s each; the aftermath lasts 2 s. S2: 1.8 s."
+frames_at_30 = "gather 0 (hard cut), hit 1-3 (the ones seen were only ever caught whole, never half), body under 54, break-up about 10, residue about 60"
+
+[take]
+structure = "Hit as a cut to a two-tone frame with radial strokes, not as a slow growth; then through noise back to the world; then a long settle of dust and a thin dark thread. This is the moments checklist of Part 3 done by the cut."
+do_not_copy = "The ink-brush black strokes and skulls: the game's rule is no ink, so use dust, glass shards, cracks and cold light as the strokes. The skull and the fist are the games' own drawings."
+
+[weak]
+ink_game = "Ink Game's S Rank has almost no effect at all (a faint floor ripple); its emotes are body-led. Use it only as the example of what is too little. The strongest hit reference here is S1, and S1 is not an emote, it is a cutaway."
+unverified = "I did not hear the sound, so how the sound lands on the hit is not recorded. I did not catch a single impact frame at frame level."
+
+[sheets]
+files = ["hit_slam_impact_frames_survey.jpg", "hit_slam_impact_frames_end.jpg", "hit_slam_ink_srank.jpg", "smoke_dust_impact_fine.jpg (shared)"]

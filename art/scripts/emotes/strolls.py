@@ -107,22 +107,6 @@ _cycle("theLongClimbWalk", 5.0, 0.52, 1.15, climb_upper,
        "Climbing an endless stair: high knees, leaning in, pushing up off each foot, the arms pumping.", kind=_Climb)
 
 
-# Parade March (paradeMarchWalk): stiff and upright, chin up, the arms swinging high and straight in time,
-# brisk at 5.5 studs a second.
-def march_upper(phase):
-    bob = locomotion.twice(phase, 0.3)
-    body = dict(
-        root=(1.5 - 0.5 * bob, 0.0, 0.6 * locomotion.cyc(phase, 0.12)),
-        neck_world=(4.0, 0.0, 0.0),
-        offset=(0.0, -0.05 + 0.04 * bob, 0.0),
-    )
-    body.update(locomotion.arms(phase, swing=46, base=0, out=4, arc=1, lift=0.0, forward=0.0, lag=0.0))
-    return body
-
-
-_cycle("paradeMarchWalk", 5.5, 0.5, 0.6, march_upper,
-       "A stiff parade march: upright, chin up, arms swinging high and straight in time.")
-
 # Mushroom Stroll (mushroomStrollWalk): an easy, unbothered walk at 4.5 studs a second, the stick over the right
 # shoulder (a mushroom tied to it: the arm of the standing clip), the other arm swinging a little, the head
 # bobbing along.
@@ -144,24 +128,3 @@ def mushroom_upper(phase):
 
 _cycle("mushroomStrollWalk", 4.5, 0.6, 0.3, mushroom_upper,
        "An easy, unbothered walk with a stick over the shoulder, the other arm swinging a little.")
-
-# Not My Problem (notMyProblemWalk): the lazy slouch of somebody walking away from it all, hands in the pockets
-# (the standing clip's), the head tipped, dragging along at 4 studs a second.
-POCKET_R, POCKET_L = J((8, 0, -4), (-0.08, 0.12, -0.02)), J((8, 0, 4), (0.08, 0.12, -0.02))
-
-
-def slouch_upper(phase):
-    bob = locomotion.twice(phase, 0.3)
-    yaw = 3.0 * locomotion.cyc(phase, 0.05)
-    body = dict(
-        root=(-12.0 + 0.8 * bob, yaw, 2.0 * locomotion.cyc(phase, 0.1)),
-        neck_world=(-14.0, 0.5 * yaw, 7.0),
-        offset=(0.05 * locomotion.cyc(phase, 0.12), -0.1 + 0.03 * bob, 0.0),
-        rShoulder=POCKET_R,
-        lShoulder=POCKET_L,
-    )
-    return body
-
-
-_cycle("notMyProblemWalk", 4.0, 0.62, 0.22, slouch_upper,
-       "A lazy slouch, hands in the pockets, walking away from it all.")

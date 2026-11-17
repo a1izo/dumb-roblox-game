@@ -15,7 +15,7 @@ judging it against a reference. A model that cannot read images must not take th
 
 ## Status (2026-11-16, the day the plan was written)
 
-Nothing is built. V0.3 (the texture check) is done: see the Log. The order is fixed:
+Nothing is built that changes a look. V0.3 (the texture check) is done and V0.1's code is on main but not yet played in Studio (the owner's Studio was in a play session on 2026-11-16): see the Log. The order is fixed:
 
 | Stage | What | Tickets | Gate before the next stage |
 |---|---|---|---|
@@ -570,3 +570,5 @@ verdict where there was a gate.)
   (0.114) is the same size as its average (0.110), a clean 4-frame loop; VfxCircle and VfxRing are one-tone line
   drawings (tone 0.025, 0.034); VfxDust and VfxWisp never break into islands (erosion fails: they fade). Not checked:
   the preview pictures were not looked at, and no flipbook was played in the engine.
+- 2026-11-16, V0.1 (the catalogue and the booth): code merged to main (b92b1227): Presentation/Vfx/Catalog.luau, Debug/FxBooth.luau, an Effects tab in the debug panel, EmoteFx.clips(), VfxCatalog.spec. Checked: stylua, selene, rojo build, check_terms. NOT checked: the specs and the booth have not run; the Studio play test (every entry plays, Stop leaves nothing in Camera.DGVfx, FxBooth.verify() returns {}) waits for Studio to be free. Not done, so V0.1 is not closed.
+- 2026-11-16, check C1 (the first graphics plan, phases 1 to 7, in the owner's place): by the records all seven are in the place (v608, scripts as of 1dcb59dc), but the place itself could not be read because Studio was in Play. See docs/handoff/graphics-plan-place-check-2026-11-16.md.

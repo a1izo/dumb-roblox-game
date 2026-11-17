@@ -1,0 +1,54 @@
+# Fire and candle. Reference notes for the effects rework (docs/handoff/vfx-rework-plan-2026-11-16.md, ticket V0.4).
+# Words are ours. The sheets beside this file are small contact sheets of frames, kept for internal reference only.
+id = "fire_candle"
+name = "Fire and candle: a flame that is never the same shape twice, and how it goes out"
+family = "fire_candle"
+status = "watched 2026-11-16 in the built-in browser; times are seconds into each clip; frames counted at 30 a second"
+
+[[source]]
+id = "S1"
+url = "https://www.youtube.com/watch?v=U8BxQNfMp18"
+title = "Slow motion video of candle flame blowing out (27 s)"
+kind = "real footage: one candle on black, a puff blows it out, and it relights from the wick"
+watched = "16 frames every 1.7 s over 0.5-26 s (fire_candle_single_survey.jpg); 12 frames every 0.38 s over 13.4-17.6 s (fire_candle_blowout_fine.jpg)"
+
+[[source]]
+id = "S2"
+url = "https://www.youtube.com/watch?v=pbGRto-gaS0"
+title = "1/6 Slow Motion (300 fps) Close-Up of Candles Burning (56 s)"
+kind = "real footage: a macro of many candle flames side by side, very close"
+watched = "16 frames every 3.4 s over 1-52 s (fire_candle_macro_tongues.jpg)"
+
+[[source]]
+id = "S3"
+url = "https://www.youtube.com/watch?v=8TazwsytWK0"
+title = "Stylized fire attack (Unity VFX pack, 16 s)"
+kind = "a game-effects showcase of a stylised fire sword attack with its effect shown in slow motion"
+watched = "16 frames every 0.95 s over 0.3-14.6 s (fire_candle_stylised_attack.jpg)"
+
+[moment]
+gather = "S3 2.2 s and 7.9 s: before the stream, a huge four-point star flare (long thin spikes, one pair horizontal, one pair diagonal, a white-hot centre with a thin gold ring) fills the frame: the flare is the gather and the hit flash together, with small orange sparks streaking away from it. S1 17.2 s (a loop's gather): a glowing red wick dot then a small flame at the wick."
+hit = "S3 3.15 s: a cone of fire, narrow at the weapon and widening toward the camera, white-yellow in the middle shading to orange then red at the rim, with black-brown rock chunks and a darker brown cloud under it; the cone is the biggest, brightest thing. S1 is a loop, so it has no hit; the nearest is the puff at 13.4 s that lays the flame flat."
+body = "S1 steady (0.5-12 s): a single tall teardrop twice as tall as wide, cream-white inside with a yellow-orange rim and a faint blue base at the wick, a soft halo round it, the wick tip glowing red; it never holds one shape: it leans, shrinks to a short round bulb (7.3 s), stretches (9.0 s), bends (10.7 s, 12.4 s). The wax top is lit warm in a gradient. S2: dozens of long tapered tongues side by side, each pale-yellow in the core and orange at the edge, with black gaps between, all leaning the same way and slightly blurred; the depth comes from overlapping. S3 0.3 s and 11.7 s: a ribbon of flame lying along the floor made of layered hard-edged tongues, red-orange with a yellow heart and flecks of ember; 3.15 s, 8.85-9.8 s, 13.6 s: the fire cone."
+breakup = "S1 blow-out: 13.4 s the flame laid flat sideways; 13.78 s torn, a thin dark tail behind it; 14.16 s it snaps upright fat and round (a balloon one and a half times wider); 14.54 s it stretches long, twice its old height, bent over; 14.92 s only a small white sliver and a faint blue wisp. The flame goes in about 1.5 s (45 frames) and the last part (14.5 to 14.9 s) is a stretch then a vanish, not a fade. S3 10.75 s: the cone thins and slants into a long narrow stream and its brown debris cloud drops away."
+residue = "S1 14.9-17.2 s (2.3 s, about 70 frames): the only thing left is a tiny red-orange glowing dot at the wick tip with faint blue and orange wisps beside it (no visible smoke); at 17.2 s a small orange-edged flame re-grows from that dot, at 17.58 s it is laid flat, and the full flame is back by about 21 s. S3 11.7 s: the ribbon of flame stays after the cone has gone, with a few embers falling."
+
+[layers]
+count = "S1: 3 (the flame, the halo, the lit wax). S2: 2 to 3 stacked tongue layers. S3: 5: floor ribbon, cone, flare, rock chunks, brown cloud behind, plus spark streaks."
+brightest = "S1: the middle of the teardrop (cream). S3: the cone's centre line and the star flare's heart."
+colours = "S1: cream, pale yellow, orange rim, a little blue. S3: white-yellow, orange, red, with dark brown behind."
+values = "S3 has three: white-hot core, orange body, dark brown cloud and rocks (a non-glowing layer behind the glowing one). S1 has a cream core with a darker orange rim and the black field."
+
+[timing]
+whole_effect = "S1 blow-out to relight: 13.4 to 21 s, 7.6 s; the flame itself is gone for 2.3 s."
+frames_at_30 = "S1 gather 5 (relight), body loops, break-up 45, residue 70"
+
+[take]
+structure = "A flame is a teardrop whose shape changes every few frames and whose edge is darker than its heart. It goes out by laying over, ballooning, stretching and vanishing, and it leaves a glowing wick dot for two seconds. For an attack, a four-point flare gathers it, a cone fires with a dark cloud behind, flecks of ember fly off, a ribbon stays on the floor."
+do_not_copy = "The Unity pack's exact tongue shapes and star; use our own teardrops with ragged paper-like edges for the world's flames."
+
+[weak]
+unverified = "S1's puff was sampled every 0.38 s; the blow-out between samples is inferred from neighbouring frames. S2 is a macro of many flames at once and says little about a single flame. No smoke was seen above S1's wick; the video shows none."
+
+[sheets]
+files = ["fire_candle_single_survey.jpg", "fire_candle_blowout_fine.jpg", "fire_candle_macro_tongues.jpg", "fire_candle_stylised_attack.jpg"]

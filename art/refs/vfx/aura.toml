@@ -1,0 +1,56 @@
+# Aura (idle and ignition). Reference notes for the effects rework (docs/handoff/vfx-rework-plan-2026-11-16.md, ticket V0.4).
+# Words are ours. The sheets beside this file are small contact sheets of frames, kept for internal reference only.
+# A loop, so its moments are ignition, steady and ending (Part 3 of the plan).
+id = "aura"
+name = "Aura: a cloud that wraps a body, lights up, holds and lets go"
+family = "aura"
+status = "watched 2026-11-16 in the built-in browser; times are seconds into each clip; frames counted at 30 a second"
+
+[[source]]
+id = "S1"
+url = "https://www.youtube.com/watch?v=45TFcrhc0LQ"
+title = "ALL EMOTES SHOWCASE IN INK GAME (14 min 38 s), the Menacing emote at 96-112.5 s"
+kind = "the owner's named game: the JoJo menacing pose with floating symbols"
+watched = "12 frames every 1.5 s over 96-112.5 s (aura_ink_menacing_wide.jpg); 12 frames every 0.7 s over 103.5-111.2 s cropped round the player (aura_ink_menacing_close.jpg)"
+
+[[source]]
+id = "S2"
+url = "https://www.youtube.com/watch?v=WCS02c9lgro"
+title = "Aura Monster Emote JJS (2 min 44 s)"
+kind = "the owner's named game: Jujutsu Shenanigans' Aura Monster emote, the one docs/vfx.md already names"
+watched = "12 frames every 1.2 s over 1-14.2 s (aura_jjs_aura_monster.jpg). The video is a small low-contrast recording; fine detail did not read"
+
+[[source]]
+id = "S3"
+url = "https://www.youtube.com/watch?v=7mHQRipWV2o"
+title = "DragonBall Super Broly Super Saiyan Transformation (1 min 48 s)"
+kind = "an anime power-up: face close-ups, a green energy dome rising from the ground, the dome bursting into a column"
+watched = "16 frames every 6.5 s over the whole clip (aura_anime_survey.jpg); 12 frames every 1.1 s over 22-34.1 s (aura_anime_ignition.jpg)"
+
+[moment]
+ignition = "S1 103.5 s: pose only, no effect. 104.2 s: a burst of flat dark-crimson symbols (about fifteen, outlined, each a quarter of a head tall) fires out from the head and shoulders to the right and the player is already tilted. 104.9 s: the count is 30 to 40, all round the torso. 105.6 s: a stream of them trails in an arc behind the sweeping arm. So ignition is about 1.4 s (42 frames), a burst that peaks in count within the first second. S3 22-25.3 s: close-ups of the face (the gather, 3 s), then the eye flashes red with a yellow ring; 26.4 s a thin green ellipse of light on the ground with a small bright disc inside (a ring at the floor first); 27.5 s a dome of light rising from it with a pale vertical stripe above; 29.7 s the dome has a bright rim and black-green blotches inside (mottled, not smooth) and blue-white lightning crawling on its skin; 30.8 s a full-screen green-white flash (the hit, one sample); 31.9 s a tall column, black rocks rising off the ground round it."
+steady = "S1 106.3-109.8 s (about 3.5 s): fifteen to thirty symbols alive at any time, hanging at all heights round the torso and head, mostly drifting and rotating, leaning with the body's motion rather than rising; a few bigger ones (half a head) near the head; the count rises on the left of the body at 109.1 s as the player turns. Nothing glows: the symbols are dark with a lighter edge. No light on the floor, no smoke, no halo. S2 5.8-9.4 s: a huge flat black mass, soft at its edge, standing up behind the head like swept hair (twice head height), a thin pale-green vertical rod of light above it at 8.2 s and 11.8 s; one colour of black with one of green. S3 29.7-33 s: the dome and column hold with lightning arcs jumping across them and rocks lifting, the interior blotched dark green on bright green."
+ending = "S1 110.5-111.2 s: the count falls (about 10 left, then a handful) and the survivors streak away behind the body; by 112.5 s two or three remain (the sheet's last frame); the fade is by thinning the count, not by fading each symbol, so it lasts about 2 s (60 frames) of falling count. S2 14.2 s: the black mass is gone, a green-cyan glow flares on the stone under the feet. S3: the clip cuts away before any ending, so S3 gives no ending."
+residue = "S1 112.5 s: two or three symbols still drifting. S2 14.2 s: the green glow at the feet. S3: not shown."
+
+[layers]
+count = "S1: 1 (one symbol sprite sheet). S2: 2 (a dark mass, a green rod and glow). S3: 5 or 6: the ground ring and disc, the dome, the dome's lightning, the column, floating rocks, an outer flash."
+brightest = "S3: the ground disc inside the ring, then the full-screen flash. S1: nothing is bright; the symbols are the darkest, most saturated thing on screen."
+colours = "S1: crimson, magenta edge, near-black inside. S2: black, pale green. S3: green, cyan, white, black blotches, a little blue lightning."
+values = "S3 has three: bright rim and arcs, mid green body, dark blotches inside. S1 has two. S2's black mass is a dark layer that would still read in daylight."
+
+[timing]
+whole_effect = "S1: about 8 s from first symbol to the last (104.2-112.5 s). S3: about 5 s from the first light on the ground (26.4) to the full column (31.9)."
+frames_at_30 = "S1 ignition 42, steady 105, ending 60. S3 ignition about 150 (including 3 s of gather in close-ups)"
+
+[take]
+structure = "A burst on ignition (count, not size, peaks first), a steady cloud that is kept alive by drifting and following the body, an ending by count falling. A big aura starts with something small on the floor (ring, disc) before the body of it rises. A dark layer under the bright one keeps it readable in daylight (S2, S3's blotches)."
+do_not_copy = "The katakana-like glyph shapes and their trails are Ink Game's drawing; S3's dome is the film's. Use our own shapes (pages, crows' feathers, ash) in the same counts."
+
+[weak]
+ink_game = "Menacing is the only Ink Game emote that has a real aura; the other emotes looked at (S Rank closely; Exorcist at 801-815 s closely; Bloom Step and Conquest only in the 70 s survey frames) show no effect or a floor ripple only. Their effects may be faint or short and I did not look at every emote."
+jjs = "S2 is low quality and only shows a flat dark mass; it is a weak reference for layering. The 3 min 50 s JJS 'aura farming' video (S_jGKd9ECjM) was surveyed (16 frames) and had no clear aura in the frames sampled, apart from one purple tint at 174 s that was not studied."
+unverified = "No frame-by-frame look at ignition; the first symbol's frame was not caught (the gap 103.5 to 104.2 s hides it). The Broly clip's ending is not in the clip."
+
+[sheets]
+files = ["aura_ink_menacing_wide.jpg", "aura_ink_menacing_close.jpg", "aura_jjs_aura_monster.jpg", "aura_anime_survey.jpg", "aura_anime_ignition.jpg"]

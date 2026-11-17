@@ -1,0 +1,55 @@
+# Paper and feathers in the air. Reference notes for the effects rework (docs/handoff/vfx-rework-plan-2026-11-16.md, ticket V0.4).
+# Words are ours. The sheets beside this file are small contact sheets of frames, kept for internal reference only.
+id = "paper_feathers"
+name = "Paper and feathers in the air: a burst that spreads, tumbles in three dimensions and falls out of frame"
+family = "paper_feathers"
+status = "watched 2026-11-16 in the built-in browser; times are seconds into each clip; frames counted at 30 a second"
+
+[[source]]
+id = "S1"
+url = "https://www.youtube.com/watch?v=PorlGtd1moU"
+title = "Paper Flying Green Screen - Paper Blowing in the Wind (8 s)"
+kind = "a stock element: a gust of loose sheets, filmed on green"
+watched = "12 frames every 0.7 s over 0.2-7.9 s (paper_feathers_paper_burst.jpg)"
+
+[[source]]
+id = "S2"
+url = "https://www.youtube.com/watch?v=aRm3fv0LKOg"
+title = "Feather Fall Green Screen (8 s)"
+kind = "a stock element: white feathers falling on green"
+watched = "12 frames every 0.7 s over 0.2-7.9 s (paper_feathers_feathers.jpg)"
+
+[[source]]
+id = "S3"
+url = "https://www.youtube.com/watch?v=DJwzN5IUztk"
+title = "Feather falls down in super slow motion (21 s)"
+kind = "real footage: one feather falling past a paved path, after an intro card"
+watched = "12 frames every 1.8 s over 0.5-20.3 s (paper_feathers_real_feather.jpg; the first three frames are title cards)"
+
+[moment]
+gather = "S1 0.2 s: a few sheets at the left edge (the gust is entering). 0.9 s: about twelve sheets in the left third. No wind-up: papers do not announce themselves; the gather is the gust pushing the first ones in over about 0.7 s (20 frames). S2 0.2 s: six feathers already in frame (the clip starts mid-fall). S3 7.7 s: the feather's tip enters at the top."
+hit = "S1 2.3-3.0 s: the peak: thirty-five to forty sheets in the air at once, at several distances, covering the whole frame. The biggest number and the sharpest scatter come at the same time. S2: no peak; six to nine feathers at all times from the first frame. S3: one feather; no peak."
+body = "S1 3.0-5.1 s (about 2 s, 60 frames): twenty-five to thirty sheets spread wide, each in a different 3D orientation (some flat squares, some narrow edge-on slivers, some bent), sizes from 0.6 to 1.5 times the usual; near-white (about 235) with a soft grey shading (about 190) on the bent and folded ones; they drift and turn (a sheet changes between a flat square and a narrow sliver from one sample to the next, 0.7 s apart, so a turn takes on the order of a second; not measured); the sheets do not stay in a cloud, they fall out through the bottom and sides. S2 (a loop, 8 s sampled): six to nine feathers, each at a different angle, each white with a grey shadow side, a thin dark shaft, asymmetric vanes with ragged tips; sizes between a twelfth and a fifth of the frame's height; they rotate slowly (about 30 to 60 degrees between samples 0.7 s apart) and foreshorten from oval to narrow as they turn. S3 9.5-14.9 s: one feather swings like a pendulum between tip-down (9.5 s, 13.1 s), a flat white oval blur (11.3 s: broadside, spinning) and tilted (14.9 s); it falls the height of the frame in about seven seconds."
+breakup = "S1 5.8-7.2 s (about 1.4 s): twelve sheets, then seven, then two or three; they leave by falling out of the frame, not by fading. Nothing dissolves; the count drops as they pass the bottom. S2: no break-up in 8 s. S3: the feather leaves the bottom at 15-16 s."
+residue = "S1 7.9 s: nothing left; empty frame. S3 16.7-18.5 s: the empty path. (Whatever lands is outside both clips: the paper's resting on the floor was not shown.)"
+
+[layers]
+count = "S1: one layer of sheets with a few shapes (flat, folded, curled). S2: one layer, one feather shape at several angles. S3: one."
+brightest = "all of them: the sheets and feathers are the near-white things on green or grey."
+colours = "near-white with grey shade, on green (stock) or grey stone."
+values = "two: near white lit face, mid grey shade. A shadow or a dark layer is not in the stock clips (they were shot against green)."
+
+[timing]
+whole_effect = "S1: 0.2-7.9 s, 7.7 s: 20 frames in, 60 frames at the peak, 40 frames out. S3: a single feather takes about 7 s to cross the frame."
+frames_at_30 = "S1 gather 20, hit 20, body 60, break-up 40"
+
+[take]
+structure = "A paper or feather burst: a short gust enters, the count peaks for a moment, then the sheets drift apart and leave by falling, not fading. Each piece is a different orientation, size and speed, flat to edge-on, near-white lit with a grey fold shadow; a feather pendulum-swings and spins flat, so its apparent width changes from fat oval to sliver."
+do_not_copy = "These are stock elements; keep only the counts and timing, not the footage. Our papers are page-shaped (the Manual's pages) and our feathers are crows'."
+
+[weak]
+unverified = "The sources are stock green-screen elements; none shows paper or feathers interacting with a body, a light or a floor. A real slow-motion paper clip (NezY2i4oaHA, 'Slow Motion paper flying') was opened and was too dark to read (a carpet and a few specks). Burning paper and ash are in dissolve_ash.toml."
+sources = "S3's frames at 0.5, 2.3 and 4.1 s are a neon title card ('Motalius'); only 5.9 s and later are the feather."
+
+[sheets]
+files = ["paper_feathers_paper_burst.jpg", "paper_feathers_feathers.jpg", "paper_feathers_real_feather.jpg"]

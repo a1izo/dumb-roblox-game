@@ -6,7 +6,7 @@ each one, the camera, the effects, and how an emote is made and checked. Rebuilt
 
 ## What there is
 
-70 emotes: 11 that everyone has and 59 from the shop.
+68 emotes: 11 that everyone has and 57 from the shop.
 
 | Family | Emotes | Notes |
 | --- | --- | --- |
@@ -14,7 +14,7 @@ each one, the camera, the effects, and how an emote is made and checked. Rebuilt
 | Dances (19) | The Classic, Office Party, Bunny Ears, Jackpot Shuffle, Rat Dance, Goal Celebration, ... | Several motion-captured from footage (`art/refs/mocap`); loops play on a shared beat, so everyone doing one is in step. |
 | Poses (19) | Just As Planned, New World, Final Breakdown, Reaper's Eyes, Menacing Pose, Low Battery, Chair Perch, ... | Held moments, many with a press-to-do moment. |
 | Prop emotes (14) | Pre-Dawn Bonk, Sugar Tower, Dice Tower, Furious Scribbling, Apple Toss, Strawberry on Top, Potato chip, ... | Props from the Core set held, carried, stacked, tossed, opened or set on the floor. |
-| Strolls (5) | The Long Climb, Parade March, Griddy, Mushroom Stroll, Not My Problem | Walk styles that walk by themselves. |
+| Strolls (3) | The Long Climb, Griddy, Mushroom Stroll | Walk styles that walk by themselves. |
 | Duos (2 + the 2 free) | Match Point, Cuffed Together | Played by two. |
 
 Every shop emote has a rarity (`src/shared/Rarity.luau`), the same five tiers as every other shop item:

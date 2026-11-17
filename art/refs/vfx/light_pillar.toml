@@ -1,0 +1,48 @@
+# A pillar of light. Reference notes for the effects rework (docs/handoff/vfx-rework-plan-2026-11-16.md, ticket V0.4).
+# Words are ours. The sheets beside this file are small contact sheets of frames, kept for internal reference only.
+id = "light_pillar"
+name = "Pillar of light: rays poured down, a column of lines that merges, rings that float up"
+family = "light_pillar"
+status = "watched 2026-11-16 in the built-in browser; times are seconds into each clip; frames counted at 30 a second"
+
+[[source]]
+id = "S1"
+url = "https://www.youtube.com/watch?v=L7BUWXKjUww"
+title = "Disintegration - Tensura S2 (29 s)"
+kind = "an anime spell: a circle in the sky, rays, then a golden cylinder of light with rings, then a crater with a glowing disc"
+watched = "16 frames every 1.8 s over 0.3-27.3 s (light_pillar_spell_survey.jpg); 8 frames every 0.8 s over 6.2-11.8 s (light_pillar_rise.jpg); the floor part is in magic_circle_floor_lift.jpg"
+
+[[source]]
+id = "S2"
+url = "https://www.youtube.com/watch?v=7mHQRipWV2o"
+title = "DragonBall Super Broly Super Saiyan Transformation (1 min 48 s), 26-34 s"
+kind = "an anime energy dome that bursts into a tall column with rocks lifting round it"
+watched = "12 frames every 1.1 s over 22-34.1 s (aura_anime_ignition.jpg, shared with aura.toml)"
+
+[moment]
+gather = "S1 3.9 s: seen from below, a giant ring of nested gold glyph circles overhead with a sun-bright centre; 0.3-2.1 s before it: the caster with a white flash and dozens of small gold specks flying out (the specks are in the frame before the rings). S2 26.4 s: a thin glowing ellipse on the ground with a small bright disc, 1 s before the column. The gather is a ring: overhead in S1, on the floor in S2, 1 to 3 s before the pillar."
+hit = "S1 5.7 s: rays pour down from the circle in broad straight stripes, gold bands with dark orange between; 7.0 s: the stack stands, twelve to fourteen thin bright lines (gold, beaded like dotted lines) inside a cylinder, dark orange between them, two or three white flat ellipse rings crossing at different heights, a big octagonal circle at the top. 12.9 s: the whole screen is white. S2 31.9 s: a tall green column, the biggest and brightest part, black rocks lifting round it."
+body = "S1 7.8-9.4 s (about 1.6 s, 50 frames): the thin lines widen and merge into a flat solid yellow cylinder, its sides vertical and sharp, brighter at the base where a flat ellipse of white flares; 9.4 s the lines are faint streaks inside the solid; 10.2-11.8 s (about 1.6 s): the top is white-yellow and the middle shows a figure's silhouette, the base a white ellipse glow on dark purple ground. Specks of gold (about a hundred in frame) are present in every frame. S2 29.7-33 s: the dome and column hold, bright rim, dark blotches inside, blue-white arcs."
+breakup = "S1 22.6-23.4 s: seen from far to the side the pillar is narrow, a fifth of the frame, the base a golden circle in cracked ground, two or three thin rings floating up its length; 24.2 s: the pillar has gone; the rings float up and spread apart; 25.0-25.8 s the top rings fade first, lower ones remain (the pillar ends by the light drawing back from the top while rings detach). S2: not shown."
+residue = "S1 24.2-27.4 s (3 s, about 90 frames): a crater of cracked brown rock with a small bright gold rosette disc at the bottom that is still glowing after the pillar and rings have gone (26.6 s); at 27.4 s a few bright yellow spikes at the crater edge and rubble, in daylight."
+
+[layers]
+count = "S1: at least six: the overhead circle, the rays, the thin lines, the solid cylinder, the flat rings, the specks, the base ellipse, the crater disc. S2: five or six."
+brightest = "S1: the base ellipse and the cylinder's top. The full-white screen at 12.9 s."
+colours = "S1: gold, yellow, orange behind; white where it is hottest; dark purple ground at night. S2: green, cyan, white, black."
+values = "S1: white-hot ellipse and top, yellow body, dark orange gaps between the lines (the gaps are what make the lines read). S2: bright rim, mid body, dark blotches."
+
+[timing]
+whole_effect = "S1: 3.9 to 27.4 s but the pillar itself stands from 7.0 to 12.9 s (6 s); rings and crater run on to 27 s."
+frames_at_30 = "S1 gather 50, hit 5 to 10 (the rays), body 150, break-up 90, residue 90"
+
+[take]
+structure = "A ring above or below, then straight rays, then a cylinder of thin bright lines with dark gaps that widens and merges into a solid column with a hot ellipse at its base, then flat rings that lift off and fade top first, then a scorched mark with one small glowing disc."
+do_not_copy = "The anime's glyph text on the circles and its golden palette. For a world effect keep grey rule 1; shop pillars wear their own tier colour."
+
+[weak]
+real = "Real light pillars (ice-crystal columns above lamps at night) came up in search (0ttboaR5X4Q, _Gzep-0wJJo, zZg_2r1Ne00) but were not opened. A game or Roblox pillar (the 21-minute 'how to make big pillar explosion roblox vfx' _EciT4WQizk) was not opened either. So the references here are both anime."
+unverified = "S1's ring count and the order the rings fade were read from four stills."
+
+[sheets]
+files = ["light_pillar_rise.jpg", "light_pillar_spell_survey.jpg", "magic_circle_floor_lift.jpg (shared)", "aura_anime_ignition.jpg (shared)"]
