@@ -29,6 +29,7 @@ local MapLife = {}
 local Life = script.Parent.Life
 local KINDS: { Util.Kind } = {
 	require(Life.Fans),
+	require(Life.Glows),
 }
 
 local STEP = 1 / 30
