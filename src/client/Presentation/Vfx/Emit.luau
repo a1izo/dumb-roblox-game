@@ -9,7 +9,8 @@
 --           "Random", blend (blend flipbook frames), startRandom, variants (true: one random cell, held; the 2x2 and 4x4
 --           random sheets do it unasked). The new sheets (Vfx/Sheets) need none of grid, fps and mode: a one-shot's rate
 --           is set from the life so its last frame lands at the death
---   color   Color3 | ColorSequence | { {t, Color3}, ... }
+--   color   Color3 | ColorSequence | { {t, Color3}, ... };  ramp  { core, body, edge } (Vfx/Palette) in place of color:
+--           white-hot at birth, the body through the middle, the edge at death
 --   size    number | { {t, size, envelope?}, ... };  alpha  { {t, transparency}, ... } (0 = solid)
 --   life    {min, max} | number;  speed {min, max} | number;  spread  number | {x, y};  dir  Enum.NormalId
 --   accel   Vector3;  drag  number;  rot {min, max};  spin {min, max};  squash { {t, v}, ... } | number
@@ -21,6 +22,7 @@
 local Tex = require(script.Parent.Tex)
 local Clock = require(script.Parent.Clock)
 local Sheets = require(script.Parent.Sheets)
+local Palette = require(script.Parent.Palette)
 local Probe = require(script.Parent.Probe)
 local Device = require(script.Parent.Parent.Parent.UI.Core.Device)
 local Governor = require(script.Parent.Parent.Parent.World.Governor)
@@ -104,7 +106,7 @@ function Emit.make(parent: Instance, spec: Spec): ParticleEmitter
 	local e = Instance.new("ParticleEmitter")
 	e.Name = spec.name or "DGVfx"
 	e.Texture = Tex.id(spec.tex or "VfxGlow")
-	e.Color = colorSeq(spec.color)
+	e.Color = if spec.ramp ~= nil then Palette.sequence(spec.ramp) else colorSeq(spec.color)
 	e.Size = numberSeq(spec.size, 1)
 	e.Transparency = numberSeq(spec.alpha, 0)
 	e.Lifetime = range(spec.life, 1)

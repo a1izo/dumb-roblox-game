@@ -119,3 +119,4 @@
 - [Effect report](vfx-effect-report.md) - 2026-11-16 ticket V0.5: Vfx/Probe + FxBooth.report / reportAll print PASS or FAIL per effect (dots, moments, pops, values, light, cost against Part 9); what it cannot see (hand Emit counts, parts, sounds); needs Studio for the table
 - [Sheets and fallback grid](vfx-sheets-fallback-grid.md) - V2.2 (2026-11-17): Emit plays new flipbook sheets by Vfx/Sheets only when Tex.real; before the import the old texture's own grid
 - [Moment envelope](vfx-moment-envelope.md) - V2.3 (2026-11-17): Vfx/Moment.play runs gather, hit, body, residue on the kit's clock round one hit time; cancel stops later parts
+- [Colour ramps](vfx-palette-ramps.md) - V2.4 (2026-11-17): Vfx/Palette ramps {core, body, edge}; Emit spec ramp = ...; shop full colour, world greys, danger red
