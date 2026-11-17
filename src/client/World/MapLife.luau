@@ -26,7 +26,10 @@ local Util = require(script.Parent.Life.Util)
 
 local MapLife = {}
 
-local KINDS: { Util.Kind } = {}
+local Life = script.Parent.Life
+local KINDS: { Util.Kind } = {
+	require(Life.Fans),
+}
 
 local STEP = 1 / 30
 local SETTLE = 1.5 -- seconds a map must have been there before it is sorted out (it arrives in pieces)
