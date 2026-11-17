@@ -61,3 +61,43 @@ notes = "No ankles: a heel tap is the leg tilted out in front. The goggles go be
 [check]
 by_eye = "2026-10-17 rework: 24 frames side by side with the reference (front), the taps from the side and three quarters, the walk cycle from the side."
 issues = ["only the right heel's taps are in the take; the left foot mostly carries the weight"]
+
+# ---- Rebuild 2026-11-16 (the owner: "rework griddy to be more accurate, bouncing on one leg, hands thrown up every 2 seconds")
+[rebuild]
+sentence = "A dancer who bounces on one leg, the other foot kicked out in front and bent, the arms swinging across, and every two seconds both arms thrown high and open with the body leaning back."
+big_action = "the throw: crouch low with the arms swung back, spring off the standing leg and fling both arms up and open, hold, bring them down into the swing"
+source = "https://www.youtube.com/watch?v=QEWkaP-2Yb4 (How to Griddy in 2023, full-body, fixed camera, one dancer)"
+watched = "2026-11-16: contact sheets at 0.25 s steps over 72-76.5 s, 84-92.5 s and 122-126.5 s (the shared browser pane was taken over by another session twice: work in an own tab with tabId)"
+timing = "4 hops a bar of 2.0 s (a hop every 0.5 s), the throw on the fourth; at the stroll's pace of 9 studs a second a hop covers 4.5 studs"
+legs = "the LEFT leg takes all the weight and bounces; the RIGHT foot is lifted and kicked out in front, bent, drawn back under at each landing"
+
+[[rebuild_beat]]
+src = 72.0
+pose = "standing bounce, knees soft, both hands loose at chest height, weight even"
+[[rebuild_beat]]
+src = 74.25
+pose = "weight over one leg, torso leaning away from the lifted foot, the near arm swinging back"
+[[rebuild_beat]]
+src = 74.75
+pose = "the free leg out in front and bent, the other arm swung wide behind, the torso leaning back, loose"
+[[rebuild_beat]]
+src = 75.5
+pose = "the hop lands and the arms trade: the one that was back comes across the body"
+[[rebuild_beat]]
+src = 87.5
+pose = "a low bounce, knees bent, hands at the hips, one heel dragging in front"
+[[rebuild_beat]]
+src = 90.0
+pose = "arms still low, the body gathered, the breath before the throw"
+[[rebuild_beat]]
+src = 90.5
+pose = "both arms thrown wide out to the sides, elbows straight, the chest open, the standing leg bent"
+[[rebuild_beat]]
+src = 91.5
+pose = "the hands come in toward the face, the head tipped forward (the goggles)"
+[[rebuild_beat]]
+src = 122.75
+pose = "on one leg in the air of a hop, the free foot lifted behind and out, the arm swinging low"
+[[rebuild_beat]]
+src = 123.25
+pose = "landing on the standing leg, the free leg bent and out, one arm flung out wide, the torso leaning back"
