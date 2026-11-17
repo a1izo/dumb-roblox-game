@@ -35,6 +35,7 @@ local KINDS: { Util.Kind } = {
 	require(Life.Sway),
 	require(Life.Steam),
 	require(Life.Drips),
+	require(Life.Breath),
 }
 
 local STEP = 1 / 30
