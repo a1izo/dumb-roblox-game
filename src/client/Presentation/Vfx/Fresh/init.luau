@@ -31,7 +31,9 @@
 
 local Charge = require(script.Charge)
 local Fire = require(script.Fire)
+local Floor = require(script.Floor)
 local Impact = require(script.Impact)
+local Scatter = require(script.Scatter)
 local Shine = require(script.Shine)
 local Slash = require(script.Slash)
 local Smoke = require(script.Smoke)
@@ -52,5 +54,8 @@ Fresh.fireBurst = Fire.fireBurst
 Fresh.smokePuff = Smoke.smokePuff
 Fresh.dustKick = Smoke.dustKick
 Fresh.mist = Smoke.mist
+Fresh.dissolve = Scatter.dissolve
+Fresh.scatter = Scatter.scatter
+Fresh.sigil = Floor.sigil
 
 return Fresh

@@ -222,10 +222,10 @@ local function flameEntry(into: { Entry }, spec: { [string]: any })
 			family = spec.family,
 			source = spec.source,
 			label = spec.label,
-			hit = 0.3,
+			hit = spec.hit or 0.3,
 			length = 6,
 			loop = true,
-			budget = "world",
+			budget = spec.budget or "world",
 			play = function(stage: Stage)
 				local candle = spec.kind == "candle"
 				local stand = Instance.new("Part")
@@ -252,12 +252,15 @@ local function flameEntry(into: { Entry }, spec: { [string]: any })
 				wick.Size = Vector3.new(0.1, 0.1, 0.1)
 				wick.CFrame = CFrame.new(base + Vector3.new(0, stand.Size.Y, 0))
 				wick.Parent = stage.props
-				local flame = vfx().Recipes.flame(wick, {
-					kind = spec.kind,
-					scale = spec.scale,
-					color = spec.color,
-					light = spec.light,
-				})
+				local flame = (if spec.fresh then need("Presentation", "Vfx", "Fresh").flame else vfx().Recipes.flame)(
+					wick,
+					{
+						kind = spec.kind,
+						scale = spec.scale,
+						color = spec.color,
+						light = spec.light,
+					}
+				)
 				return function()
 					flame.destroy()
 					wick:Destroy()
@@ -266,6 +269,93 @@ local function flameEntry(into: { Entry }, spec: { [string]: any })
 			end,
 		})
 	)
+end
+
+-- The fresh recipes (Vfx/Fresh, ticket V2.5) -------------------------------------------------------------------------
+
+-- Plays one variant of Fresh/Defs where the booth stands it (the dummy's front); returns the stop.
+local function playFresh(variant: any, stage: Stage): () -> ()
+	local fn = need("Presentation", "Vfx", "Fresh")[variant.call]
+	local args = table.clone(variant.args)
+	local place = variant.place
+	local look = stage.at.LookVector
+	if place == "chest" then
+		return fn(CFrame.new(chest(stage, 2.4)), args)
+	elseif place == "floor" then
+		return fn(CFrame.new(stage.floor + Vector3.new(0, 0.05, 0) + look * 3.2), args)
+	elseif place == "glint" then
+		return fn(chest(stage, 1.2, 1.4), args)
+	elseif place == "pillar" then
+		return fn(CFrame.new(stage.floor + look * 4), args)
+	elseif place == "arc" then
+		local to = stage.floor + look * 3 + Vector3.new(0, 0.2, 0)
+		return fn(to + Vector3.new(3, 14, -2), to, args)
+	elseif place == "charge" then
+		-- (it gathers and holds, then the booth releases it: the hit lands at CHARGE_HOLD)
+		local handle = fn(chest(stage, 1.4, 0.4), args)
+		local cancelRelease = vfx().Clock.after(1.6, function()
+			handle.release()
+		end)
+		return function()
+			cancelRelease()
+			handle.cancel()
+		end
+	elseif place == "mist" then
+		local handle = fn(CFrame.new(stage.floor + look * 3), args)
+		return function()
+			handle.destroy()
+		end
+	elseif place == "body" then
+		local parts = {}
+		for _, item in ipairs(stage.body:GetDescendants()) do
+			if item:IsA("BasePart") and item.Name ~= "HumanoidRootPart" then
+				table.insert(parts, item)
+			end
+		end
+		return fn(parts, 1.6, args)
+	end
+	return noop
+end
+
+-- One entry per variant of Fresh/Defs, id "recipe_new_<name>": the new recipes beside the old ones (the game does not use
+-- them yet; the pilot moves callers one at a time after the owner's verdict).
+local function fresh(into: { Entry })
+	local Defs = require(script.Parent:WaitForChild("Fresh"):WaitForChild("Defs")) :: any
+	for _, variant in ipairs(Defs.VARIANTS) do
+		local id = Defs.idOf(variant)
+		local source = "Fresh." .. variant.call
+		if variant.place == "flame" then
+			flameEntry(into, {
+				id = id,
+				family = "recipe",
+				source = source .. ", a " .. tostring(variant.args.kind),
+				label = variant.label,
+				kind = variant.args.kind,
+				light = true,
+				fresh = true,
+				hit = Defs.hitOf(variant),
+				budget = variant.budget,
+			})
+		else
+			table.insert(
+				into,
+				make({
+					id = id,
+					family = "recipe",
+					source = source,
+					label = variant.label,
+					-- (a charge is let go 1.6 s after it starts: that is its hit)
+					hit = if variant.place == "charge" then 1.6 else Defs.hitOf(variant),
+					length = variant.length,
+					loop = variant.loop,
+					budget = variant.budget,
+					play = function(stage: Stage)
+						return playFresh(variant, stage)
+					end,
+				})
+			)
+		end
+	end
 end
 
 -- Auras ---------------------------------------------------------------------------------------------------------------
@@ -825,6 +915,7 @@ function Catalog.build(sources: Sources?): { Entry }
 		kind = "fire",
 		light = true,
 	})
+	fresh(list)
 	auras(list)
 	emotes(list, given.emotes or {})
 	deaths(list, given.customDeaths or {})
