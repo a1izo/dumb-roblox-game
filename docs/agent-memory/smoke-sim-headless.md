@@ -30,3 +30,9 @@ What was learned the hard way:
   following the cloud (puff) or its floor (dust) because the sim drifts and the texture check wants 80% fill.
 - A steady column or fog gives almost no per-frame change when it is opaque (the texture check's motion floor is
   0.01): keep the sigma low so alpha varies inside it.
+- **Mantaflow's `buoyancy density` (alpha): POSITIVE makes the smoke RISE here, NEGATIVE makes it sink.** A heavy block
+  with alpha 6 stood up into a mushroom on the ceiling; alpha -4 slumped into a thin film along the floor. Jets,
+  balls and blocks all failed to give "dust rolling along the floor" (they roll up into lobes or a bush, or slump
+  into a film too thin to read), so VfxDustRoll is a hand-built cast of cloudlets, not a sim.
+- Window and cell edge: a one-shot's window is fitted to its box, but the texture check wants 4 px clear and
+  `edge_window` ramps over 10 more, so keep `fit` at 0.8 to 0.9 or the leading edge shows a hard vertical cut.
