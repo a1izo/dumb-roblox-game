@@ -1,0 +1,94 @@
+# The Operative's role scene (shot RoleOperative). Reference notes, kept the way art/refs/cinema/RoleAce.toml keeps theirs.
+id = "RoleOperative"
+name = "Operative: gearing up"
+status = "rebuilt 2026-11-17 (item 1b of docs/handoff/animation-cutscene-plan-2026-11-13.md); the old module art/scripts/cinema/shots/role_taskforce.py is kept, unimported"
+
+[scene]
+sentence = "A Bureau agent alone in the locker room before the night's work takes each thing from the locker, checks it and puts it on (the badge first, then the cuffs, the earpiece, the tie), and each one makes them a little less a person and a little more the Bureau; they close up, turn, and walk out through the door."
+action = "One person, one routine done with weight: reach up into the locker, take the badge, check it in the light, put it away; every later item is the same take-check-wear in fewer, surer movements, ending on the turn and the walk out of the door."
+mood = "Cold, quiet and exact: a long lens, slow held cameras, the fluorescent room's one warm point in the open locker. Nothing is fast; the weight of the gear is in the body (a settle on every item). No strikes, no crash zooms (cutscene-quality-bar round 14). The captions (YOU ARE / YOUR RULES / YOUR ALIAS) sit low left, so the subject lives on the right and high."
+
+[origin]
+what = "Real gearing-up scenes: the squad-room locker scene of the film End of Watch (a body camera checked and clipped on, the armour vest strapped, the badge pinned over the heart), the way a film shows a kit put on item by item with inserts on the hands, and a filmed look at how a real badge wallet opens (a bi-fold black leather case, the shield in a cut-out on one side, the ID in a window on the other)."
+recognisable = "Standing square to a locker, the first reach up and in without looking; the object turned over in the hand and checked as a thing that matters; the click or the snap of a catch; a hand at the chest to settle the thing under the jacket; the head tilting to listen to an earpiece; the tug that squares the jacket and tie; the last glance at the empty locker; the turn; the walk to the door."
+ours = "The set stays (maps/venues/sets/locker.py: the open eighth locker with its shelf and hook, benches, the seal on the west wall, the door in the south wall). The scene stays alone (nobody else in the room). Everything acted, shot and lit is new. The badge (Core prop BureauBadge) is the hero insert: a close shot in a moving raking light."
+
+[source]
+url = "https://www.youtube.com/watch?v=9NljhBMGXIk"
+title = "End of Watch - Locker Room / Roll Call Scene"
+kind = "the film scene, a recording"
+watched = "2026-11-17: frame sheets every 6 s over 0-66 s and 72-225 s (232 s clip), then every 3 s over 36-51 s and 86-101 s, in the built-in browser"
+mirror = false
+
+[source2]
+url = "https://www.youtube.com/watch?v=WdTsKinRZiw"
+title = "Badge and Wallet: Perfect Fit USA Hidden Badge Wallet"
+kind = "a filmed product demonstration of a real bi-fold badge wallet (25 s)"
+watched = "2026-11-17: nine frames over the whole clip"
+mirror = false
+
+[source3]
+url = "https://www.youtube.com/watch?v=YYQ_ux2IQgE"
+title = "ZERO DARK THIRTY | Geared Up"
+kind = "film clips of a team's kit (used for the cutting rhythm only: a wide of the people, then close inserts on the hands and the kit)"
+watched = "2026-11-17: twelve frames every 20 s over 5-225 s of the 424 s video"
+mirror = false
+
+[badge_real]
+filmed = "Black pebbled leather case, folded; the shield (silver or nickel, domed, with an engraved rim and lettering) sits in a recessed cut-out on one half, the ID card in a clear window on the other. It is opened by thumb and finger and shown by turning the whole case flat to the person it is shown to; metal catches the light on its raised edges and engraved lines first, the enamel and leather stay dark."
+ours = "BureauBadge: stitched black leather with a fold, a gold shield with a beaded rim and a scalloped crown, a blue enamel seal with a star, THE BUREAU on its ribbon and the number 0417 on its foot, and the ID card in its window on the left half."
+
+# The poses, each with its source (S1 = End of Watch, S2 = the badge wallet clip, S3 = Zero Dark Thirty) and its time.
+
+[[beat]]
+src = "S1 0-12"
+pose = "A man in a bare T-shirt stands square to the lens in front of the lockers, hands low, shifting his weight, eyes down, as still as a man deciding: the room before the routine."
+[[beat]]
+src = "S1 30-36"
+pose = "The head turns and dips towards something at his chest; the shoulders drop a little; one hand comes up to the kit he is about to wear."
+[[beat]]
+src = "S1 39-42"
+pose = "A small device is held out at arm's length in front of the lens, thumb working it, then turned over and looked at close: check it before you wear it."
+[[beat]]
+src = "S1 42-48"
+pose = "Both hands come in to the chest together and fix the device on, elbows out, head bowed over the work, then the head comes up: the click that says it is on."
+[[beat]]
+src = "S1 86-92"
+pose = "A man in a vest, side on, one forearm across his belly, the other hand strapping the vest at his ribs: weight settles into the hips as each strap is pulled tight."
+[[beat]]
+src = "S1 98-101"
+pose = "Close on the chest: both hands pinch the badge over the heart and press it through the cloth, head bowed over them, then a glance at it."
+[[beat]]
+src = "S1 108"
+pose = "A wrist is turned to look at a watch; the other hand tugs the cuff: the last small checks before leaving."
+[[beat]]
+src = "S2 4-8"
+pose = "The wallet is held shut in one hand at chest height, back to us (leather only); a thumb and finger take its edge."
+[[beat]]
+src = "S2 10-15"
+pose = "The case is opened and turned to face the lens: the shield on the right half takes the light on its rim, the ID window dark on the left; the hand tilts it a few degrees and the shine moves across the metal."
+[[beat]]
+src = "S2 18-24"
+pose = "The ID flap is lifted and flicked back; the case snapped shut and turned away: the whole check takes seconds and ends in a closed hand."
+[[beat]]
+src = "S3 145-165"
+pose = "Cutting rhythm: a wide of the group and then, on the same action, a tight insert on a hand closing on the kit; the insert is held long enough to read the object."
+[[beat]]
+src = "ours 12-15"
+pose = "The last look at the open locker (the empty shelf), one breath, then the turn on the heels; the head leads the body."
+
+[cuts]
+# As built (the order of the items changed while blocking: the cuffs first, then the badge, so the face beats come after the turn to the room)
+A = "0.0-2.8 low wide from the west corner, creeping in: the open locker and the still figure facing it; the head lifts to the shelf, the left hand goes up"
+B = "2.8-5.2 from the east flank at head height, long lens: the cuffs taken off the shelf's lip, looked at (they swing), clipped on behind the left hip"
+E = "5.2-7.7 from behind on the right: the badge case taken off the shelf, brought down, the step back and the turn to the room with it"
+C = "7.7-10.1 the badge insert: a slow arc round the case in the left hand, leather first, then the shield tilted through a raking warm light; THE BUREAU and the number 0417 read"
+D = "10.1-11.9 straight on from the front: the case goes inside the jacket with a pat, the jacket settles"
+F = "11.9-13.7 close from the door, long lens: the head tilts to the earpiece's tone, a hand at the lapel"
+F2 = "13.7-15.3 from the front left, low: the tie squared, both hands tug the jacket hem, the last look at the open locker"
+G = "15.3-19.0 wide and low from the north-west: the walk the length of the room to the doorway and out; the last 0.4 s cut to black for the role card"
+
+
+[check]
+reach = "every placed hand as fist-against-target numbers (r6-reach-limits); the shelf is at 6.0 high, so the left hand takes from it with the arm nearly straight up and the body leaned in"
+near_arm = "the raised arm is the left (the camera sees him from the front and right), so it stays beside the head, not across it"
