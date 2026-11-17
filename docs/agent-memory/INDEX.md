@@ -114,3 +114,4 @@
 - [Floor textures: cracks, scorch, sigil](floor-textures-cracks-scorch-sigil.md) - V1.6 tex_floor.py (2026-11-17): cracks shaded from a height field (groove, bevel, chips), per-bbox segment raster, brush-stroke sigil, glyphs that must not read as letters
 - [Vfx mesh UV rule](vfx-mesh-uv-rule.md) - V1.7 (2026-11-17): u once round, v up on every kit mesh; VfxSlashArc/Twister/Shell; doubled faces had zero normals (fixed); check_meshes.py and its sheet
 - [Fx file v4 export](fx-file-v4-export.md) - 2026-11-17: ModelsFx 4 = meshes.py alone (no Core/Props.blend), version in two places, check_fx_export.py, Tex.FALLBACK, budget exception (+23 MP, +11 MB in every scene), V1.2 not in it
+- [Fire and flame textures](fire-flame-textures.md) - V1.2 tex_fire.py (2026-11-17): 4 px clear is cell-size dependent (0.93 for 128 px), tongues from spines not noise cones, candle fill comes from its halo
