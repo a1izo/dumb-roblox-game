@@ -108,3 +108,4 @@
 - [Griddy one-leg hop](griddy-one-leg-hop.md) - 2026-11-16 Griddy rebuilt (4 hops a 2 s bar, both arms thrown up on the fourth); a stroll cycle can be longer than a step (stride/stance rules), the 7 s lab loop, splice-only commit, the shared browser pane trap
 - [Route E noise-cut traps](route-e-noise-cut-traps.md) - V1.3 tex_impact.py (2026-11-17): bite-only noise, alpha = g/aaw, weak taper so rays dash, islands rule, angular gap mask for rings, sparks head up
 - [Slash, arc and wisp textures](slash-arc-wisp-textures.md) - V1.4 tex_slash.py (2026-11-17): stroke coordinates (s along, dr across), NaN wedge trap, loop-exact periodic noise, TEX_QUICK look switch
+- [EmoteFx is a folder](emotefx-split.md) - 2026-11-17 ticket V2.1: init = public API, Shared = helpers, one module per family (Godhood, Poses, Dances, Props, Older, Strolls, Duos, Everyone); where to add an effect, EmoteFx.thud via Common.EmoteFx, the two GOLDs
