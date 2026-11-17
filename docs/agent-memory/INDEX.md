@@ -124,3 +124,4 @@
 - [One-shot sheet life](vfx-oneshot-sheet-life.md) - a one-shot flipbook sheet needs particle lives of frames / 30 s or more (4x4: 0.55 s, 8x8: 2.1 s), because the flipbook rate caps at 30
 - [Shape textures off](vfx-shape-textures-off.md) - V2.6 (2026-11-17): Shape.grow knows slashArc, twister, shell; the textured opt-in stays off (Shape.TEXTURED = false) until the Studio SurfaceAppearance test of V1.7 is run
 - [Map life, phase 13](map-life-phase-13.md) - 2026-11-17 World/MapLife + World/Life kinds (fans, glows, neon, tubes, sway, steam, drips, breath, roof snow, lab lamp): what in a baked map can move, what was skipped, how to add a kind; not yet seen in Studio
+- [Badge remake 2026-11-17](badge-remake-2026-11-17.md) - BureauBadge Core 42: shapes designed once, raised in relief and painted into its maps; pipeline hooks, catalog-format trap, review renders

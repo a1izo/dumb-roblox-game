@@ -995,7 +995,11 @@ def bake(obj, size=1024, ao_strength=0.6, samples=24, where="prop", exact=False,
     metal = read(metal_img, small)
     normal, rough = read(normal_img, half), read(rough_img, small)
     if finish:
-        finish(final, normal, rough)
+        if finish.__code__.co_argcount >= 4:
+            # (a finish that draws metalness too: BureauBadge's enamel is glossy and not metal, its gold is)
+            finish(final, normal, rough, metal)
+        else:
+            finish(final, normal, rough)
     maps = {
         "color": _save_map(obj.name + "_color", final, size, False, 90),
         "normal": _save_map(obj.name + "_normal", normal, half, True, 90),

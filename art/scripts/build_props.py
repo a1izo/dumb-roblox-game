@@ -459,6 +459,11 @@ def build_one(key):
         for obj in [main] + [pieces[name] for name, piece in more["pieces"].items() if not piece["own"]]:
             _wear(obj, baked)
     else:
+        # (a prop with faces laid by hand and no pieces, BureauBadge: laid in the builder's own coordinates, before the
+        # prop is centred)
+        laid_early = bool(more.get("laid"))
+        if laid_early:
+            mk.unwrap(main, laid=more["laid"], into=more.get("into", (0.0, 0.0, 1.0, 1.0)), least=_sliver(spec))
         shift = mk.ground(main) if spec["pivot"] == "bottom" else mk.centre(main)
         if fit_to is not None:
             have = Vector(mk.dimensions(main))
@@ -471,7 +476,8 @@ def build_one(key):
             main.data.transform(Matrix.Diagonal((*fit_k, 1.0)))
         for high in highs.values():
             high.data.transform(Matrix.Translation(shift))
-        mk.unwrap(main, least=_sliver(spec))
+        if not laid_early:
+            mk.unwrap(main, least=_sliver(spec))
         mk.bake(main, size=spec["texture"], where=where, ao_strength=spec.get("ao", 0.6), exact=spec.get("exact", False),
                 high=highs.get(None), normal_full=bool(spec.get("detail")), normal_size=spec.get("normal"),
                 finish=more.get("finish"))
