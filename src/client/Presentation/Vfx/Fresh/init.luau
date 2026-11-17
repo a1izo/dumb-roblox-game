@@ -30,9 +30,11 @@
 -- Fresh.Defs is the pure declaration of all of them (textures, moments, parameters, booth variants).
 
 local Charge = require(script.Charge)
+local Fire = require(script.Fire)
 local Impact = require(script.Impact)
 local Shine = require(script.Shine)
 local Slash = require(script.Slash)
+local Smoke = require(script.Smoke)
 
 local Fresh = {}
 
@@ -45,5 +47,10 @@ Fresh.glint = Shine.glint
 Fresh.pillar = Shine.pillar
 Fresh.arc = Shine.arc
 Fresh.charge = Charge.charge
+Fresh.flame = Fire.flame
+Fresh.fireBurst = Fire.fireBurst
+Fresh.smokePuff = Smoke.smokePuff
+Fresh.dustKick = Smoke.dustKick
+Fresh.mist = Smoke.mist
 
 return Fresh
