@@ -33,8 +33,8 @@ export type Options = {
 }
 
 local STYLES = {
-	sharp = { tex = "VfxImpactA", life = 0.55, size = 4.4, sparks = 16, chips = 6, dark = 4, ring = 3.2, shake = 0.8 },
-	heavy = { tex = "VfxImpactB", life = 0.6, size = 5.4, sparks = 12, chips = 9, dark = 5, ring = 4, shake = 1.8 },
+	sharp = { tex = "VfxImpactA", life = 0.55, size = 4.4, sparks = 16, chips = 6, dark = 6, ring = 3.2, shake = 0.8 },
+	heavy = { tex = "VfxImpactB", life = 0.6, size = 5.4, sparks = 12, chips = 9, dark = 7, ring = 4, shake = 1.8 },
 	soft = { tex = "VfxImpactC", life = 0.6, size = 5, sparks = 5, chips = 0, dark = 5, ring = 3.4, shake = 0.5 },
 } :: {
 	[string]: {
@@ -162,7 +162,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 							st.dark * s,
 							{ { 0, st.dark * s * 0.4 }, { 1, st.dark * s * 1.2 } }
 						),
-						alpha = { { 0, 1 }, { 0.08, 0.2 }, { 0.65, 0.35 }, { 1, 1 } },
+						alpha = { { 0, 1 }, { 0.08, 0.1 }, { 0.65, 0.25 }, { 1, 1 } },
 						life = { 2, 2.3 },
 						accel = Vector3.new(0, 1.2, 0),
 						light = 0,
@@ -221,7 +221,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 					{
 						tex = "VfxAshFlakes",
 						ramp = dust,
-						size = { { 0, 0.75 * s }, { 1, 0.55 * s } },
+						size = { { 0, 1.1 * s }, { 1, 0.8 * s } },
 						alpha = { { 0, 1 }, { 0.08, 0.05 }, { 0.7, 0.2 }, { 1, 1 } },
 						life = { 2, 3 },
 						speed = { 1 * s, 3 * s },
@@ -233,23 +233,23 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 						light = 0.45,
 						lit = 0.6,
 					},
-					8,
+					12,
 				},
 				{
 					{
 						-- (one thin thread of smoke standing up from the middle: the ref's leftover)
 						tex = "VfxSmokePlume",
 						ramp = {
+							Color3.fromRGB(230, 230, 235),
 							Color3.fromRGB(190, 190, 196),
-							Color3.fromRGB(140, 140, 146),
-							Color3.fromRGB(90, 90, 96),
+							Color3.fromRGB(130, 130, 136),
 						},
-						size = { { 0, 1 * s }, { 1, 2.4 * s } },
-						alpha = { { 0, 1 }, { 0.1, 0.35 }, { 0.8, 0.5 }, { 1, 1 } },
+						size = { { 0, 1.6 * s }, { 1, 3.6 * s } },
+						alpha = { { 0, 1 }, { 0.1, 0.2 }, { 0.8, 0.4 }, { 1, 1 } },
 						life = 2.5,
 						speed = 0.6,
 						accel = Vector3.new(0, 1.4, 0),
-						light = 0.3,
+						light = 0.55,
 						lit = 0.6,
 					},
 					1,
