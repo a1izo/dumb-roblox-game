@@ -41,6 +41,9 @@ local Curtain = require(script.Parent.Parent.UI.Curtain)
 local Settings = require(script.Parent.Parent.UI.Core.Settings)
 local Toasts = require(script.Parent.Parent.UI.Toasts)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Presentation.Vfx.Fresh)
+local Palette = require(script.Parent.Parent.Presentation.Vfx.Palette)
+local Pilot = require(script.Parent.Parent.Presentation.Vfx.Pilot)
 
 local DiveController = {}
 
@@ -239,7 +242,12 @@ local function hangString(character: Model, cloudY: number)
 	}) :: Beam
 	strings[character] = { beam = beam, top = top }
 	-- (a glint where the string takes the body's weight)
-	Vfx.Recipes.twinkle(back.WorldPosition, { color = STRING_COLOR, scale = 1.2 })
+	if Pilot.on.glintDive then
+		-- (the new glint, stage 4a; Pilot.on.glintDive = false brings the old twinkle back)
+		Fresh.glint(back.WorldPosition, { ramp = Palette.shop(STRING_COLOR), scale = 1.2, lead = 0.1 })
+	else
+		Vfx.Recipes.twinkle(back.WorldPosition, { color = STRING_COLOR, scale = 1.2 })
+	end
 	Sfx.play("gameDiveString")
 end
 

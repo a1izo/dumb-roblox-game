@@ -23,6 +23,10 @@ Pilot.on = {
 	aura3 = true,
 	-- stage 4a: Presentation/Materialize (the smoke and specks, and the glint when whole; callers that ask for quiet are unchanged)
 	materialize = true,
+	-- stage 4a: the glint where a soul is gathered (Specter/GhostController) and where the dive's string takes the body
+	-- (Controllers/DiveController, the string's glint only: the crash is V4d's)
+	glintGhost = true,
+	glintDive = true,
 }
 
 return Pilot

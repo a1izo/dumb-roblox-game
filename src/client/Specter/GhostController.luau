@@ -19,6 +19,9 @@ local ClientState = require(script.Parent.Parent.ClientState)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Characters = require(script.Parent.Parent.Characters)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Presentation.Vfx.Fresh)
+local Palette = require(script.Parent.Parent.Presentation.Vfx.Palette)
+local Pilot = require(script.Parent.Parent.Presentation.Vfx.Pilot)
 
 local GhostRemote = Net.event("Ghost")
 local LocalPlayer = Players.LocalPlayer
@@ -246,7 +249,13 @@ end
 
 -- A soul gathered: its light goes up in a white star, a ring of it opens and specks stream up.
 local function gathered(at: Vector3)
-	Vfx.Recipes.twinkle(at, { color = Color3.fromRGB(170, 205, 255), scale = 1.6 })
+	if Pilot.on.glintGhost then
+		-- (the new glint, stage 4a: a star that grows two arms and drops back to a dot, a dark halo behind it, a light on the
+		-- beat; Pilot.on.glintGhost = false brings the old twinkle back)
+		Fresh.glint(at, { ramp = Palette.shop(Color3.fromRGB(170, 205, 255)), scale = 1.6, lead = 0.1 })
+	else
+		Vfx.Recipes.twinkle(at, { color = Color3.fromRGB(170, 205, 255), scale = 1.6 })
+	end
 	Vfx.Emit.burst(at, {
 		{
 			{
