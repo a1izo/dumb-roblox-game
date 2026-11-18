@@ -23,7 +23,7 @@ local DUTY = 0.3
 type Lamp = { part: Part, halo: ImageLabel, phase: number, lit: boolean? }
 
 -- Where on the lintel the lamp goes: the surface point and the way it faces, or nil.
-local function surface(model: Model, world: RaycastParams): (Vector3, Vector3)?
+local function surface(model: Model, world: RaycastParams): (Vector3?, Vector3?)
 	local scale = model:GetScale()
 	local pivot = model:GetPivot()
 	local own = RaycastParams.new()
