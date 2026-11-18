@@ -17,6 +17,10 @@
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Governor = require(script.Parent.Parent.World.Governor)
 local Vfx = require(script.Parent.Vfx)
+local Pilot = require(script.Parent.Vfx.Pilot)
+local Moment = require(script.Parent.Vfx.Moment)
+local Palette = require(script.Parent.Vfx.Palette)
+local Common = require(script.Parent.Vfx.Fresh.Common)
 
 local Emit = Vfx.Emit
 local Clock = Vfx.Clock
@@ -207,7 +211,7 @@ local function steady(spec: { [string]: any }, solid: number): { [string]: any }
 	return spec
 end
 
-function Aura.start(character: Model, spec: Spec): () -> ()
+local function startOld(character: Model, spec: Spec): () -> ()
 	local root = partOf(character, "HumanoidRootPart")
 	local torso = partOf(character, "Torso", "UpperTorso")
 	if not root or not torso or Governor.low("emoteFx") then
@@ -570,6 +574,462 @@ function Aura.start(character: Model, spec: Spec): () -> ()
 			end
 		end)
 	end
+end
+
+-- LEVELS 1 AND 3 ON THE NEW KIT (the VFX rework, stage 4a; Pilot.on.aura1 and Pilot.on.aura3 = false bring the old build back).
+-- One sentence: the body's own power coming up as a bank of tongues and dark smoke in the emote's own colour, with a cold
+-- star at the moment it lights; its motif is candle flame and smoke (the aura's colours stay as EmoteFx's AURAS gives them).
+-- A loop's five moments (art/refs/vfx/aura.toml: a burst first, a steady cloud kept alive by drifting, an ending by thinning):
+--   gather    0.0 s   specks drawn in to the chest (0.3 s)
+--   hit       0.3 s   a white-hot four-point glint at the chest, a ring on the floor, sparks thrown up, a light that rises fast and
+--                     falls three times slower; on one's own screen a short shake and punch (not under Reduce motion)
+--   body      0.35 s  tongues (VfxAuraFlame) licking up off the body, a dark bank of mist laid behind them, a soft halo, wisps and
+--                     wandering sparks; level 3 adds a ring and a pool of light on the floor, crescents, a ring behind the head,
+--                     two spiral beams, lightning and a shockwave every few seconds
+--   break-up  the layers are switched off together, so the tongues and the bank thin out by their own lives
+--   residue   a last handful of sparks drawn up off the body; the bank's tail drifts for 3 to 4 s and goes
+-- Budget (Part 9): level 1 is six loop emitters and one light; level 3 is twelve and two lights. The loops are fed by hand (a
+-- few times a second) so the booth's stills and the kit's clock hold them.
+local function startFresh(character: Model, spec: Spec): () -> ()
+	local root = partOf(character, "HumanoidRootPart")
+	local torso = partOf(character, "Torso", "UpperTorso")
+	if not root or not torso or Governor.low("emoteFx") then
+		return function() end
+	end
+	local calm = Motion.isReduced()
+	local level = math.clamp(spec.level, 1, 3)
+	local k = spec.scale or 1
+	local colour = spec.colour
+	local accent = spec.accent or colour:Lerp(WHITE, 0.55)
+	local ramp = Palette.pair(colour, accent)
+	local hot, shade = Common.hotter(ramp), Common.shadow(ramp)
+	local g = 0.6 + 0.4 * level
+	local stopped = false
+	local made: { Instance } = {}
+	local feeds: { { e: ParticleEmitter, per: number, owed: number } } = {}
+	local stops: { () -> () } = {}
+	local function mark(item: Instance)
+		item:SetAttribute("DGEmote", true)
+		table.insert(made, item)
+	end
+	-- A loop layer: made without a rate and fed by hand at that rate (`first` particles at once).
+	local function layer(parent: Instance, s: { [string]: any }, first: number?): ParticleEmitter
+		local copy = table.clone(s)
+		local per = (copy.rate :: number?) or 0
+		copy.rate = nil
+		copy.name = "DGAura"
+		local e = Emit.make(parent, copy)
+		mark(e)
+		table.insert(feeds, { e = e, per = per, owed = 0 })
+		if first and first > 0 then
+			e:Emit(first)
+		end
+		return e
+	end
+	local function attach(parent: Instance, at: Vector3): Attachment
+		local a = Instance.new("Attachment")
+		a.Name = "DGAura"
+		a.Position = at
+		a.Parent = parent
+		mark(a)
+		return a
+	end
+	-- (the floor under the body: the ring and the pool of light lie on it)
+	local chest = torso.Position
+	local floor = floorUnder(chest + Vector3.new(0, 1, 0), character)
+	local light = Instance.new("PointLight")
+	light.Name = "DGAura"
+	light.Color = colour
+	light.Range = 10 * k
+	light.Brightness = 0
+	light.Shadows = false
+	light.Parent = torso
+	mark(light)
+
+	local cancel = Moment.play(chest, {
+		lead = 0.3,
+		gather = function()
+			Common.gather(torso.Position, hot, 3 * k, 0.3, 12, 0.4)
+		end,
+		hit = function()
+			if stopped then
+				return
+			end
+			local at = torso.Position
+			Emit.burst(at, {
+				{
+					{
+						tex = "VfxGlint",
+						ramp = hot,
+						size = Common.size("VfxGlint", 7 * g * k, { { 0, 1 * k }, { 0.15, 7 * g * k }, { 1, 0 } }),
+						alpha = { { 0, 0 }, { 0.5, 0.1 }, { 1, 1 } },
+						life = 0.4,
+						rot = { 0, 360 },
+						bright = 2.2,
+						z = 3,
+					},
+					1,
+				},
+				{
+					{
+						tex = "VfxSparks",
+						ramp = hot,
+						size = { { 0, 0.5 * k }, { 1, 0.1 * k } },
+						alpha = { { 0, 1 }, { 0.08, 0 }, { 0.7, 0.2 }, { 1, 1 } },
+						life = { 0.7, 1.2 },
+						speed = { 12 * k * g, 24 * k * g },
+						spread = 16,
+						drag = 2.2,
+						accel = Vector3.new(0, -6, 0),
+						face = "along",
+						bright = 1.7,
+					},
+					math.floor(12 * g),
+				},
+			})
+			Emit.burst(floor + Vector3.new(0, 0.2, 0), {
+				{
+					{
+						tex = "VfxShock",
+						ramp = ramp,
+						size = Common.size(
+							"VfxShock",
+							9 * g * k,
+							{ { 0, 2 * k }, { 0.5, 8 * g * k }, { 1, 9 * g * k } }
+						),
+						alpha = { { 0, 0.3 }, { 0.5, 0.6 }, { 1, 1 } },
+						life = 0.6,
+						face = "flat",
+						speed = 0.001,
+						bright = 1,
+						z = 1,
+					},
+					1,
+				},
+			})
+			if level >= 3 and not calm then
+				Beams.wave(CFrame.new(floor + Vector3.new(0, 0.12, 0)), 1 * k, 12 * g * k, 0.6, {
+					tex = "VfxRingBand",
+					color = accent,
+					width = 0.9 * k,
+					light = 1,
+					bright = 1.3,
+				})
+			end
+			Common.beat(at, accent, 22 * k * g, 3 * g, 0.05)
+			if spec.own == true and not calm then
+				Vfx.Screen.shake(0.6 * g, 0.25)
+				Vfx.Screen.punch(-2 * g, 0.2)
+			end
+			Clock.tween(0.5, Vfx.Ease.outQuad, function(u)
+				light.Brightness = 1.3 * u
+			end)
+		end,
+		body = function()
+			if stopped then
+				return
+			end
+			local still = calm
+			-- the tongues, the aura's colour through their middles; a second, lower bank from the legs
+			local flames = {
+				tex = "VfxAuraFlame",
+				ramp = ramp,
+				size = { { 0, 2.4 * k }, { 1, 3.1 * k } },
+				alpha = { { 0, 1 }, { 0.12, 0.2 }, { 0.65, 0.35 }, { 1, 1 } },
+				life = { 0.5, 0.8 },
+				rate = 16,
+				speed = { 3 * k, 5.5 * k },
+				spread = 24,
+				accel = Vector3.new(0, 5 * k, 0),
+				drag = 1,
+				rot = { -12, 12 },
+				face = "up",
+				light = 0.35,
+				bright = 1.1,
+				shape = Enum.ParticleEmitterShape.Box,
+				z = 0.3,
+			}
+			layer(torso, flames)
+			local low = table.clone(flames)
+			low.rate = 8
+			low.size = { { 0, 1.8 * k }, { 1, 2.4 * k } }
+			layer(attach(torso, Vector3.new(0, -2.4, 0)), low)
+			-- the dark bank laid behind them (never added, so the aura reads in a lit room too)
+			layer(torso, {
+				tex = "VfxMist",
+				ramp = shade,
+				size = { { 0, 3.5 * k }, { 1, 6 * k } },
+				alpha = { { 0, 1 }, { 0.2, 0.3 }, { 0.7, 0.45 }, { 1, 1 } },
+				life = { 2.4, 3.4 },
+				rate = 2.2,
+				speed = { 0.4, 1 },
+				accel = Vector3.new(0, 1, 0),
+				rot = { 0, 360 },
+				spin = if still then 0 else { -12, 12 },
+				light = 0,
+				lit = 0.2,
+				z = -2,
+			})
+			-- the soft halo behind the body: one long-lived puff at a time, the next fading in as the last goes
+			layer(attach(torso, Vector3.zero), {
+				tex = "VfxMist",
+				ramp = ramp,
+				size = 7 * k,
+				alpha = { { 0, 1 }, { 0.12, 0.2 }, { 0.8, 0.3 }, { 1, 1 } },
+				life = 4,
+				rate = 1 / 3.8,
+				locked = true,
+				light = 0.8,
+				lit = 0.1,
+				z = -1.5,
+			}, 1)
+			layer(torso, {
+				tex = "VfxEnergyWisp",
+				ramp = hot,
+				size = { { 0, 1.8 * k }, { 1, 3 * k } },
+				alpha = { { 0, 1 }, { 0.2, 0.15 }, { 0.75, 0.3 }, { 1, 1 } },
+				life = { 1.1, 1.7 },
+				rate = 3,
+				speed = { 1, 2.5 },
+				accel = Vector3.new(0, 2.5 * k, 0),
+				rot = { 0, 360 },
+				spin = if still then 0 else { -40, 40 },
+				light = 0.9,
+				lit = 0.1,
+				bright = 1.3,
+				shape = Enum.ParticleEmitterShape.Box,
+			})
+			layer(torso, {
+				tex = "VfxSparks",
+				ramp = hot,
+				size = { { 0, 0.4 * k }, { 1, 0.1 * k } },
+				alpha = { { 0, 1 }, { 0.08, 0 }, { 0.7, 0.2 }, { 1, 1 } },
+				life = { 1, 1.7 },
+				rate = 6,
+				speed = { 1, 3 },
+				spread = 40,
+				accel = Vector3.new(0, 2.5, 0),
+				drag = 1,
+				face = "along",
+				bright = 1.6,
+				shape = Enum.ParticleEmitterShape.Box,
+			})
+
+			-- level 3: the floor (a ring and a pool of light), crescents, a ring behind the head, spiral beams, lightning
+			local ground: BasePart? = nil
+			local beamEnds: { { low: Attachment, high: Attachment, turn: number } } = {}
+			if level >= 3 then
+				if spec.ground ~= false then
+					local gp = Emit.point(CFrame.new(floor + Vector3.new(0, 0.08, 0)))
+					gp.Name = "DGAuraGround"
+					mark(gp)
+					ground = gp
+					layer(gp, {
+						tex = "VfxShock",
+						ramp = ramp,
+						size = Common.size("VfxShock", 10 * k, { { 0, 2 * k }, { 1, 10 * k } }),
+						alpha = { { 0, 1 }, { 0.1, 0.35 }, { 1, 1 } },
+						life = 1.4,
+						rate = 0.9,
+						speed = 0.001,
+						face = "flat",
+						light = 0.5,
+						bright = 1,
+					})
+					layer(gp, {
+						tex = "VfxMist",
+						ramp = ramp,
+						size = 9 * k,
+						alpha = { { 0, 1 }, { 0.12, 0.3 }, { 0.8, 0.4 }, { 1, 1 } },
+						life = 4,
+						rate = 1 / 3.8,
+						speed = 0.001,
+						face = "flat",
+						light = 0.7,
+						lit = 0.1,
+					}, 1)
+				end
+				layer(torso, {
+					tex = "VfxSlashA",
+					ramp = ramp,
+					size = { { 0, 2.6 * k }, { 1, 4 * k } },
+					alpha = { { 0, 1 }, { 0.2, 0.3 }, { 1, 1 } },
+					life = { 0.55, 0.8 },
+					rate = 3,
+					rot = { 0, 360 },
+					spin = if still then 0 else { -200, 200 },
+					light = 0.55,
+					bright = 1,
+					z = 0.4,
+				})
+				local head = partOf(character, "Head")
+				if head then
+					layer(attach(head, Vector3.new(0, 0.15, 0.7)), {
+						tex = "VfxRing",
+						color = accent,
+						size = 2 * k,
+						alpha = { { 0, 1 }, { 0.05, 0.4 }, { 0.95, 0.4 }, { 1, 1 } },
+						life = 4,
+						rate = 1 / 3.8,
+						locked = true,
+						spin = if still then 0 else 25,
+						light = 0.8,
+						bright = 1.1,
+						z = -1,
+					}, 1)
+				end
+				if ground and not calm then
+					for i, curve in ipairs({ 4.5, -4.5 }) do
+						local lowEnd = attach(ground, Vector3.zero)
+						local highEnd = attach(ground, Vector3.new(0, 7.5 * k, 0))
+						local beam = Beams.make(lowEnd, highEnd, {
+							tex = "VfxColumn",
+							color = ColorSequence.new(colour, accent),
+							width = 0.35 * k,
+							width1 = 0.9 * k,
+							bright = 1,
+							light = 0.8,
+							speed = 1.4,
+							repeats = 4,
+							segments = 40,
+							alpha = NumberSequence.new({
+								NumberSequenceKeypoint.new(0, 1),
+								NumberSequenceKeypoint.new(0.15, 0.35),
+								NumberSequenceKeypoint.new(0.85, 0.4),
+								NumberSequenceKeypoint.new(1, 1),
+							}),
+						}, ground)
+						beam.CurveSize0 = curve * k
+						beam.CurveSize1 = -curve * k
+						beam.Name = "DGAura"
+						mark(beam)
+						table.insert(beamEnds, { low = lowEnd, high = highEnd, turn = (i - 1) * math.pi })
+					end
+				end
+				table.insert(stops, Rim.glow(character, accent, math.huge, { fill = 0.1, fadeIn = 0.4 }))
+			end
+
+			-- the loop: feeds the layers, the ground follows the feet, the beams turn, the lightning and shockwaves
+			local rng = Random.new()
+			local nextBolt, nextWave = Clock.now() + 0.4, Clock.now() + 1.2
+			local spin, sinceFloor = 0, 1
+			local floorY = floor.Y + 0.08
+			table.insert(
+				stops,
+				Clock.every(function(dt, now)
+					if stopped or not root.Parent or not torso.Parent then
+						return false
+					end
+					for _, one in ipairs(feeds) do
+						one.owed += one.per * dt * Emit.share()
+						local n = math.floor(one.owed)
+						if n > 0 then
+							one.owed -= n
+							one.e:Emit(n)
+						end
+					end
+					if ground then
+						sinceFloor += dt
+						if sinceFloor > 0.12 then
+							sinceFloor = 0
+							floorY = floorUnder(root.Position, character).Y + 0.08
+						end
+						ground.CFrame = CFrame.new(root.Position.X, floorY, root.Position.Z)
+					end
+					spin += dt * 1.3
+					for _, ends in ipairs(beamEnds) do
+						local a = spin + ends.turn
+						ends.low.Position = Vector3.new(math.cos(a) * 1.4 * k, 0.2, math.sin(a) * 1.4 * k)
+						ends.high.Position =
+							Vector3.new(math.cos(a + 2.2) * 1.2 * k, 7.5 * k, math.sin(a + 2.2) * 1.2 * k)
+					end
+					if level >= 3 and not calm then
+						if now >= nextBolt then
+							nextBolt = now + rng:NextNumber(0.6, 1.4)
+							local from = torso.Position
+								+ Vector3.new(rng:NextNumber(-1, 1), rng:NextNumber(-1, 2), rng:NextNumber(-1, 1))
+									* k
+							local to = from
+								+ Vector3.new(
+										rng:NextNumber(-2.5, 2.5),
+										rng:NextNumber(-1, 2.5),
+										rng:NextNumber(-2.5, 2.5)
+									)
+									* k
+							Beams.bolt(from, to, 0.14, {
+								color = accent,
+								width = 0.4 * k,
+								bright = 1.6,
+								jag = 0.5 * k,
+								pieces = 5,
+								rate = 30,
+							})
+						end
+						if ground and now >= nextWave then
+							nextWave = now + 2.6
+							Beams.wave(ground.CFrame, 1 * k, 8 * k, 0.6, {
+								tex = "VfxRingBand",
+								color = accent,
+								width = 1.2 * k,
+								light = 0.6,
+								bright = 1,
+							})
+						end
+					end
+					return true
+				end)
+			)
+		end,
+	})
+
+	return function()
+		if stopped then
+			return
+		end
+		stopped = true
+		cancel()
+		for _, stop in ipairs(stops) do
+			stop()
+		end
+		for _, item in ipairs(made) do
+			if item:IsA("ParticleEmitter") or item:IsA("Beam") then
+				item.Enabled = false
+			end
+		end
+		if torso.Parent then
+			Emit.burst(torso.Position, {
+				tex = "VfxSparks",
+				ramp = hot,
+				size = { { 0, 0.4 * k }, { 1, 0.1 * k } },
+				alpha = { { 0, 1 }, { 0.1, 0 }, { 0.7, 0.2 }, { 1, 1 } },
+				life = { 0.6, 1.1 },
+				speed = { 3 * k, 7 * k },
+				spread = 180,
+				drag = 2.5,
+				accel = Vector3.new(0, 4, 0),
+				face = "along",
+				bright = 1.5,
+			}, 14, Vector3.new(1.6 * k, 2.2 * k, 1.2 * k))
+		end
+		local from = light.Brightness
+		Clock.tween(0.4, Vfx.Ease.outQuad, function(u)
+			light.Brightness = from * (1 - u)
+		end)
+		-- (the longest life, the bank's, is 4 s: everything has faded by then)
+		Clock.after(4.3, function()
+			for _, item in ipairs(made) do
+				item:Destroy()
+			end
+		end)
+	end
+end
+
+function Aura.start(character: Model, spec: Spec): () -> ()
+	local level = math.clamp(spec.level, 1, 3)
+	if (level == 1 and Pilot.on.aura1) or (level == 3 and Pilot.on.aura3) then
+		return startFresh(character, spec)
+	end
+	return startOld(character, spec)
 end
 
 return Aura

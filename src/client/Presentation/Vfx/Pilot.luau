@@ -7,6 +7,7 @@
 --   impact    the burst of a body hitting the floor (Presentation/DeathFx.burst)
 --   menacing  Menacing Pose's own effect (Controllers/EmoteFx/Poses.luau, the first pose only)
 --   cover     the highest Manual cover's tell (World/CoverTells.luau, the Black Mirror)
+--   aura1, aura3  the aura an emote wears at level 1 and level 3 (Presentation/Aura)
 
 local Pilot = {}
 
@@ -16,6 +17,9 @@ Pilot.on = {
 	-- report got worse, 26 emitters and 3 lights against 24 and 2; the old haze stays until it is redone)
 	menacing = false,
 	cover = true,
+	-- stage 4a (Presentation/Aura.luau: levels 1 and 3 only; level 2 is still the old build)
+	aura1 = true,
+	aura3 = true,
 }
 
 return Pilot
