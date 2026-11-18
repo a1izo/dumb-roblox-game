@@ -162,7 +162,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 							st.dark * s,
 							{ { 0, st.dark * s * 0.4 }, { 1, st.dark * s * 1.2 } }
 						),
-						alpha = { { 0, 1 }, { 0.08, 0.1 }, { 0.65, 0.25 }, { 1, 1 } },
+						alpha = { { 0, 1 }, { 0.08, 0.02 }, { 0.65, 0.12 }, { 1, 1 } },
 						life = { 2, 2.3 },
 						accel = Vector3.new(0, 1.2, 0),
 						light = 0,
@@ -247,7 +247,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 							Color3.fromRGB(130, 130, 136),
 						},
 						size = { { 0, 1.6 * s }, { 1, 3.6 * s } },
-						alpha = { { 0, 1 }, { 0.1, 0.2 }, { 0.8, 0.4 }, { 1, 1 } },
+						alpha = { { 0, 1 }, { 0.1, 0.05 }, { 0.8, 0.2 }, { 1, 1 } },
 						life = 2.5,
 						speed = 0.6,
 						accel = Vector3.new(0, 1.4, 0),
