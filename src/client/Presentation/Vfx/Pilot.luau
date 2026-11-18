@@ -8,6 +8,7 @@
 --   menacing  Menacing Pose's own effect (Controllers/EmoteFx/Poses.luau, the first pose only)
 --   cover     the highest Manual cover's tell (World/CoverTells.luau, the Black Mirror)
 --   aura1, aura3  the aura an emote wears at level 1 and level 3 (Presentation/Aura)
+--   materialize   things drawn into being or taken out of it (Presentation/Materialize)
 
 local Pilot = {}
 
@@ -20,6 +21,8 @@ Pilot.on = {
 	-- stage 4a (Presentation/Aura.luau: levels 1 and 3 only; level 2 is still the old build)
 	aura1 = true,
 	aura3 = true,
+	-- stage 4a: Presentation/Materialize (the smoke and specks, and the glint when whole; callers that ask for quiet are unchanged)
+	materialize = true,
 }
 
 return Pilot
