@@ -213,7 +213,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 					Ground.debris(pos, math.floor(5 * s + 0.5), { size = 0.6 * s, speed = 22 * s, life = 1.6 })
 				end
 			end
-			Emit.burst(at, list)
+			Emit.burst(at, list, nil, Vector3.new(3.5 * s, 0.2, 3.5 * s)) -- (spread round the body, not inside it)
 		end,
 		residue = function()
 			Emit.burst(at, {
@@ -235,9 +235,11 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 					},
 					12,
 				},
+			}, nil, Vector3.new(3.5 * s, 0.2, 3.5 * s))
+			Emit.burst(at * CFrame.new(0.9 * s, 0, 1.2 * s), {
 				{
 					{
-						-- (one thin thread of smoke standing up from the middle: the ref's leftover)
+						-- (one thin thread of smoke standing up from beside the body: the ref's leftover)
 						tex = "VfxSmokePlume",
 						ramp = {
 							Color3.fromRGB(230, 230, 235),
