@@ -105,6 +105,7 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 	}
 	local made: { ParticleEmitter } = {}
 	local releaseLight: ((number?) -> ())? = nil
+	local feedStop: (() -> ())? = nil
 	local stopped = false
 	local cancel = Moment.play(chest, {
 		lead = 0.55,
@@ -180,11 +181,32 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 			if stopped then
 				return
 			end
+			-- (the bank is fed by hand a few times a second, at each layer's rate: the same looks as a rate, and it also
+			-- shows in the booth's stills and holds with the kit's clock)
+			local feed: { { e: ParticleEmitter, per: number, owed: number } } = {}
 			for _, spec in ipairs(specs) do
-				local e = Emit.make(holder, spec)
-				e.Enabled = true
+				local copy = table.clone(spec)
+				local rate = (copy.rate :: number?) or 0
+				copy.rate = nil
+				local e = Emit.make(holder, copy)
 				table.insert(made, e)
+				table.insert(feed, { e = e, per = rate, owed = 0 })
 			end
+			local stopFeed = Clock.every(function(dt: number): boolean?
+				if stopped then
+					return false
+				end
+				for _, one in ipairs(feed) do
+					one.owed += one.per * dt * Emit.share()
+					local n = math.floor(one.owed)
+					if n > 0 then
+						one.owed -= n
+						one.e:Emit(n)
+					end
+				end
+				return true
+			end)
+			feedStop = stopFeed
 			local _, release = Light.hold(holder, ramp[2], 12, 0.8, 1.2)
 			releaseLight = release
 		end,
@@ -216,6 +238,9 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 		destroy = function()
 			stopped = true
 			cancel()
+			if feedStop then
+				feedStop()
+			end
 			if releaseLight then
 				releaseLight(0.1)
 			end

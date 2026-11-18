@@ -765,10 +765,24 @@ local function covers(into: { Entry })
 						local made = {}
 						for _, entry in ipairs(tell.emitters) do
 							local emitter = vfx().Emit.make(carrier, entry.spec)
-							emitter.Rate = entry.held
-							emitter.Enabled = entry.held > 0
-							table.insert(made, { emitter = emitter, entry = entry })
+							emitter.Rate = 0
+							table.insert(made, { emitter = emitter, entry = entry, owed = 0 })
 						end
+						-- (the booth feeds the emitters by hand at the tell's rates: a rate does not show in the booth's
+						-- stills, and by hand it also holds with the kit's clock)
+						local writing = false
+						local stopFeed = vfx().Clock.every(function(dt: number): boolean?
+							for _, one in ipairs(made) do
+								local rate = if writing then one.entry.writing else one.entry.held
+								one.owed += rate * dt
+								local n = math.floor(one.owed)
+								if n > 0 then
+									one.owed -= n
+									one.emitter:Emit(n)
+								end
+							end
+							return true
+						end)
 						local light: PointLight? = nil
 						if tell.light then
 							local lamp = Instance.new("PointLight")
@@ -784,16 +798,14 @@ local function covers(into: { Entry })
 						end
 						-- (the book is held, then a name goes in)
 						local switch = later(2, function()
-							for _, one in ipairs(made) do
-								one.emitter.Rate = one.entry.writing
-								one.emitter.Enabled = one.entry.writing > 0
-							end
+							writing = true
 							if light and tell.light then
 								light.Brightness = tell.light.writing
 							end
 						end)
 						return function()
 							switch()
+							stopFeed()
 							carrier:Destroy()
 						end
 					end,
