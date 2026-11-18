@@ -118,25 +118,23 @@ local function menace(kind: Menace): Fx
 		local random = Random.new()
 		local calm = Motion.isReduced()
 		-- The first pose's menace on the new kit (the pilot V3.2; Pilot.on.menacing = false brings the old haze back). The
-		-- idea: the room's pressure. A violet charge draws in round the chest, breaks as the first sign lands, and a
-		-- low violet bank of fog climbs off the floor until the pose ends. The five moments, a loop's (art/refs/vfx/aura.toml):
-		--   gather   0.0 s, specks and wisps drawn in to the chest (the reference's close-up before the power-up)
-		--   hit      0.55 s, the charge is let go: one blown-out burst, a shock ring, sparks, a light (the ignition)
-		--   body     from 0.55 s, the violet bank on the floor that never repeats visibly, the signs rising in it
-		--   break-up the bank thins away over its last seconds when the pose ends (no cut)
-		--   residue  the dust motes and the last of the fog drift 2 to 3 s after
+		-- idea: the room's pressure. Specks draw in to the chest, a small violet-white star is let go as the first sign
+		-- lands, and a violet bank of fog climbs off the floor round the body until the pose ends. The five moments, a
+		-- loop's (art/refs/vfx/aura.toml), built in Fresh/Menace:
+		--   gather   0.0 s, specks drawn in to the chest (the reference's close-up before the power-up)
+		--   hit      0.55 s, the release: a small star, a white-hot glint, a flat ring on the floor, sparks, one light
+		--   body     from 0.6 s, the violet bank (a dark bank under it, motes in it) and one soft light, the signs in it
+		--   break-up the bank thins away as the emitters stop when the pose ends (no cut)
+		--   residue  the motes and the last of the fog drift 3 to 4 s after
 		-- (this replaces the old haze and ember emitters only; the aura and the signs are untouched, AURAS' colours kept)
 		local useFresh = kind.fresh == true and Pilot.on.menacing and not Vfx.quiet()
 		local haze: Attachment? = nil
-		local charge: { release: () -> (), cancel: () -> () }? = nil
 		local bank: { stop: () -> (), destroy: () -> () }? = nil
 		if useFresh then
-			local ramp = Palette.emote("menacingPose") :: Palette.Ramp
-			local made =
-				Fresh.charge(root.Position + Vector3.new(0, 0.6, 0), { ramp = ramp, scale = 1.25, radius = 2.6 })
-			charge = made
-			Vfx.Clock.after(0.55, made.release)
-			bank = Fresh.mist(root.Position - Vector3.new(0, 2.8, 0), { ramp = ramp, size = 7, density = 0.9 })
+			bank = Fresh.menace(root.Position + Vector3.new(0, 0.6, 0), {
+				ramp = Palette.emote("menacingPose") :: Palette.Ramp,
+				floor = 3.4,
+			})
 		else
 			haze = Create("Attachment", { Name = "EmoteMenace", Position = Vector3.new(0, -0.5, 0.6), Parent = root })
 			haze:SetAttribute("DGEmote", true)
@@ -227,9 +225,6 @@ local function menace(kind: Menace): Fx
 			going = false
 			if haze then
 				haze:Destroy()
-			end
-			if charge then
-				charge.cancel()
 			end
 			if bank then
 				bank.stop()

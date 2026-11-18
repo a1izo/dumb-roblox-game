@@ -26,6 +26,7 @@
 --   sigil(at: CFrame, { ramp, size, hold, spin, lead })
 --   scatter(at: CFrame, { kind = "paper" | "feathers" | "shards", ramp, scale, count, wind, flash, lead })
 --   mist(at: CFrame | Vector3, { ramp, size, density }) -> { stop, destroy }
+--   menace(chest: Vector3, { ramp, floor, size }) -> { stop, destroy }
 --
 -- Fresh.Defs is the pure declaration of all of them (textures, moments, parameters, booth variants).
 
@@ -33,6 +34,7 @@ local Charge = require(script.Charge)
 local Fire = require(script.Fire)
 local Floor = require(script.Floor)
 local Impact = require(script.Impact)
+local Menace = require(script.Menace)
 local Scatter = require(script.Scatter)
 local Shine = require(script.Shine)
 local Slash = require(script.Slash)
@@ -54,6 +56,7 @@ Fresh.fireBurst = Fire.fireBurst
 Fresh.smokePuff = Smoke.smokePuff
 Fresh.dustKick = Smoke.dustKick
 Fresh.mist = Smoke.mist
+Fresh.menace = Menace.menace
 Fresh.dissolve = Scatter.dissolve
 Fresh.scatter = Scatter.scatter
 Fresh.sigil = Floor.sigil
