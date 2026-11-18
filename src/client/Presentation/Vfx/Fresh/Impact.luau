@@ -33,9 +33,9 @@ export type Options = {
 }
 
 local STYLES = {
-	sharp = { tex = "VfxImpactA", life = 0.55, size = 6.6, sparks = 16, chips = 5, dark = 5, ring = 5, shake = 0.8 },
-	heavy = { tex = "VfxImpactB", life = 0.6, size = 7.4, sparks = 10, chips = 9, dark = 7, ring = 7, shake = 1.8 },
-	soft = { tex = "VfxImpactC", life = 0.6, size = 6.4, sparks = 5, chips = 0, dark = 6, ring = 4.5, shake = 0.5 },
+	sharp = { tex = "VfxImpactA", life = 0.55, size = 4.4, sparks = 16, chips = 6, dark = 4, ring = 3.2, shake = 0.8 },
+	heavy = { tex = "VfxImpactB", life = 0.6, size = 5.4, sparks = 12, chips = 9, dark = 5, ring = 4, shake = 1.8 },
+	soft = { tex = "VfxImpactC", life = 0.6, size = 5, sparks = 5, chips = 0, dark = 5, ring = 3.4, shake = 0.5 },
 } :: {
 	[string]: {
 		tex: string,
@@ -76,7 +76,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 						alpha = { { 0, 0 }, { 0.55, 0.1 }, { 1, 1 } },
 						life = st.life,
 						rot = { 0, 360 },
-						bright = 2.3,
+						bright = 1.25, -- (hot ramp already starts white: more only blows the sheet's shading out)
 						z = 2,
 					},
 					1,
@@ -85,11 +85,11 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 					{
 						tex = "VfxGlint",
 						ramp = hot,
-						size = C.size("VfxGlint", size * 0.62, { { 0, 0 }, { 0.3, size * 0.62 }, { 1, 0 } }),
+						size = C.size("VfxGlint", size * 0.4, { { 0, 0 }, { 0.3, size * 0.4 }, { 1, 0 } }),
 						alpha = { { 0, 0 }, { 0.5, 0.1 }, { 1, 1 } },
-						life = 0.55,
+						life = 0.3,
 						rot = { -14, 14 },
-						bright = 2.5,
+						bright = 1.6,
 						z = 3,
 					},
 					1,
@@ -103,11 +103,11 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 							st.ring * s,
 							{ { 0, st.ring * s * 0.3 }, { 0.5, st.ring * s * 0.9 }, { 1, st.ring * s } }
 						),
-						alpha = { { 0, 0.2 }, { 0.6, 0.4 }, { 1, 1 } },
-						life = 0.55,
+						alpha = { { 0, 0.5 }, { 0.5, 0.6 }, { 1, 1 } },
+						life = 0.45,
 						face = lay.face,
 						speed = lay.speed,
-						bright = 1.1,
+						bright = 0.9,
 						z = 1,
 					},
 					1,
@@ -162,7 +162,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 							st.dark * s,
 							{ { 0, st.dark * s * 0.4 }, { 1, st.dark * s * 1.2 } }
 						),
-						alpha = { { 0, 1 }, { 0.12, 0.4 }, { 0.6, 0.6 }, { 1, 1 } },
+						alpha = { { 0, 1 }, { 0.1, 0.3 }, { 0.6, 0.5 }, { 1, 1 } },
 						life = { 2, 2.3 },
 						accel = Vector3.new(0, 1.2, 0),
 						light = 0,
@@ -177,7 +177,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 					{
 						tex = "VfxShards",
 						ramp = ramp,
-						size = { { 0, 0.5 * s, 0.25 * s }, { 1, 0.4 * s, 0.2 * s } },
+						size = { { 0, 0.7 * s, 0.35 * s }, { 1, 0.55 * s, 0.28 * s } },
 						alpha = { { 0, 1 }, { 0.08, 0 }, { 0.7, 0 }, { 1, 1 } },
 						life = { 0.6, 1 },
 						speed = { 10 * s, 24 * s },
@@ -185,7 +185,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 						spread = if onFloor then 55 else 120,
 						spin = { -300, 300 },
 						rot = { 0, 360 },
-						light = 0,
+						light = 0.35,
 						lit = 0.6,
 					},
 					st.chips,
@@ -221,7 +221,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 					{
 						tex = "VfxAshFlakes",
 						ramp = dust,
-						size = { { 0, 0.4 * s }, { 1, 0.3 * s } },
+						size = { { 0, 0.75 * s }, { 1, 0.55 * s } },
 						alpha = { { 0, 1 }, { 0.15, 0.1 }, { 0.7, 0.3 }, { 1, 1 } },
 						life = { 2, 3 },
 						speed = { 1 * s, 3 * s },
@@ -230,23 +230,27 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 						drag = 1.5,
 						rot = { 0, 360 },
 						spin = if C.still() then 0 else { -120, 120 },
-						light = 0,
+						light = 0.45,
 						lit = 0.6,
 					},
-					5,
+					8,
 				},
 				{
 					{
 						-- (one thin thread of smoke standing up from the middle: the ref's leftover)
 						tex = "VfxSmokePlume",
-						ramp = shade,
-						size = { { 0, 0.6 * s }, { 1, 1.5 * s } },
-						alpha = { { 0, 1 }, { 0.2, 0.65 }, { 1, 1 } },
+						ramp = {
+							Color3.fromRGB(190, 190, 196),
+							Color3.fromRGB(140, 140, 146),
+							Color3.fromRGB(90, 90, 96),
+						},
+						size = { { 0, 1 * s }, { 1, 2.4 * s } },
+						alpha = { { 0, 1 }, { 0.2, 0.45 }, { 0.8, 0.6 }, { 1, 1 } },
 						life = 2.5,
 						speed = 0.6,
 						accel = Vector3.new(0, 1.4, 0),
-						light = 0,
-						lit = 0.2,
+						light = 0.3,
+						lit = 0.6,
 					},
 					1,
 				},

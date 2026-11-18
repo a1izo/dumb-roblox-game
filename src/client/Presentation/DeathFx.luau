@@ -63,7 +63,7 @@ function DeathFx.burst(position: Vector3, colour: Color3?, amount: number?)
 			ramp = ramp,
 			scale = math.clamp(count / 40, 0.6, 1.3),
 			shake = false,
-			lead = 0.06,
+			lead = 0.05,
 		})
 		return
 	end
