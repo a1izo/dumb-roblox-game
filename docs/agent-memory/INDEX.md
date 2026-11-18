@@ -131,3 +131,4 @@
 - [Meeting intro: cast and places](meeting-intro-cast-and-places.md) - 2026-11-17: seat:k = place k, cast = seats 0..n-1, uncast seats are faceless stand-ins, real bodies stand at radius 17 during the shot, MEETING_INTRO must equal the shot's length
 - [War room chair gaps](war-room-chair-gaps.md) - 2026-11-17: chairs 3.2 boxes, gaps 6.4 to 7.4 wide, lane at radius 15.8, 1.3 s between two walkers in a gap, ~20k acting characters per footwork walker
 - [Fresh recipes pass the report](vfx-fresh-report-fixes.md) - 2026-11-18: what made all 21 pass (fade-in sparks, 0.6 s sheets, shared emitters, residue later), first-run warm-up trap
+- [Effects pilot: flags and booth pictures](vfx-pilot-booth-capture.md) - 2026-11-18: Pilot.on flags (impact on, menacing off, cover on), report before/after, how screen_capture with an explicit camera shows the booth

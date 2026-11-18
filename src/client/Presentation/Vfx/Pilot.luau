@@ -12,7 +12,9 @@ local Pilot = {}
 
 Pilot.on = {
 	impact = true,
-	menacing = true,
+	-- (off: in the booth the new menace was a soft white blob at the ignition and nothing visible after it, and the effect
+	-- report got worse, 26 emitters and 3 lights against 24 and 2; the old haze stays until it is redone)
+	menacing = false,
 	cover = true,
 }
 
