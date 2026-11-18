@@ -25,8 +25,11 @@ Pilot.on = {
 	materialize = true,
 	-- stage 4a: the glint where a soul is gathered (Specter/GhostController) and where the dive's string takes the body
 	-- (Controllers/DiveController, the string's glint only: the crash is V4d's)
-	glintGhost = true,
-	glintDive = true,
+	-- (off until seen in the game: the booth does not play these two)
+	glintGhost = false,
+	glintDive = false,
+	-- stage 4a: the shop cards draw the new texture names (ViewFx.RENAMED); off until the cards are seen
+	viewfx = false,
 }
 
 return Pilot

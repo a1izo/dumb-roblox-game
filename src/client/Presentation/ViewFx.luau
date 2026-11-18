@@ -16,6 +16,7 @@ local TweenService = game:GetService("TweenService")
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Tex = require(script.Parent.Vfx.Tex)
 local Sheets = require(script.Parent.Vfx.Sheets)
+local Pilot = require(script.Parent.Vfx.Pilot)
 
 local ViewFx = {}
 
@@ -84,7 +85,7 @@ function ViewFx.burst(view: ViewportFrame, point: Point, spec: Spec): ImageLabel
 	label.Name = spec.tex
 	label.BackgroundTransparency = 1
 	local tex = spec.tex
-	local renamed = ViewFx.RENAMED[tex]
+	local renamed = if Pilot.on.viewfx then ViewFx.RENAMED[tex] else nil
 	if renamed and Tex.real(renamed) then
 		tex = renamed
 	end

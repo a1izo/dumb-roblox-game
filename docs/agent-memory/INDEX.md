@@ -133,3 +133,4 @@
 - [Fresh recipes pass the report](vfx-fresh-report-fixes.md) - 2026-11-18: what made all 21 pass (fade-in sparks, 0.6 s sheets, shared emitters, residue later), first-run warm-up trap
 - [Effects pilot: flags and booth pictures](vfx-pilot-booth-capture.md) - 2026-11-18: Pilot.on flags (impact on, menacing off, cover on), report before/after, how screen_capture with an explicit camera shows the booth
 - [vfx-pilot-redo-traps](vfx-pilot-redo-traps.md) - booth stills lie after ~10 s (Governor), rate emitters do not show, soft sheets are 25-60% opaque; where impact/cover/menacing stand (2026-11-18)
+- [vfx-rollout-4a-first-batch](vfx-rollout-4a-first-batch.md) — stage 4a first batch: Aura 1 and 3 + Materialize on, glints and ViewFx off; booth still limits
