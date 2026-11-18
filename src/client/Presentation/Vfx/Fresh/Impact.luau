@@ -33,8 +33,8 @@ export type Options = {
 }
 
 local STYLES = {
-	sharp = { tex = "VfxImpactA", life = 0.55, size = 4.4, sparks = 16, chips = 6, dark = 6, ring = 3.2, shake = 0.8 },
-	heavy = { tex = "VfxImpactB", life = 0.6, size = 5.4, sparks = 12, chips = 9, dark = 7, ring = 4, shake = 1.8 },
+	sharp = { tex = "VfxImpactA", life = 0.55, size = 4.4, sparks = 16, chips = 6, dark = 3.6, ring = 3.2, shake = 0.8 },
+	heavy = { tex = "VfxImpactB", life = 0.6, size = 5.4, sparks = 12, chips = 9, dark = 4.4, ring = 4, shake = 1.8 },
 	soft = { tex = "VfxImpactC", life = 0.6, size = 5, sparks = 5, chips = 0, dark = 5, ring = 3.4, shake = 0.5 },
 } :: {
 	[string]: {
@@ -89,7 +89,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 						alpha = { { 0, 0 }, { 0.5, 0.1 }, { 1, 1 } },
 						life = 0.3,
 						rot = { -14, 14 },
-						bright = 1.6,
+						bright = 2.1,
 						z = 3,
 					},
 					1,
