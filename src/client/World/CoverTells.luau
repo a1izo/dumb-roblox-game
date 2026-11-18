@@ -20,6 +20,9 @@ local Characters = require(script.Parent.Parent.Characters)
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Presentation.Vfx.Fresh)
+local Palette = require(script.Parent.Parent.Presentation.Vfx.Palette)
+local Pilot = require(script.Parent.Parent.Presentation.Vfx.Pilot)
 
 local CoverTells = {}
 
@@ -258,7 +261,85 @@ local TELLS: { [string]: Tell } = {
 	},
 }
 
-CoverTells.STYLES = TELLS
+-- The Black Mirror's tell on the new kit (the pilot V3.3: the dearest of the two legendary covers, 1100; Pilot.on.cover = false
+-- brings the old tell back). The idea: cold light trapped in cracked glass. Five moments, a loop's:
+--   gather   0.0 s as the book comes out: specks of cold light drawn in to the cover (Fresh.glint's gather)
+--   hit      0.12 s later: one star of white-hot cold light flashes across the glass, with a small light
+--   body     held: a glint every second or so crosses the glass, a few cold motes rise; written in: glints three times
+--            as often and a frost of fog blooms off the cover (the glass "frosts over")
+--   break-up each glint erodes by itself (the sheet is drawn eaten away); the frost thins with its rate
+--   residue  the motes and the last of the frost drift 1 to 2 s after the pen lifts
+-- Full colour (a shop effect): the cover's own cold blue, white-hot at the core.
+local COLD_RAMP = Palette.shop(COLD)
+local MIRROR_FRESH: Tell = {
+	emitters = {
+		{
+			spec = {
+				tex = "VfxGlint",
+				ramp = COLD_RAMP,
+				size = 0.9,
+				alpha = { { 0, 0 }, { 0.5, 0.1 }, { 1, 1 } },
+				life = 0.6,
+				rot = { -14, 14 },
+				locked = true,
+				light = 1,
+				bright = 2.3,
+				shape = Enum.ParticleEmitterShape.Box,
+				z = 0.6,
+			},
+			held = 1,
+			writing = 3,
+		},
+		{
+			spec = {
+				tex = "VfxMist",
+				ramp = COLD_RAMP,
+				size = { { 0, 1.1 }, { 1, 1.7 } },
+				alpha = { { 0, 1 }, { 0.25, 0.7 }, { 0.75, 0.74 }, { 1, 1 } },
+				life = { 1.4, 1.8 },
+				speed = { 0.2, 0.5 },
+				spread = 60,
+				rot = { 0, 360 },
+				light = 0.3,
+				lit = 0.5,
+				shape = Enum.ParticleEmitterShape.Box,
+				z = -0.5,
+			},
+			held = 0,
+			writing = 1.6,
+		},
+		{
+			spec = {
+				tex = "VfxSparks",
+				ramp = COLD_RAMP,
+				size = { { 0, 0.14 }, { 1, 0.04 } },
+				alpha = { { 0, 1 }, { 0.15, 0.1 }, { 0.8, 0.2 }, { 1, 1 } },
+				life = { 1, 1.6 },
+				speed = { 0.2, 0.6 },
+				spread = 40,
+				accel = Vector3.new(0, 0.4, 0),
+				bright = 1.5,
+				shape = Enum.ParticleEmitterShape.Box,
+			},
+			held = 0.8,
+			writing = 3,
+		},
+	},
+	appear = function(carrier: BasePart)
+		Fresh.glint(carrier.Position, { ramp = COLD_RAMP, scale = 0.7 })
+	end,
+	light = { color = COLD, held = 0.25, writing = 0.7 },
+}
+
+-- The tells by cover style. The Black Mirror's is read when asked for, so Pilot.on.cover can be flipped while the game runs.
+CoverTells.STYLES = setmetatable({} :: { [string]: Tell }, {
+	__index = function(_, style: string): Tell?
+		if style == "mirror" and Pilot.on.cover then
+			return MIRROR_FRESH
+		end
+		return TELLS[style]
+	end,
+})
 
 -- A carrier at the held book's middle (welded to its largest piece), for the tell's emitters and light.
 local function carrierOf(book: Model): (BasePart?, Vector3)
@@ -293,7 +374,7 @@ end
 local function dress(character: Model, book: Model)
 	local player = Players:GetPlayerFromCharacter(character)
 	local style = if player then player:GetAttribute("LGrimoireStyle") else nil
-	local tell = if type(style) == "string" then TELLS[style] else nil
+	local tell = if type(style) == "string" then CoverTells.STYLES[style] else nil
 	if not tell then
 		return
 	end
