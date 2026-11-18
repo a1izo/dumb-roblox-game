@@ -753,11 +753,14 @@ local function covers(into: { Entry })
 						carrier.CanTouch = false
 						carrier.CastShadow = false
 						carrier.Material = Enum.Material.SmoothPlastic
-						carrier.Color = if typeof(item.color) == "Color3"
+						-- (the booth only: the slab is lightened and held in front of the dummy, facing the camera, because a
+						-- black book on the black dummy cannot be judged; the game's own book is not touched)
+						carrier.Color = (if typeof(item.color) == "Color3"
 							then item.color
-							else Color3.fromRGB(60, 40, 40)
-						carrier.Size = Vector3.new(0.9, 1.2, 0.25)
-						carrier.CFrame = CFrame.lookAt(chest(stage, 1.3, 0.2), chest(stage, 3, 0.2))
+							else Color3.fromRGB(60, 40, 40)):Lerp(Color3.fromRGB(176, 182, 196), 0.6)
+						carrier.Size = Vector3.new(1.3, 1.8, 0.3)
+						local front = chest(stage, -1.7, 0.3)
+						carrier.CFrame = CFrame.lookAt(front, front + Vector3.new(0, 0, 5))
 						carrier.Parent = stage.props
 						local made = {}
 						for _, entry in ipairs(tell.emitters) do
