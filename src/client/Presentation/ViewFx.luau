@@ -15,6 +15,7 @@ local TweenService = game:GetService("TweenService")
 
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Tex = require(script.Parent.Vfx.Tex)
+local Sheets = require(script.Parent.Vfx.Sheets)
 
 local ViewFx = {}
 
@@ -40,6 +41,19 @@ export type Spec = {
 export type Point = Vector3 | Vector2 | () -> Vector3
 
 -- Where a world point falls in the view, as a fraction across and down (nil when it is behind the camera).
+-- The old texture names each card still draws, and the new name that replaces it once the Fx import with the new library is
+-- in the place (the new sheets carry their own grid; a still shows one frame from the middle of the sheet). Until then the
+-- old name is used as it always was (Vfx/Tex also falls back to it).
+ViewFx.RENAMED = {
+	VfxWisp = "VfxEnergyWisp",
+	VfxFeather = "VfxFeatherTumble",
+	VfxSmoke = "VfxMist",
+	VfxFlare = "VfxGlint",
+	VfxAsh = "VfxAshFlakes",
+	VfxChunk = "VfxShards",
+	VfxStreak = "VfxSparks",
+} :: { [string]: string }
+
 function ViewFx.project(view: ViewportFrame, point: Vector3): Vector2?
 	local camera = view.CurrentCamera
 	if not camera then
@@ -69,7 +83,13 @@ function ViewFx.burst(view: ViewportFrame, point: Point, spec: Spec): ImageLabel
 	local label = Instance.new("ImageLabel")
 	label.Name = spec.tex
 	label.BackgroundTransparency = 1
-	label.Image = Tex.id(spec.tex)
+	local tex = spec.tex
+	local renamed = ViewFx.RENAMED[tex]
+	if renamed and Tex.real(renamed) then
+		tex = renamed
+	end
+	local sheet = Sheets.NEW[tex]
+	label.Image = Tex.id(tex)
 	label.ImageColor3 = spec.color or Color3.new(1, 1, 1)
 	label.ImageTransparency = alphas[1]
 	label.AnchorPoint = spec.anchor or Vector2.new(0.5, 0.5)
@@ -77,7 +97,7 @@ function ViewFx.burst(view: ViewportFrame, point: Point, spec: Spec): ImageLabel
 	label.ZIndex = view.ZIndex + (spec.z or 1)
 	label.Parent = view
 	-- (a flipbook only once the kit's own sheet is in: a stand-in is one picture)
-	local grid = if spec.grid and Tex.real(spec.tex) then spec.grid else 1
+	local grid = if sheet and Tex.real(tex) then sheet.grid elseif spec.grid and Tex.real(tex) then spec.grid else 1
 	local cell = (spec.sheet or 1024) / grid
 	if grid > 1 then
 		label.ImageRectSize = Vector2.new(cell, cell)
@@ -109,7 +129,9 @@ function ViewFx.burst(view: ViewportFrame, point: Point, spec: Spec): ImageLabel
 		label.ImageTransparency = alphas[1] + (alphas[#alphas] - alphas[1]) * u
 		label.Rotation = rots[1] + (rots[#rots] - rots[1]) * eased
 		if grid > 1 then
-			local frame = math.floor((os.clock() - start) * (spec.fps or 30)) % (grid * grid)
+			local frame = if spec.still and sheet
+				then 5 % (grid * grid)
+				else math.floor((os.clock() - start) * (spec.fps or 30)) % (grid * grid)
 			label.ImageRectOffset = Vector2.new((frame % grid) * cell, math.floor(frame / grid) * cell)
 		end
 	end
