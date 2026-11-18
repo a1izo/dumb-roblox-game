@@ -132,3 +132,4 @@
 - [War room chair gaps](war-room-chair-gaps.md) - 2026-11-17: chairs 3.2 boxes, gaps 6.4 to 7.4 wide, lane at radius 15.8, 1.3 s between two walkers in a gap, ~20k acting characters per footwork walker
 - [Fresh recipes pass the report](vfx-fresh-report-fixes.md) - 2026-11-18: what made all 21 pass (fade-in sparks, 0.6 s sheets, shared emitters, residue later), first-run warm-up trap
 - [Effects pilot: flags and booth pictures](vfx-pilot-booth-capture.md) - 2026-11-18: Pilot.on flags (impact on, menacing off, cover on), report before/after, how screen_capture with an explicit camera shows the booth
+- [vfx-pilot-redo-traps](vfx-pilot-redo-traps.md) - booth stills lie after ~10 s (Governor), rate emitters do not show, soft sheets are 25-60% opaque; where impact/cover/menacing stand (2026-11-18)
