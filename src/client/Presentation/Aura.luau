@@ -753,7 +753,10 @@ local function startFresh(character: Model, spec: Spec): () -> ()
 			local low = table.clone(flames)
 			low.rate = 8
 			low.size = { { 0, 1.8 * k }, { 1, 2.4 * k } }
-			layer(attach(torso, Vector3.new(0, -2.4, 0)), low)
+			-- (level 3 is nearer its budget: the lower bank is left out there)
+			if level < 3 then
+				layer(attach(torso, Vector3.new(0, -2.4, 0)), low)
+			end
 			-- the dark bank laid behind them (never added, so the aura reads in a lit room too)
 			layer(torso, {
 				tex = "VfxMist",
@@ -961,7 +964,7 @@ local function startFresh(character: Model, spec: Spec): () -> ()
 								width = 0.4 * k,
 								bright = 1.6,
 								jag = 0.5 * k,
-								pieces = 5,
+								pieces = 3,
 								rate = 30,
 							})
 						end
