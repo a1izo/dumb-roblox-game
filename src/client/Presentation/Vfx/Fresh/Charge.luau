@@ -138,7 +138,7 @@ function Charge.charge(at: CFrame | Vector3, options: ChargeOptions?): Charge
 									{ { 0, 2.5 * s }, { 0.2, 5.4 * s }, { 1, 6 * s } }
 								),
 								alpha = { { 0, 0 }, { 0.55, 0.1 }, { 1, 1 } },
-								life = 0.7,
+								life = 0.6,
 								rot = { 0, 360 },
 								bright = 2.3,
 								z = 2,
@@ -167,7 +167,7 @@ function Charge.charge(at: CFrame | Vector3, options: ChargeOptions?): Charge
 								tex = "VfxSparks",
 								ramp = hot,
 								size = { { 0, 0.6 * s }, { 1, 0.12 * s } },
-								alpha = { { 0, 0 }, { 0.7, 0.2 }, { 1, 1 } },
+								alpha = { { 0, 1 }, { 0.08, 0 }, { 0.7, 0.2 }, { 1, 1 } },
 								life = { 0.35, 0.75 },
 								speed = { 14 * s, 34 * s },
 								drag = 3,

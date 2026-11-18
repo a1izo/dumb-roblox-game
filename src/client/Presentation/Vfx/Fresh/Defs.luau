@@ -345,7 +345,7 @@ Defs.VARIANTS = {
 		budget = "accent",
 	},
 	{ id = "dissolve", label = "Dissolve", call = "dissolve", args = {}, place = "body", length = 6, budget = "scene" },
-	{ id = "arc", label = "Arc (lightning)", call = "arc", args = {}, place = "arc", length = 3, budget = "accent" },
+	{ id = "arc", label = "Arc (lightning)", call = "arc", args = {}, place = "arc", length = 3, budget = "showpiece" },
 	{
 		id = "charge",
 		label = "Charge, then release",

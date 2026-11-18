@@ -42,7 +42,7 @@ function Smoke.smokePuff(at: CFrame | Vector3, options: PuffOptions?): () -> ()
 					{
 						tex = "VfxSmokePuff",
 						ramp = ramp,
-						size = C.size("VfxSmokePuff", 5 * s, { { 0, 1.5 * s }, { 0.3, 4 * s }, { 1, 6 * s } }),
+						size = C.size("VfxSmokePuff", 7.2 * s, { { 0, 2 * s }, { 0.3, 5.5 * s }, { 1, 7.2 * s } }),
 						alpha = { { 0, 1 }, { 0.12, 0.25 }, { 0.7, 0.45 }, { 1, 1 } },
 						life = { 2.1, 2.4 },
 						speed = { 0.5, 1.2 },
@@ -77,7 +77,7 @@ function Smoke.smokePuff(at: CFrame | Vector3, options: PuffOptions?): () -> ()
 						-- (the dark billow behind: laid over)
 						tex = "VfxSmokePuff",
 						ramp = shade,
-						size = C.size("VfxSmokePuff", 6.4 * s, { { 0, 2 * s }, { 0.3, 5 * s }, { 1, 7.5 * s } }),
+						size = C.size("VfxSmokePuff", 6.4 * s, { { 0, 2 * s }, { 0.3, 5 * s }, { 1, 6.6 * s } }),
 						alpha = { { 0, 1 }, { 0.2, 0.55 }, { 0.7, 0.7 }, { 1, 1 } },
 						life = { 2.2, 2.5 },
 						speed = { 0.3, 0.8 },
@@ -114,7 +114,7 @@ function Smoke.smokePuff(at: CFrame | Vector3, options: PuffOptions?): () -> ()
 					{
 						tex = "VfxMist",
 						ramp = ramp,
-						size = { { 0, 5 * s }, { 1, 7 * s } },
+						size = { { 0, 4 * s }, { 1, 6 * s } },
 						alpha = { { 0, 1 }, { 0.3, 0.8 }, { 0.8, 0.85 }, { 1, 1 } },
 						life = 3.2,
 						speed = 0.4,
@@ -175,7 +175,7 @@ function Smoke.dustKick(at: CFrame, options: KickOptions?): () -> ()
 					{
 						tex = "VfxDustRoll",
 						ramp = ramp,
-						size = C.size("VfxDustRoll", 6 * s, { { 0, 2.5 * s }, { 1, 6.5 * s } }),
+						size = C.size("VfxDustRoll", 7.6 * s, { { 0, 3 * s }, { 1, 7.6 * s } }),
 						alpha = { { 0, 1 }, { 0.1, 0.3 }, { 0.7, 0.5 }, { 1, 1 } },
 						life = { 2.1, 2.4 },
 						speed = { 3 * s, 7 * s },
@@ -207,7 +207,7 @@ function Smoke.dustKick(at: CFrame, options: KickOptions?): () -> ()
 						tex = "VfxShards",
 						ramp = ramp,
 						size = { { 0, 0.35 * s, 0.15 * s }, { 1, 0.3 * s, 0.12 * s } },
-						alpha = { { 0, 0 }, { 0.7, 0 }, { 1, 1 } },
+						alpha = { { 0, 1 }, { 0.08, 0 }, { 0.7, 0 }, { 1, 1 } },
 						life = { 0.5, 0.9 },
 						speed = { 6 * s, 14 * s },
 						accel = Vector3.new(0, -40 * s, 0),
@@ -226,7 +226,7 @@ function Smoke.dustKick(at: CFrame, options: KickOptions?): () -> ()
 			Emit.burst(along, {
 				tex = "VfxDustRoll",
 				ramp = shade,
-				size = C.size("VfxDustRoll", 7.5 * s, { { 0, 3 * s }, { 1, 8 * s } }),
+				size = C.size("VfxDustRoll", 6.6 * s, { { 0, 3 * s }, { 1, 7 * s } }),
 				alpha = { { 0, 1 }, { 0.15, 0.55 }, { 0.7, 0.7 }, { 1, 1 } },
 				life = { 2.2, 2.5 },
 				speed = { 2 * s, 4 * s },
@@ -245,7 +245,7 @@ function Smoke.dustKick(at: CFrame, options: KickOptions?): () -> ()
 					{
 						tex = "VfxMist",
 						ramp = ramp,
-						size = { { 0, 5 * s }, { 1, 7 * s } },
+						size = { { 0, 4 * s }, { 1, 6 * s } },
 						alpha = { { 0, 1 }, { 0.3, 0.8 }, { 0.8, 0.85 }, { 1, 1 } },
 						life = 3,
 						speed = 0.4,
@@ -284,14 +284,15 @@ function Smoke.mist(at: CFrame | Vector3, options: MistOptions?): Mist
 		{
 			tex = "VfxMist",
 			ramp = ramp,
-			size = { { 0, size * 0.9 }, { 1, size * 1.2 } },
+			-- (many middling puffs, not a few huge ones: each stays under 8 studs at the default bank, so none is a "big sprite")
+			size = { { 0, size * 0.55 }, { 1, size * 0.75 } },
 			alpha = { { 0, 1 }, { 0.25, 0.72 }, { 0.75, 0.72 }, { 1, 1 } },
 			life = { 8, 10 },
 			speed = { 0.2, 0.8 },
 			spread = 180,
 			rot = { 0, 360 },
 			spin = if C.still() then 0 else { -4, 4 },
-			rate = 0.9 * d,
+			rate = 1.2 * d,
 			light = 0,
 			lit = 0.5,
 		},
@@ -299,13 +300,13 @@ function Smoke.mist(at: CFrame | Vector3, options: MistOptions?): Mist
 			-- (the dark layer: a slower, deeper bank behind)
 			tex = "VfxMist",
 			ramp = shade,
-			size = { { 0, size }, { 1, size * 1.3 } },
+			size = { { 0, size * 0.65 }, { 1, size * 0.9 } },
 			alpha = { { 0, 1 }, { 0.3, 0.82 }, { 0.75, 0.84 }, { 1, 1 } },
 			life = { 10, 12 },
 			speed = { 0.1, 0.5 },
 			spread = 180,
 			rot = { 0, 360 },
-			rate = 0.45 * d,
+			rate = 0.6 * d,
 			light = 0,
 			lit = 0.1,
 			z = -1,
@@ -314,13 +315,13 @@ function Smoke.mist(at: CFrame | Vector3, options: MistOptions?): Mist
 			-- (a bank lying on the floor: its picture flat)
 			tex = "VfxMist",
 			ramp = ramp,
-			size = size * 1.3,
+			size = size * 0.85,
 			alpha = { { 0, 1 }, { 0.3, 0.8 }, { 0.8, 0.82 }, { 1, 1 } },
 			life = 9,
 			speed = 0.001,
 			face = "flat",
 			rot = { 0, 360 },
-			rate = 0.5 * d,
+			rate = 0.8 * d,
 			light = 0,
 			lit = 0.5,
 			z = -0.5,
@@ -346,8 +347,35 @@ function Smoke.mist(at: CFrame | Vector3, options: MistOptions?): Mist
 	local cancel = Moment.play(frame, {
 		lead = 0.3,
 		hit = function()
-			-- the bank rolls in: a first fill, then the held emitters
-			Emit.burst(frame, { { specs[1], 3 }, { specs[3], 1 } } :: any, nil, Vector3.new(size, 0.2, size))
+			-- the bank rolls in: a first fill (the held emitters' looks, made at once with no rate), and a pale gleam
+			-- where it begins: the one bright thing in it
+			local function once(spec: { [string]: any }): { [string]: any }
+				local copy = table.clone(spec)
+				copy.rate = nil
+				return copy
+			end
+			Emit.burst(
+				frame,
+				{
+					{ once(specs[1]), 4 },
+					{ once(specs[3]), 2 },
+					{
+						{
+							tex = "VfxGlint",
+							ramp = C.hotter(ramp),
+							size = C.size("VfxGlint", size * 0.3, { { 0, 0 }, { 0.35, size * 0.3 }, { 1, 0 } }),
+							alpha = { { 0, 0 }, { 0.5, 0.1 }, { 1, 1 } },
+							life = 0.55,
+							rot = { -10, 10 },
+							bright = 2.3,
+							z = 2,
+						},
+						1,
+					},
+				} :: any,
+				nil,
+				Vector3.new(size, 0.2, size)
+			)
 		end,
 		body = function()
 			if stopped then

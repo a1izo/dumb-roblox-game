@@ -35,7 +35,7 @@ export type Options = {
 local STYLES = {
 	sharp = { tex = "VfxImpactA", life = 0.55, size = 6.6, sparks = 16, chips = 5, dark = 5, ring = 5, shake = 0.8 },
 	heavy = { tex = "VfxImpactB", life = 0.6, size = 7.4, sparks = 10, chips = 9, dark = 7, ring = 7, shake = 1.8 },
-	soft = { tex = "VfxImpactC", life = 0.7, size = 6.4, sparks = 5, chips = 0, dark = 6, ring = 4.5, shake = 0.5 },
+	soft = { tex = "VfxImpactC", life = 0.6, size = 6.4, sparks = 5, chips = 0, dark = 6, ring = 4.5, shake = 0.5 },
 } :: {
 	[string]: {
 		tex: string,
@@ -60,6 +60,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 	local heavy = name == "heavy"
 	return Moment.play(at, {
 		lead = lead,
+		residueAfter = 0.8, -- (after the hit layers have gone: at most six emitters alive together)
 		gather = function()
 			C.gather(pos, ramp, 2.2 * s, lead, 8, 0.45 * s)
 		end,
@@ -116,7 +117,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 						tex = "VfxSparks",
 						ramp = hot,
 						size = { { 0, 0.7 * s }, { 1, 0.15 * s } },
-						alpha = { { 0, 0 }, { 0.7, 0.2 }, { 1, 1 } },
+						alpha = { { 0, 1 }, { 0.08, 0 }, { 0.7, 0.2 }, { 1, 1 } },
 						life = { 0.35, 0.75 },
 						speed = { 26 * s, 56 * s },
 						drag = 3,
@@ -177,7 +178,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 						tex = "VfxShards",
 						ramp = ramp,
 						size = { { 0, 0.5 * s, 0.25 * s }, { 1, 0.4 * s, 0.2 * s } },
-						alpha = { { 0, 0 }, { 0.7, 0 }, { 1, 1 } },
+						alpha = { { 0, 1 }, { 0.08, 0 }, { 0.7, 0 }, { 1, 1 } },
 						life = { 0.6, 1 },
 						speed = { 10 * s, 24 * s },
 						accel = Vector3.new(0, -60 * s, 0),

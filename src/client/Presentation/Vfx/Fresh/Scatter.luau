@@ -221,6 +221,32 @@ function Scatter.dissolve(parts: { BasePart }, seconds: number, options: Dissolv
 	local centre = sum / #list
 	local cancels: { () -> () } = {}
 
+	-- The three emitters every part is torn through: made once, on one holder that moves to each part (a body of fifteen
+	-- parts used to make forty-five emitters, alive three seconds each).
+	local pool: { holder: Part, emitters: { ParticleEmitter } }? = nil
+	local function emitThrough(part: BasePart, entries: { any })
+		local made = pool
+		if made == nil then
+			local holder = Emit.point(part.CFrame, part.Size)
+			local emitters: { ParticleEmitter } = {}
+			local longest = 0
+			for _, entry in ipairs(entries) do
+				table.insert(emitters, Emit.make(holder, entry[1]))
+				longest = math.max(longest, Emit.longest(entry[1]))
+			end
+			made = { holder = holder, emitters = emitters }
+			pool = made
+			Clock.after(seconds + longest + 0.5, function()
+				holder:Destroy()
+			end)
+		end
+		made.holder.Size = part.Size
+		made.holder.CFrame = part.CFrame
+		for index, entry in ipairs(entries) do
+			made.emitters[index]:Emit(math.max(1, math.floor(entry[2] * Emit.share() + 0.5)))
+		end
+	end
+
 	-- One part goes: torn into flakes carried off, embers at its edge, a thread of soot; the part itself fades.
 	local function eat(part: BasePart)
 		if not part.Parent then
@@ -229,63 +255,58 @@ function Scatter.dissolve(parts: { BasePart }, seconds: number, options: Dissolv
 		local size = part.Size
 		local volume = math.clamp(size.X * size.Y * size.Z, 0.05, 4)
 		local n = math.min(24, math.floor(8 + volume * 10))
-		Emit.burst(
-			part.CFrame,
+		emitThrough(part, {
 			{
 				{
-					{
-						tex = "VfxAshFlakes",
-						ramp = ramp,
-						size = { { 0, 0.3 * s, 0.1 * s }, { 0.7, 0.25 * s, 0.08 * s }, { 1, 0.1 * s } },
-						alpha = { { 0, 1 }, { 0.12, 0.1 }, { 0.75, 0.2 }, { 1, 1 } },
-						life = { 1.8, 3 },
-						speed = { 0.5, 1.8 },
-						spread = 180,
-						accel = wind + Vector3.new(0, rise, 0),
-						drag = 0.9,
-						rot = { 0, 360 },
-						spin = if C.still() then 0 else { -160, 160 },
-						light = 0,
-						lit = 0.65,
-					},
-					n,
+					tex = "VfxAshFlakes",
+					ramp = ramp,
+					size = { { 0, 0.3 * s, 0.1 * s }, { 0.7, 0.25 * s, 0.08 * s }, { 1, 0.1 * s } },
+					alpha = { { 0, 1 }, { 0.12, 0.1 }, { 0.75, 0.2 }, { 1, 1 } },
+					life = { 1.8, 3 },
+					speed = { 0.5, 1.8 },
+					spread = 180,
+					accel = wind + Vector3.new(0, rise, 0),
+					drag = 0.9,
+					rot = { 0, 360 },
+					spin = if C.still() then 0 else { -160, 160 },
+					light = 0,
+					lit = 0.65,
 				},
+				n,
+			},
+			{
 				{
-					{
-						-- (the edge still smouldering: the brightest thing in it)
-						tex = "VfxSparks",
-						ramp = hot,
-						size = { { 0, 0.2 * s }, { 1, 0.05 * s } },
-						alpha = { { 0, 0 }, { 0.6, 0.2 }, { 1, 1 } },
-						life = { 0.8, 1.6 },
-						speed = { 0.3, 1.2 },
-						spread = 180,
-						accel = wind * 0.6 + Vector3.new(0, rise * 1.3, 0),
-						drag = 1.2,
-						face = "along",
-						bright = 2.3,
-					},
-					math.floor(n * 0.3),
+					-- (the edge still smouldering: the brightest thing in it)
+					tex = "VfxSparks",
+					ramp = hot,
+					size = { { 0, 0.2 * s }, { 1, 0.05 * s } },
+					alpha = { { 0, 1 }, { 0.08, 0 }, { 0.6, 0.2 }, { 1, 1 } },
+					life = { 0.8, 1.6 },
+					speed = { 0.3, 1.2 },
+					spread = 180,
+					accel = wind * 0.6 + Vector3.new(0, rise * 1.3, 0),
+					drag = 1.2,
+					face = "along",
+					bright = 2.3,
 				},
+				math.floor(n * 0.3),
+			},
+			{
 				{
-					{
-						tex = "VfxSmokePlume",
-						ramp = shade,
-						size = { { 0, 0.4 * s }, { 1, 1.6 * s } },
-						alpha = { { 0, 1 }, { 0.3, 0.8 }, { 1, 1 } },
-						life = { 1.6, 2.6 },
-						speed = { 0.2, 0.6 },
-						spread = 60,
-						accel = wind * 0.8 + Vector3.new(0, rise * 0.7, 0),
-						light = 0,
-						lit = 0.3,
-					},
-					2,
+					tex = "VfxSmokePlume",
+					ramp = shade,
+					size = { { 0, 0.4 * s }, { 1, 1.6 * s } },
+					alpha = { { 0, 1 }, { 0.3, 0.8 }, { 1, 1 } },
+					life = { 1.6, 2.6 },
+					speed = { 0.2, 0.6 },
+					spread = 60,
+					accel = wind * 0.8 + Vector3.new(0, rise * 0.7, 0),
+					light = 0,
+					lit = 0.3,
 				},
-			} :: any,
-			nil,
-			size
-		)
+				2,
+			},
+		})
 		-- the part goes: it darkens toward the ash, then is gone
 		local c0, t0 = part.Color, part.Transparency
 		local marks: { { inst: Instance, start: number } } = {}
