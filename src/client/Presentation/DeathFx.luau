@@ -17,10 +17,16 @@ local Kit = require(script.Parent.Parent.UI.Kit)
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Screens = require(script.Parent.Parent.UI.Screens)
 local Vfx = require(script.Parent.Vfx)
+local Fresh = require(script.Parent.Vfx.Fresh)
+local Palette = require(script.Parent.Vfx.Palette)
+local Pilot = require(script.Parent.Vfx.Pilot)
 
 local C = Kit.color
 
 local DeathFx = {}
+
+-- A death's colours (the pilot's hit): white-hot, a pale grey body, a dark red edge that the dark puff is made from.
+local DEATH_RAMP: Palette.Ramp = { Color3.new(1, 1, 1), Color3.fromRGB(206, 206, 212), Color3.fromRGB(150, 24, 30) }
 
 DeathFx.DARK = C.g0
 DeathFx.CHALK = C.white
@@ -43,6 +49,24 @@ function DeathFx.burst(position: Vector3, colour: Color3?, amount: number?)
 	local base = colour or DeathFx.DARK
 	local count = amount or 36
 	local death = base == DeathFx.DARK
+	if Pilot.on.impact then
+		-- The hit, remade on the new kit (the VFX rework's pilot V3.1; Pilot.on.impact = false brings the old one back).
+		-- Five moments (art/refs/vfx/hit_slam.toml): gather = the body's own fall plus a few specks drawn in over the 0.06 s
+		-- before the blow (the reference's gather is the hard cut, no particles); hit = one blown-out impact sheet with a
+		-- white-hot core, a star and a shock ring, sparks thrown; body = a dark puff laid over (light 0) and chips of
+		-- the floor falling; break-up = the sheets erode by themselves (they are drawn eaten away) while the puff thins;
+		-- residue = flakes and one thread of smoke hanging 2 to 3 s. A death wears grey with a red edge (red = danger);
+		-- any other colour wears its own.
+		local ramp = if death then DEATH_RAMP else Palette.shop(base)
+		Fresh.impact(CFrame.new(position), {
+			style = if count >= 30 then "heavy" else "sharp",
+			ramp = ramp,
+			scale = math.clamp(count / 40, 0.6, 1.3),
+			shake = false,
+			lead = 0.06,
+		})
+		return
+	end
 	local palette = if death
 		then { { 0, base }, { 0.5, DeathFx.CHALK }, { 1, DeathFx.DANGER } }
 		else { { 0, base }, { 1, base:Lerp(Color3.new(1, 1, 1), 0.5) } }
