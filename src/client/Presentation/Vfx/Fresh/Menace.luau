@@ -54,9 +54,9 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 			rot = { 0, 360 },
 			spin = if still then 0 else { -10, 10 },
 			rate = 5,
-			light = 0.4,
-			lit = 0.6,
-			bright = 1.1,
+			light = 0.85,
+			lit = 0.1,
+			bright = 1.4,
 		},
 		{
 			-- (the dark bank laid under it: it reads on a lit floor too)
@@ -84,8 +84,8 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 			face = "flat",
 			rot = { 0, 360 },
 			rate = 1,
-			light = 0.3,
-			lit = 0.5,
+			light = 0.75,
+			lit = 0.15,
 			z = -0.5,
 		},
 		{
@@ -99,8 +99,8 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 			accel = Vector3.new(0, 0.5, 0),
 			rot = { 0, 360 },
 			rate = 4,
-			light = 0.55,
-			lit = 0.6,
+			light = 0.9,
+			lit = 0.1,
 		},
 	}
 	local made: { ParticleEmitter } = {}
