@@ -60,7 +60,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 	local heavy = name == "heavy"
 	return Moment.play(at, {
 		lead = lead,
-		residueAfter = 0.8, -- (after the hit layers have gone: at most six emitters alive together)
+		residueAfter = 0.4, -- (the leftovers show from the first second: the ref has them standing at 1 to 2 s)
 		gather = function()
 			C.gather(pos, ramp, 2.2 * s, lead, 8, 0.45 * s)
 		end,
@@ -103,7 +103,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 							st.ring * s,
 							{ { 0, st.ring * s * 0.3 }, { 0.5, st.ring * s * 0.9 }, { 1, st.ring * s } }
 						),
-						alpha = { { 0, 0.5 }, { 0.5, 0.6 }, { 1, 1 } },
+						alpha = { { 0, 0.7 }, { 0.5, 0.75 }, { 1, 1 } },
 						life = 0.45,
 						face = lay.face,
 						speed = lay.speed,
@@ -162,7 +162,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 							st.dark * s,
 							{ { 0, st.dark * s * 0.4 }, { 1, st.dark * s * 1.2 } }
 						),
-						alpha = { { 0, 1 }, { 0.1, 0.3 }, { 0.6, 0.5 }, { 1, 1 } },
+						alpha = { { 0, 1 }, { 0.08, 0.2 }, { 0.65, 0.35 }, { 1, 1 } },
 						life = { 2, 2.3 },
 						accel = Vector3.new(0, 1.2, 0),
 						light = 0,
@@ -222,7 +222,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 						tex = "VfxAshFlakes",
 						ramp = dust,
 						size = { { 0, 0.75 * s }, { 1, 0.55 * s } },
-						alpha = { { 0, 1 }, { 0.15, 0.1 }, { 0.7, 0.3 }, { 1, 1 } },
+						alpha = { { 0, 1 }, { 0.08, 0.05 }, { 0.7, 0.2 }, { 1, 1 } },
 						life = { 2, 3 },
 						speed = { 1 * s, 3 * s },
 						spread = 160,
@@ -245,7 +245,7 @@ local function build(at: CFrame, o: Options, name: string, onFloor: boolean): ()
 							Color3.fromRGB(90, 90, 96),
 						},
 						size = { { 0, 1 * s }, { 1, 2.4 * s } },
-						alpha = { { 0, 1 }, { 0.2, 0.45 }, { 0.8, 0.6 }, { 1, 1 } },
+						alpha = { { 0, 1 }, { 0.1, 0.35 }, { 0.8, 0.5 }, { 1, 1 } },
 						life = 2.5,
 						speed = 0.6,
 						accel = Vector3.new(0, 1.4, 0),
