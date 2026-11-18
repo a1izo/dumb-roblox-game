@@ -8,6 +8,9 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Assets = require(Shared:WaitForChild("Assets"))
 local Create = require(Shared:WaitForChild("Create"))
 local Vfx = require(script.Parent.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Parent.Presentation.Vfx.Fresh)
+local Palette = require(script.Parent.Parent.Parent.Presentation.Vfx.Palette)
+local Pilot = require(script.Parent.Parent.Parent.Presentation.Vfx.Pilot)
 local Motion = require(script.Parent.Parent.Parent.UI.Core.Motion)
 
 local Common = require(script.Parent.Shared)
@@ -34,10 +37,12 @@ type Menace = {
 	size: number,
 	every: number,
 	place: (Random, number) -> (Vector3, number),
+	fresh: boolean?, -- wears the new kit's menace (the pilot, V3.2: only the first pose; Pilot.on.menacing)
 }
 
 local MENACES: { [string]: Menace } = {
 	menacingPose = {
+		fresh = true,
 		colour = Color3.fromRGB(150, 92, 205),
 		stroke = Color3.fromRGB(20, 8, 30),
 		size = 1.8,
@@ -112,10 +117,32 @@ local function menace(kind: Menace): Fx
 		local going = true
 		local random = Random.new()
 		local calm = Motion.isReduced()
+		-- The first pose's menace on the new kit (the pilot V3.2; Pilot.on.menacing = false brings the old haze back). The
+		-- idea: the room's pressure. A violet charge draws in round the chest, breaks as the first sign lands, and a
+		-- low violet bank of fog climbs off the floor until the pose ends. The five moments, a loop's (art/refs/vfx/aura.toml):
+		--   gather   0.0 s, specks and wisps drawn in to the chest (the reference's close-up before the power-up)
+		--   hit      0.55 s, the charge is let go: one blown-out burst, a shock ring, sparks, a light (the ignition)
+		--   body     from 0.55 s, the violet bank on the floor that never repeats visibly, the signs rising in it
+		--   break-up the bank thins away over its last seconds when the pose ends (no cut)
+		--   residue  the dust motes and the last of the fog drift 2 to 3 s after
+		-- (this replaces the old haze and ember emitters only; the aura and the signs are untouched, AURAS' colours kept)
+		local useFresh = kind.fresh == true and Pilot.on.menacing and not Vfx.quiet()
+		local haze: Attachment? = nil
+		local charge: { release: () -> (), cancel: () -> () }? = nil
+		local bank: { stop: () -> (), destroy: () -> () }? = nil
+		if useFresh then
+			local ramp = Palette.emote("menacingPose") :: Palette.Ramp
+			local made =
+				Fresh.charge(root.Position + Vector3.new(0, 0.6, 0), { ramp = ramp, scale = 1.25, radius = 2.6 })
+			charge = made
+			Vfx.Clock.after(0.55, made.release)
+			bank = Fresh.mist(root.Position - Vector3.new(0, 2.8, 0), { ramp = ramp, size = 7, density = 0.9 })
+		else
+			haze = Create("Attachment", { Name = "EmoteMenace", Position = Vector3.new(0, -0.5, 0.6), Parent = root })
+			haze:SetAttribute("DGEmote", true)
+		end
 		-- the menace in the air: a haze of the signs' colour rising off the body and specks of it drifting up
-		local haze = Create("Attachment", { Name = "EmoteMenace", Position = Vector3.new(0, -0.5, 0.6), Parent = root })
-		haze:SetAttribute("DGEmote", true)
-		if not calm then
+		if not calm and haze then
 			Vfx.Emit.make(haze, {
 				tex = "VfxSmoke",
 				grid = 8,
@@ -198,7 +225,15 @@ local function menace(kind: Menace): Fx
 		end)
 		return function()
 			going = false
-			haze:Destroy()
+			if haze then
+				haze:Destroy()
+			end
+			if charge then
+				charge.cancel()
+			end
+			if bank then
+				bank.stop()
+			end
 			task.delay(1.8, stopShake)
 		end
 	end
