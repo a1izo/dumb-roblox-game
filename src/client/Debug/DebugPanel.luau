@@ -627,6 +627,17 @@ builders.World = function()
 			lastSignature = ""
 		end, if DebugTools.flySpeed == speed then COLORS.pick else nil)
 	end
+	heading("Powers for " .. selectedName() .. " (pick them in People)")
+	r = row()
+	for _, power in ipairs({ { "fly", "Fly" }, { "noclip", "Noclip" } }) do
+		button(r, power[2] .. " on", function()
+			send("power", { userId = selected, power = power[1], on = true })
+		end, COLORS.on)
+		button(r, power[2] .. " off", function()
+			send("power", { userId = selected, power = power[1], on = false })
+		end)
+	end
+	note("They fly with WASD, Space up, Ctrl down, Shift faster. Real players only, not bots.")
 	heading("Show")
 	r = row()
 	toggle(r, "Colliders", DebugTools.colliders, function()
@@ -1473,6 +1484,26 @@ local function setOpen(open: boolean)
 end
 
 function DebugPanel.init()
+	-- Powers a debug user gave this player from their panel (fly, noclip): the server sets the attribute, any player
+	-- obeys it (this runs for everyone, the panel itself only for debug users).
+	local function applyPower(attribute: string, set: (boolean) -> ())
+		local function apply()
+			set(LocalPlayer:GetAttribute(attribute) == true)
+		end
+		LocalPlayer:GetAttributeChangedSignal(attribute):Connect(apply)
+		LocalPlayer.CharacterAdded:Connect(function()
+			if LocalPlayer:GetAttribute(attribute) == true then
+				task.wait(0.6)
+				apply()
+			end
+		end)
+		if LocalPlayer:GetAttribute(attribute) == true then
+			apply()
+		end
+	end
+	applyPower("LDebugFly", DebugTools.setFly)
+	applyPower("LDebugNoclip", DebugTools.setNoclip)
+
 	local function start()
 		if window or LocalPlayer:GetAttribute("LDebug") ~= true then
 			return

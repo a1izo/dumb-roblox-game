@@ -555,6 +555,20 @@ COMMANDS.freeze = function(player, args)
 	end
 end
 
+-- Fly or noclip for a real player (not a bot): the server flags them and their own client obeys (DebugPanel.init).
+local POWERS = { fly = "LDebugFly", noclip = "LDebugNoclip" }
+COMMANDS.power = function(player, args)
+	local attribute = if type(args) == "table" and type(args.power) == "string" then POWERS[args.power] else nil
+	local target = if type(args) == "table" and type(args.userId) == "number" then Players:GetPlayerByUserId(args.userId) else nil
+	if not attribute or not target then
+		reply(player, "Pick a real player in People first (bots cannot fly).", "bad")
+		return
+	end
+	local on = args.on == true
+	target:SetAttribute(attribute, if on then true else nil)
+	reply(player, string.format("%s %s for %s.", args.power, if on then "on" else "off", target.Name), "good")
+end
+
 COMMANDS.tpTo = function(player, args)
 	local _, target = person(if type(args) == "table" then args.userId else nil)
 	local root = rootOf(target)
