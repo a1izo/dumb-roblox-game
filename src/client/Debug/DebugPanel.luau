@@ -84,6 +84,7 @@ local orderTarget: number? = nil -- the second person for bot orders
 local animSpeed, animLoop, animOnSelected = 1, false, false
 local lastSignature = ""
 local showStats = false
+local giveName = "" -- what is typed in the Profile tab's "give everything" box
 
 local function send(command: string, args: any?)
 	remote:FireServer(command, args)
@@ -1160,6 +1161,30 @@ builders.Profile = function()
 	button(r, "Give me every emote", function()
 		send("allEmotes")
 	end)
+	heading("Give another player everything")
+	r = row()
+	local box = make("TextBox", {
+		BackgroundColor3 = COLORS.button,
+		Size = UDim2.fromOffset(180, 26),
+		Font = Enum.Font.GothamMedium,
+		TextSize = 12,
+		TextColor3 = COLORS.text,
+		PlaceholderText = "username",
+		PlaceholderColor3 = COLORS.muted,
+		ClearTextOnFocus = false,
+		Text = giveName,
+		LayoutOrder = nextOrder(),
+		Parent = r,
+	})
+	corner(box)
+	box:GetPropertyChangedSignal("Text"):Connect(function()
+		giveName = box.Text
+	end)
+	button(r, "Give everything", function()
+		send("giveEveryone", { name = giveName })
+	end)
+	note("Every cosmetic and emote, for someone in this server: type their username (a start of it is enough).")
+	r = row()
 	button(r, "Next day", function()
 		send("dayPlus")
 	end)

@@ -989,6 +989,59 @@ COMMANDS.allCosmetics = function(player)
 	end
 end
 
+-- Gives another person in the server every cosmetic and emote, picked by username (or display name): exact match
+-- first, then a prefix. Only debug users can send it (DebugService.allowed above).
+COMMANDS.giveEveryone = function(player, args)
+	local wanted = if type(args) == "table" and type(args.name) == "string" then string.lower(args.name) else ""
+	wanted = string.gsub(wanted, "^%s+", "")
+	wanted = string.gsub(wanted, "%s+$", "")
+	if wanted == "" then
+		reply(player, "Type a username first.", "bad")
+		return
+	end
+	local found: Player? = nil
+	local prefixes = {}
+	for _, other in ipairs(Players:GetPlayers()) do
+		local name, display = string.lower(other.Name), string.lower(other.DisplayName)
+		if name == wanted or display == wanted then
+			found = other
+			break
+		end
+		if string.sub(name, 1, #wanted) == wanted or string.sub(display, 1, #wanted) == wanted then
+			table.insert(prefixes, other)
+		end
+	end
+	if not found and #prefixes == 1 then
+		found = prefixes[1]
+	end
+	if not found then
+		reply(
+			player,
+			if #prefixes > 1 then "More than one player starts with that: type more of it." else "Nobody in this server is called that.",
+			"bad"
+		)
+		return
+	end
+	local data = DataService.get(found)
+	if not data then
+		reply(player, found.Name .. "'s profile is not loaded yet.", "bad")
+		return
+	end
+	local count = 0
+	for _, item in ipairs(Cosmetics.ITEMS) do
+		if not data.owned[item.id] then
+			data.owned[item.id] = true
+			count += 1
+		end
+	end
+	DataService.push(found)
+	DataService.saveSoon(found)
+	reply(player, string.format("Gave %s everything (%d new).", found.Name, count), "good")
+	if found ~= player then
+		reply(found, "Everything has been unlocked for you.", "good")
+	end
+end
+
 -- Every emote in the catalog (shop, mastery and pass emotes alike), and nothing else.
 COMMANDS.allEmotes = function(player)
 	local data = profileOf(player)
