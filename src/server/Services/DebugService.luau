@@ -5,7 +5,7 @@
 -- the profile.
 --
 -- Who may use it: only the user ids in Config.DEBUG_USER_IDS (realALEXTEM and Kenshi_89), in a Studio play test
--- (Config.STUDIO_DEBUG) as in a live server. Test bots exist in Studio only. Allowed players
+-- (Config.STUDIO_DEBUG) as in a live server. Test bots work in live servers too. Allowed players
 -- get the attribute LDebug, which shows the panel on their screen.
 
 local Players = game:GetService("Players")
@@ -180,7 +180,7 @@ local function snapshot(viewer: Player)
 			botsAuto = Bots.autoPlay,
 			botsKill = Bots.handKills,
 			voteTarget = Bots.voteTarget,
-			botsAllowed = IS_STUDIO,
+			botsAllowed = true, -- (live servers too since 2026-11-19, the user's word: only debug users ever get the panel)
 			previewing = previewInfo ~= nil,
 		},
 		people = people,
@@ -599,20 +599,13 @@ end
 -- Test bots
 
 COMMANDS.addBots = function(player, args)
-	if not IS_STUDIO then
-		reply(player, "Test bots only exist in Studio.", "bad")
-		return
-	end
 	local count = if type(args) == "table" then tonumber(args.count) or 1 else 1
 	local made = Bots.add(count)
 	reply(player, string.format("Added %d bot(s). They join the next match (READY or Start match).", #made), "good")
 end
 
 COMMANDS.fillBots = function(player, args)
-	if not IS_STUDIO then
-		return
-	end
-	local wanted = if type(args) == "table" then tonumber(args.total) or Config.MIN_PLAYERS else Config.MIN_PLAYERS
+	local wanted =if type(args) == "table" then tonumber(args.total) or Config.MIN_PLAYERS else Config.MIN_PLAYERS
 	local count = #Players:GetPlayers() + #Bots.list
 	if count < wanted then
 		Bots.add(wanted - count)

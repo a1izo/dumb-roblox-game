@@ -448,7 +448,7 @@ end
 
 builders.Bots = function()
 	if not snap.settings.botsAllowed then
-		note("Test bots only exist in Studio play tests.")
+		note("Test bots are switched off.")
 		return
 	end
 	heading("Add and remove")
