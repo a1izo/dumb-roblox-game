@@ -66,7 +66,7 @@ local FOOTER = 72
 local TITLE_SIZE = 88
 
 -- How wide a window's sheet runs at most (design px).
-local WIDTHS = { S = 560, sheet = 620, M = 940, L = 1220 }
+local WIDTHS = { S = 560, sheet = 620, M = 940, L = 1100 }
 
 -- A title the way concept A sets it: lowercase, ending on a full stop ("shop.").
 local function titled(text: string): string
@@ -253,8 +253,9 @@ function Window.new(options: Options): Window
 			root.Size = UDim2.new(1, -Tokens.space.l * 2, 1, -(Tokens.space.l + top))
 			limit.MaxSize = Vector2.new(math.huge, math.huge)
 		else
-			root.Size = UDim2.new(1, -Tokens.space.xxxl * 2, 1, -Tokens.space.xxl * 2)
-			limit.MaxSize = Vector2.new(WIDTHS[options.size or "M"] or WIDTHS.M, 900)
+			-- (not the whole screen: 86% of its height, the user's word 2026-11-19, the big windows covered it all)
+			root.Size = UDim2.new(1, -Tokens.space.xxxl * 2, 0.86, 0)
+			limit.MaxSize = Vector2.new(WIDTHS[options.size or "M"] or WIDTHS.M, 820)
 		end
 	end
 	Layout.watch(arrange)

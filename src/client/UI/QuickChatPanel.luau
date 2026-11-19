@@ -31,7 +31,7 @@ local PAD = T.space.l
 local HEIGHT_EMOTES = PAD * 2 + Wheel.HEIGHT
 -- How far up from the bottom of the screen the wheel stands: clear of the action bar on a computer; low on a touch
 -- screen, where the height is short (a phone's wheel ran off the top of the screen, 2026-11-13).
-local BOTTOM = 96
+local BOTTOM = 150 -- (was 96: the wheel sat low on a desktop screen, the user's word 2026-11-19)
 local BOTTOM_TOUCH = T.space.l
 -- The slot a key plays: the wheel's slot keys (1 to 4 unless the player set their own, Shared/Bindings).
 local function slotFor(key: Enum.KeyCode): number?
