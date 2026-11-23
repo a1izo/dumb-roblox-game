@@ -576,7 +576,8 @@ local function startOld(character: Model, spec: Spec): () -> ()
 	end
 end
 
--- LEVELS 1 AND 3 ON THE NEW KIT (the VFX rework, stage 4a; Pilot.on.aura1 and Pilot.on.aura3 = false bring the old build back).
+-- LEVELS 1, 2 AND 3 ON THE NEW KIT (the VFX rework, stage 4a, level 2 in stage 4b; Pilot.on.aura1, aura2 and aura3 = false
+-- bring the old build back).
 -- One sentence: the body's own power coming up as a bank of tongues and dark smoke in the emote's own colour, with a cold
 -- star at the moment it lights; its motif is candle flame and smoke (the aura's colours stay as EmoteFx's AURAS gives them).
 -- A loop's five moments (art/refs/vfx/aura.toml: a burst first, a steady cloud kept alive by drifting, an ending by thinning):
@@ -584,11 +585,11 @@ end
 --   hit       0.3 s   a white-hot four-point glint at the chest, a ring on the floor, sparks thrown up, a light that rises fast and
 --                     falls three times slower; on one's own screen a short shake and punch (not under Reduce motion)
 --   body      0.35 s  tongues (VfxAuraFlame) licking up off the body, a dark bank of mist laid behind them, a soft halo, wisps and
---                     wandering sparks; level 3 adds a ring and a pool of light on the floor, crescents, a ring behind the head,
---                     two spiral beams, lightning and a shockwave every few seconds
+--                     wandering sparks; level 2 adds a ring and a pool of light on the floor and crescents; level 3 also a ring
+--                     behind the head, two spiral beams, lightning and a shockwave every few seconds
 --   break-up  the layers are switched off together, so the tongues and the bank thin out by their own lives
 --   residue   a last handful of sparks drawn up off the body; the bank's tail drifts for 3 to 4 s and goes
--- Budget (Part 9): level 1 is six loop emitters and one light; level 3 is twelve and two lights. The loops are fed by hand (a
+-- Budget (Part 9): level 1 is six loop emitters and one light; level 2 nine (no lower bank) and one light; level 3 twelve and two lights. The loops are fed by hand (a
 -- few times a second) so the booth's stills and the kit's clock hold them.
 local function startFresh(character: Model, spec: Spec): () -> ()
 	local root = partOf(character, "HumanoidRootPart")
@@ -753,8 +754,8 @@ local function startFresh(character: Model, spec: Spec): () -> ()
 			local low = table.clone(flames)
 			low.rate = 8
 			low.size = { { 0, 1.8 * k }, { 1, 2.4 * k } }
-			-- (level 3 is nearer its budget: the lower bank is left out there)
-			if level < 3 then
+			-- (levels 2 and 3 are nearer their budget: the lower bank is left out there)
+			if level < 2 then
 				layer(attach(torso, Vector3.new(0, -2.4, 0)), low)
 			end
 			-- the dark bank laid behind them (never added, so the aura reads in a lit room too)
@@ -818,10 +819,11 @@ local function startFresh(character: Model, spec: Spec): () -> ()
 				shape = Enum.ParticleEmitterShape.Box,
 			})
 
-			-- level 3: the floor (a ring and a pool of light), crescents, a ring behind the head, spiral beams, lightning
+			-- level 2: the floor (a ring and a pool of light) and crescents; level 3 also a ring behind the head, spiral
+			-- beams and lightning
 			local ground: BasePart? = nil
 			local beamEnds: { { low: Attachment, high: Attachment, turn: number } } = {}
-			if level >= 3 then
+			if level >= 2 then
 				if spec.ground ~= false then
 					local gp = Emit.point(CFrame.new(floor + Vector3.new(0, 0.08, 0)))
 					gp.Name = "DGAuraGround"
@@ -865,7 +867,7 @@ local function startFresh(character: Model, spec: Spec): () -> ()
 					bright = 1,
 					z = 0.4,
 				})
-				local head = partOf(character, "Head")
+				local head = if level >= 3 then partOf(character, "Head") else nil
 				if head then
 					layer(attach(head, Vector3.new(0, 0.15, 0.7)), {
 						tex = "VfxRing",
@@ -881,7 +883,7 @@ local function startFresh(character: Model, spec: Spec): () -> ()
 						z = -1,
 					}, 1)
 				end
-				if ground and not calm then
+				if ground and not calm and level >= 3 then
 					for i, curve in ipairs({ 4.5, -4.5 }) do
 						local lowEnd = attach(ground, Vector3.zero)
 						local highEnd = attach(ground, Vector3.new(0, 7.5 * k, 0))
@@ -909,7 +911,9 @@ local function startFresh(character: Model, spec: Spec): () -> ()
 						table.insert(beamEnds, { low = lowEnd, high = highEnd, turn = (i - 1) * math.pi })
 					end
 				end
-				table.insert(stops, Rim.glow(character, accent, math.huge, { fill = 0.1, fadeIn = 0.4 }))
+				if level >= 3 then
+					table.insert(stops, Rim.glow(character, accent, math.huge, { fill = 0.1, fadeIn = 0.4 }))
+				end
 			end
 
 			-- the loop: feeds the layers, the ground follows the feet, the beams turn, the lightning and shockwaves
@@ -1029,7 +1033,7 @@ end
 
 function Aura.start(character: Model, spec: Spec): () -> ()
 	local level = math.clamp(spec.level, 1, 3)
-	if (level == 1 and Pilot.on.aura1) or (level == 3 and Pilot.on.aura3) then
+	if (level == 1 and Pilot.on.aura1) or (level == 2 and Pilot.on.aura2) or (level == 3 and Pilot.on.aura3) then
 		return startFresh(character, spec)
 	end
 	return startOld(character, spec)
