@@ -14,14 +14,14 @@ local Pilot = {}
 
 Pilot.on = {
 	impact = true,
-	-- (stage 4b retry: on, tested with the aura at level 2 rebuilt; the first try, stage 3, was off: a soft white blob, 26 emitters)
-	menacing = true,
+	-- (off: stage 3, a soft white blob and 26 emitters; the stage 4b retry on the rebuilt level-2 aura is untested)
+	menacing = false,
 	cover = true,
 	-- stage 4a (Presentation/Aura.luau: levels 1, 2 and 3)
 	aura1 = true,
 	aura3 = true,
 	-- stage 4b: level 2 on the same build (Menacing Pose and its kind wear it); false = the old level 2
-	aura2 = true,
+	aura2 = false,
 	-- stage 4a: Presentation/Materialize (the smoke and specks, and the glint when whole; callers that ask for quiet are unchanged)
 	materialize = true,
 	-- stage 4a: the glint where a soul is gathered (Specter/GhostController) and where the dive's string takes the body
