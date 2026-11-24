@@ -134,6 +134,7 @@ local function menace(kind: Menace): Fx
 			bank = Fresh.menace(root.Position + Vector3.new(0, 0.6, 0), {
 				ramp = Palette.emote("menacingPose") :: Palette.Ramp,
 				floor = 3.4,
+				lean = Pilot.on.aura2,
 			})
 		else
 			haze = Create("Attachment", { Name = "EmoteMenace", Position = Vector3.new(0, -0.5, 0.6), Parent = root })

@@ -9,6 +9,8 @@
 --   break-up the bank thins as the emitters stop (no cut)
 --   residue  the motes and the last of the fog drift 3 to 4 s after
 --
+-- With `lean` (under the level-2 aura, which has its own bank, specks, glint and light: stage 4b) it is the floor bank, the motes, the star
+-- and the ring only, and holds no light of its own.
 -- Twelve emitters and two lights at most (the showpiece budget, plan Part 9): four loop emitters, a gather, a star, a glint, a
 -- ring and sparks at the release, and the beat's light plus the held one.
 
@@ -25,6 +27,7 @@ export type Options = {
 	ramp: Palette.Ramp?, -- the pose's own colour (Palette.emote), full strength
 	floor: number?, -- studs below the chest to the floor (2.8 by default)
 	size: number?, -- the bank's width in studs
+	lean: boolean?, -- under an aura (it has its own bank, specks, glint and light): only the floor bank, the motes, the star and the ring
 }
 
 export type Handle = {
@@ -103,6 +106,9 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 			lit = 0.1,
 		},
 	}
+	if o.lean then
+		specs = { specs[3], specs[4] }
+	end
 	local made: { ParticleEmitter } = {}
 	local releaseLight: ((number?) -> ())? = nil
 	local feedStop: (() -> ())? = nil
@@ -110,13 +116,15 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 	local cancel = Moment.play(chest, {
 		lead = 0.55,
 		gather = function()
-			C.gather(chest, ramp, 2.6, 0.55, 14, 0.4)
+			if not o.lean then
+				C.gather(chest, ramp, 2.6, 0.55, 14, 0.4)
+			end
 		end,
 		hit = function()
 			if stopped then
 				return
 			end
-			Emit.burst(chest, {
+			local list: { any } = {
 				{
 					{
 						tex = "VfxImpactC",
@@ -157,7 +165,12 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 					},
 					10,
 				},
-			})
+			}
+			if o.lean then
+				table.remove(list, 3)
+				table.remove(list, 2)
+			end
+			Emit.burst(chest, list)
 			-- the ring lies on the floor
 			Emit.burst(base, {
 				{
@@ -207,8 +220,10 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 				return true
 			end)
 			feedStop = stopFeed
-			local _, release = Light.hold(holder, ramp[2], 12, 0.8, 1.2)
-			releaseLight = release
+			if not o.lean then
+				local _, release = Light.hold(holder, ramp[2], 12, 0.8, 1.2)
+				releaseLight = release
+			end
 		end,
 	})
 	local function longest(): number

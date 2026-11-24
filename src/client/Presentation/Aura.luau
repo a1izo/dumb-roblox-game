@@ -585,11 +585,11 @@ end
 --   hit       0.3 s   a white-hot four-point glint at the chest, a ring on the floor, sparks thrown up, a light that rises fast and
 --                     falls three times slower; on one's own screen a short shake and punch (not under Reduce motion)
 --   body      0.35 s  tongues (VfxAuraFlame) licking up off the body, a dark bank of mist laid behind them, a soft halo, wisps and
---                     wandering sparks; level 2 adds a ring and a pool of light on the floor and crescents; level 3 also a ring
+--                     wandering sparks; level 2 adds a ring and a pool of light on the floor; level 3 also crescents, a ring
 --                     behind the head, two spiral beams, lightning and a shockwave every few seconds
 --   break-up  the layers are switched off together, so the tongues and the bank thin out by their own lives
 --   residue   a last handful of sparks drawn up off the body; the bank's tail drifts for 3 to 4 s and goes
--- Budget (Part 9): level 1 is six loop emitters and one light; level 2 nine (no lower bank) and one light; level 3 twelve and two lights. The loops are fed by hand (a
+-- Budget (Part 9): level 1 is six loop emitters and one light; level 2 eight (no lower bank, no crescents) and one light; level 3 twelve and two lights. The loops are fed by hand (a
 -- few times a second) so the booth's stills and the kit's clock hold them.
 local function startFresh(character: Model, spec: Spec): () -> ()
 	local root = partOf(character, "HumanoidRootPart")
@@ -819,7 +819,7 @@ local function startFresh(character: Model, spec: Spec): () -> ()
 				shape = Enum.ParticleEmitterShape.Box,
 			})
 
-			-- level 2: the floor (a ring and a pool of light) and crescents; level 3 also a ring behind the head, spiral
+			-- level 2: the floor (a ring and a pool of light); level 3 also crescents, a ring behind the head, spiral
 			-- beams and lightning
 			local ground: BasePart? = nil
 			local beamEnds: { { low: Attachment, high: Attachment, turn: number } } = {}
@@ -854,19 +854,21 @@ local function startFresh(character: Model, spec: Spec): () -> ()
 						lit = 0.1,
 					}, 1)
 				end
-				layer(torso, {
-					tex = "VfxSlashA",
-					ramp = ramp,
-					size = { { 0, 2.6 * k }, { 1, 4 * k } },
-					alpha = { { 0, 1 }, { 0.2, 0.3 }, { 1, 1 } },
-					life = { 0.55, 0.8 },
-					rate = 3,
-					rot = { 0, 360 },
-					spin = if still then 0 else { -200, 200 },
-					light = 0.55,
-					bright = 1,
-					z = 0.4,
-				})
+				if level >= 3 then
+					layer(torso, {
+						tex = "VfxSlashA",
+						ramp = ramp,
+						size = { { 0, 2.6 * k }, { 1, 4 * k } },
+						alpha = { { 0, 1 }, { 0.2, 0.3 }, { 1, 1 } },
+						life = { 0.55, 0.8 },
+						rate = 3,
+						rot = { 0, 360 },
+						spin = if still then 0 else { -200, 200 },
+						light = 0.55,
+						bright = 1,
+						z = 0.4,
+					})
+				end
 				local head = if level >= 3 then partOf(character, "Head") else nil
 				if head then
 					layer(attach(head, Vector3.new(0, 0.15, 0.7)), {
