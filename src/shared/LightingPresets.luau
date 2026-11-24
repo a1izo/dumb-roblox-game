@@ -208,14 +208,17 @@ LightingPresets.lobbyCity = preset({
 	realmSky = true,
 })
 
--- The meeting room: one hard key light over the table, everything else falls away.
+-- The meeting room: one hard key light over the table, the rest of the room dim but readable. 2026-11-24 (the owner:
+-- "way too dark"): measured in a play test, the Meeting phase resolved to ambient 10 of 255, brightness 0.24 and grade
+-- contrast 0.46 (preset times the Meeting mood), and faces, seats and walls were black. Raised so the table, the
+-- seats, faces and the walls read as shapes; the Meeting mood no longer scales the fill down (see moods.Meeting).
 LightingPresets.meeting = preset({
 	clockTime = 0,
-	brightness = 0.4,
-	exposure = -0.1,
-	ambient = rgb(22, 22, 28),
-	outdoorAmbient = rgb(20, 20, 26),
-	envDiffuse = 0.35,
+	brightness = 1.0,
+	exposure = 0.2,
+	ambient = rgb(73, 71, 84),
+	outdoorAmbient = rgb(69, 67, 80),
+	envDiffuse = 0.7,
 	envSpecular = 0.3,
 	density = 0.18,
 	haze = 0.4,
@@ -223,7 +226,7 @@ LightingPresets.meeting = preset({
 	atmosphereColor = rgb(40, 34, 42),
 	decay = rgb(40, 22, 26),
 	saturation = -0.4,
-	contrast = 0.28,
+	contrast = 0.2,
 	tint = rgb(240, 238, 244),
 	bloom = 0.3,
 	bloomSize = 16,
@@ -828,11 +831,11 @@ LightingPresets.NEUTRAL = mood({})
 -- Keyed by phase id, plus the two endings and the blackout.
 LightingPresets.moods = {
 	Meeting = mood({
-		exposure = 0.05,
-		brightness = 0.6,
-		ambient = 0.45,
+		exposure = 0.3,
+		brightness = 1.2,
+		ambient = 1.1,
 		saturation = -0.2,
-		contrast = 0.18,
+		contrast = 0,
 		tint = rgb(205, 222, 255),
 		tintAmount = 0.55,
 		bloom = 0.8,
