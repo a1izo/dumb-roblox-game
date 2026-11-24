@@ -27,13 +27,13 @@ Pilot.on = {
 	justAsPlanned = true,
 	reapersEyes = false,
 	newWorld = true,
-	-- stage 4b, second batch (Controllers/EmoteFx: Duos, Strolls, Props), each its own flag; false = the old build
-	cuffedLead = false,
-	theLongClimb = false,
-	griddy = false,
-	mushroomStroll = false,
-	preDawnBonk = false,
-	diceTower = false,
+	-- stage 4b, second batch (Controllers/EmoteFx: Duos, Strolls, Props), each its own flag, all on after the booth report (FAIL to PASS or fewer reasons); false = the old build
+	cuffedLead = true,
+	theLongClimb = true,
+	griddy = true,
+	mushroomStroll = true,
+	preDawnBonk = true,
+	diceTower = true,
 	-- stage 4a: Presentation/Materialize (the smoke and specks, and the glint when whole; callers that ask for quiet are unchanged)
 	materialize = true,
 	-- stage 4a: the glint where a soul is gathered (Specter/GhostController) and where the dive's string takes the body
