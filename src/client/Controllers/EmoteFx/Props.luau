@@ -41,11 +41,11 @@ local WOOD = ColorSequence.new(Color3.fromRGB(170, 120, 70), Color3.fromRGB(110,
 -- The five moments, by the clip (knocks at 0.75, 1.25 and 1.75 s, the big one at 2.55 s):
 --   gather    2.29 to 2.55 s  specks of warm light drawn in to where the bat will land
 --   hit       0.75, 1.25, 1.75 s the knock: a white-hot star on the bat tip, wood chips, a dust puff (Fresh.tap, small)
---             2.55 s             the blow from on high: a warm heavy blow on the floor with its white core and ring (Fresh.impact), the light
+--             2.55 s             the blow from on high: a warm blow on the floor with its white core, star and ring (Fresh.impact, sharp), the light
 --   body      2.55 s on       the dark puff laid over, the floor's chips thrown, a roll of dust out round him, the cracks
 --   break-up  2.6 to 3.4 s    the chips fall, the roll thins out
 --   residue   3 to 5 s        warm ash hanging in the dawn light and one thread of smoke
-local DAWN = Palette.pair(Color3.fromRGB(255, 170, 90), Color3.fromRGB(255, 240, 205))
+local DAWN = Palette.pair(Color3.fromRGB(255, 170, 90), Color3.fromRGB(255, 205, 140))
 local BONK_LEAD = 0.26
 FX.preDawnBonk = function(character, preview)
 	local root = character:FindFirstChild("HumanoidRootPart")
@@ -98,9 +98,9 @@ FX.preDawnBonk = function(character, preview)
 			local ground =
 				floorUnder((root :: BasePart).Position + (root :: BasePart).CFrame.LookVector * 1.6, character)
 			Fresh.impact(CFrame.new(ground), {
-				style = "heavy",
+				style = "sharp",
 				ramp = DAWN,
-				scale = 0.8,
+				scale = 1.0,
 				ground = true,
 				lead = BONK_LEAD,
 			})
