@@ -8,6 +8,9 @@ local Create = require(Shared:WaitForChild("Create"))
 local Cinema = require(script.Parent.Parent.Parent.Presentation.Cinema)
 local FxKit = require(script.Parent.Parent.Parent.Presentation.FxKit)
 local Vfx = require(script.Parent.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Parent.Presentation.Vfx.Fresh)
+local Palette = require(script.Parent.Parent.Parent.Presentation.Vfx.Palette)
+local Pilot = require(script.Parent.Parent.Parent.Presentation.Vfx.Pilot)
 local Motion = require(script.Parent.Parent.Parent.UI.Core.Motion)
 local LightingController = require(script.Parent.Parent.Parent.World.LightingController)
 
@@ -49,11 +52,20 @@ local BLOOD = Color3.fromRGB(150, 12, 24)
 local BLOOD_HOT = Color3.fromRGB(255, 70, 70)
 
 -- New World: a hard light from above and a pale column of it standing round the body.
+-- On the new kit (stage 4b, Pilot.on.newWorld; false = the old build below). One sentence: a god's page-storm, the notebook's
+-- pages burning into light as the fist closes (motif: paper and pages, cold gold light). The five moments, by the clip's beat:
+--   gather    0.0 to 3.4 s  the column pours down, the sigil opens, the pages spiral up round him (the old build, kept)
+--   hit       3.42 s        the fist closes: a heavy gold blow with a white core at it (Fresh.impact), the ring out over the floor
+--   body      3.42 s on     the column flares wide, the dark layer under the blow, the pages thrown out
+--   break-up  3.5 to 4.2 s  the pages go out in one scatter of burning paper at the middle (Fresh.scatter), not seven twinkles
+--   residue   to 6 s        gold ash drifting down the column and the impact's thread of smoke; the sigil holds
 FX.newWorld = function(character, preview)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if preview or not root or not root:IsA("BasePart") then
 		return nothing
 	end
+	local fresh = Pilot.on.newWorld
+	local ramp = Palette.emote("newWorld") :: Palette.Ramp
 	local own = mine(character)
 	local calm = Motion.isReduced()
 	local warm = Color3.fromRGB(255, 244, 214)
@@ -90,11 +102,12 @@ FX.newWorld = function(character, preview)
 	-- light falling through it
 	local motesAt = Vfx.Emit.point(CFrame.new(floor + Vector3.new(0, 14, 0)), Vector3.new(4, 0.1, 4))
 	local _, stopMotes = Vfx.Emit.hold(motesAt, {
-		tex = "VfxEmber",
+		tex = if fresh then "VfxAshFlakes" else "VfxEmber",
 		color = { { 0, Color3.new(1, 1, 1) }, { 1, GOLD } },
-		size = { { 0, 0.16 }, { 1, 0 } },
+		size = if fresh then { { 0, 0.5 }, { 1, 0.3 } } else { { 0, 0.16 }, { 1, 0 } },
+		alpha = if fresh then { { 0, 1 }, { 0.15, 0.15 }, { 0.8, 0.3 }, { 1, 1 } } else nil,
 		life = { 2.2, 3.2 },
-		rate = 18,
+		rate = if fresh then 10 else 18,
 		speed = { 2, 4 },
 		dir = Enum.NormalId.Bottom,
 		spread = 8,
@@ -164,7 +177,14 @@ FX.newWorld = function(character, preview)
 			local fist = if arm and arm:IsA("BasePart")
 				then (arm.CFrame * CFrame.new(0, -1.1, 0)).Position
 				else root.Position + Vector3.new(0, 3, 0)
-			Vfx.Recipes.impact(CFrame.new(fist), { color = GOLD, scale = 1.15, shake = own, flash = own })
+			if fresh then
+				Fresh.impact(
+					CFrame.new(fist),
+					{ style = "heavy", ramp = ramp, scale = 1.05, shake = own, flash = own, lead = 0.02 }
+				)
+			else
+				Vfx.Recipes.impact(CFrame.new(fist), { color = GOLD, scale = 1.15, shake = own, flash = own })
+			end
 			Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.1, 0)), 1, 24, 0.7, {
 				tex = "VfxRingBand",
 				color = warm,
@@ -185,6 +205,13 @@ FX.newWorld = function(character, preview)
 			Vfx.Clock.tween(0.7, Vfx.Ease.outQuad, function(u)
 				setSigil(14 + 4 * math.sin(u * math.pi))
 			end)
+			if fresh then
+				-- the pages go out as one scatter of burning paper at the middle of the ring
+				Fresh.scatter(
+					CFrame.new(root.Position + Vector3.new(0, 1.5, 0)),
+					{ kind = "paper", ramp = ramp, scale = 1.3, count = 14, flash = false, lead = 0.1 }
+				)
+			end
 			for _, p in ipairs(pages) do
 				p.flying = true
 				local from = p.part.CFrame
@@ -195,7 +222,9 @@ FX.newWorld = function(character, preview)
 					p.part.Transparency = u
 				end, function()
 					if p.part.Parent then
-						Vfx.Recipes.twinkle(p.part.Position, { color = GOLD, scale = 1.2 })
+						if not fresh then
+							Vfx.Recipes.twinkle(p.part.Position, { color = GOLD, scale = 1.2 })
+						end
 						p.part:Destroy()
 					end
 				end)
@@ -230,12 +259,21 @@ FX.newWorld = function(character, preview)
 end
 
 -- Reaper's Eyes: two red slivers of light on the face from when the head starts to turn.
+-- On the new kit (stage 4b, Pilot.on.reapersEyes; false = the old build). One sentence: the eyes open red in the dark, a bank of red
+-- mist rising round his feet (motif: cold light, smoke). Five moments by the clip (the hand comes away at 1.75 s):
+--   gather    0.0 to 1.75 s  the hand over the eyes, nothing yet
+--   hit       1.75 s         a white-hot four-point glint on each eye in red (Fresh.glint), a red ring out from the face, a red light
+--   body      1.75 s on      a red glow held on each eye, the mist bank round the feet with a dark bank under it
+--   break-up  at the end     the glows and the mist are switched off, they thin out by their own lives
+--   residue   2 to 3 s after the last of the mist drifting off the floor
 FX.reapersEyes = function(character, preview)
 	local head = character:FindFirstChild("Head")
 	if not head or not head:IsA("BasePart") then
 		return nothing
 	end
 	local own = mine(character)
+	local fresh = Pilot.on.reapersEyes
+	local ramp = Palette.emote("reapersEyes") :: Palette.Ramp
 	local calm = Motion.isReduced()
 	local parts: { BasePart } = {}
 	local stops: { () -> () } = {}
@@ -265,18 +303,22 @@ FX.reapersEyes = function(character, preview)
 			-- each eye: a red star flaring open as it lights, a red glow held on it
 			local at = Create("Attachment", { Name = "EmoteEyeGlow", Parent = part })
 			at:SetAttribute("DGEmote", true)
-			local flare = Vfx.Emit.make(at, {
-				tex = "VfxFlare",
-				color = BLOOD_HOT,
-				size = { { 0, 0 }, { 0.25, 2.4 }, { 1, 0 } },
-				life = 0.55,
-				rot = { 0, 45 },
-				spin = { 60, 120 },
-				locked = true,
-				bright = 1.5,
-				z = 1,
-			})
-			flare:Emit(1)
+			if fresh then
+				Fresh.glint(part.Position, { ramp = ramp, scale = 1.1, lead = 0.04 })
+			else
+				local flare = Vfx.Emit.make(at, {
+					tex = "VfxFlare",
+					color = BLOOD_HOT,
+					size = { { 0, 0 }, { 0.25, 2.4 }, { 1, 0 } },
+					life = 0.55,
+					rot = { 0, 45 },
+					spin = { 60, 120 },
+					locked = true,
+					bright = 1.5,
+					z = 1,
+				})
+				flare:Emit(1)
+			end
 			local _, stopGlow = Vfx.Emit.hold(at, {
 				tex = "VfxGlow",
 				color = BLOOD_HOT,
@@ -301,7 +343,7 @@ FX.reapersEyes = function(character, preview)
 		})
 		-- a red pulse rolling out from the eyes, red smoke rising round the feet, the world going red round him
 		Vfx.Emit.burst(head.Position, {
-			tex = "VfxRing",
+			tex = if fresh then "VfxShock" else "VfxRing",
 			color = BLOOD_HOT,
 			size = { { 0, 1 }, { 1, 16 } },
 			alpha = { { 0, 0.1 }, { 0.6, 0.5 }, { 1, 1 } },
@@ -315,28 +357,40 @@ FX.reapersEyes = function(character, preview)
 				CFrame.new(floorUnder(root.Position, character) + Vector3.new(0, 0.2, 0)),
 				Vector3.new(5, 0.1, 5)
 			)
-			local _, stopSmoke = Vfx.Emit.hold(ground, {
-				tex = "VfxSmoke",
-				grid = 8,
-				mode = "OneShot",
-				color = BLOOD,
-				light = 0,
-				lit = 0.3,
-				size = { { 0, 1.2 }, { 1, 3.2 } },
-				alpha = { { 0, 0.6 }, { 0.5, 0.55 }, { 1, 1 } },
-				life = { 1.6, 2.4 },
-				rate = 4,
-				speed = { 0.6, 1.4 },
-				shape = Enum.ParticleEmitterShape.Box,
-				rot = { 0, 360 },
-				spin = { -20, 20 },
-			})
-			table.insert(stops, function()
-				stopSmoke()
-				Vfx.Clock.after(2.6, function()
-					ground:Destroy()
+			if fresh then
+				-- (a bank of red mist lying round the feet, a dark bank under it: Fresh.mist)
+				local bank = Fresh.mist(ground.Position, { ramp = ramp, size = 5 })
+				table.insert(stops, function()
+					bank.stop()
+					Vfx.Clock.after(3, function()
+						bank.destroy()
+						ground:Destroy()
+					end)
 				end)
-			end)
+			else
+				local _, stopSmoke = Vfx.Emit.hold(ground, {
+					tex = "VfxSmoke",
+					grid = 8,
+					mode = "OneShot",
+					color = BLOOD,
+					light = 0,
+					lit = 0.3,
+					size = { { 0, 1.2 }, { 1, 3.2 } },
+					alpha = { { 0, 0.6 }, { 0.5, 0.55 }, { 1, 1 } },
+					life = { 1.6, 2.4 },
+					rate = 4,
+					speed = { 0.6, 1.4 },
+					shape = Enum.ParticleEmitterShape.Box,
+					rot = { 0, 360 },
+					spin = { -20, 20 },
+				})
+				table.insert(stops, function()
+					stopSmoke()
+					Vfx.Clock.after(2.6, function()
+						ground:Destroy()
+					end)
+				end)
+			end
 		end
 		if own and not calm then
 			Vfx.Screen.punch(-4, 0.6)
@@ -364,6 +418,13 @@ end
 -- out across the floor with a spray of embers and a pulse of the light; it all dies down as he comes to rest
 -- (8.4 s). Under reduced motion there is no burst and no pulse.
 
+-- On the new kit (stage 4b, Pilot.on.justAsPlanned; false = the old build). One sentence: a villain's plan coming together, the room
+-- going crimson with a floor of red light and ash (motif: ash and ember smoke). Five moments, by the clip's beats:
+--   gather    0 to 4.95 s   the sigil and the pool of light open, ash rising off them, the eye catching red at the stare (2.05 s, Fresh.glint)
+--   hit       4.95 s        the laugh: a heavy crimson blow on the floor with a white core (Fresh.impact), the ring out, the flame ring
+--   body      4.95 to 6.9 s the sigil and pool flare then hold, the light under the face at its strongest, the flame ring rising
+--   break-up  6.9 to 8.4 s  the light eases, the ash and smoke are switched off
+--   residue   8.4 s on      the pool and sigil fade out; the impact's ash and thread of smoke drift on
 local EMBERS = ColorSequence.new(Color3.fromRGB(255, 92, 70), Color3.fromRGB(70, 62, 62))
 
 FX.justAsPlanned = function(character, preview)
@@ -373,6 +434,8 @@ FX.justAsPlanned = function(character, preview)
 		return nothing
 	end
 	local own = mine(character)
+	local fresh = Pilot.on.justAsPlanned
+	local ramp = Palette.emote("justAsPlanned") :: Palette.Ramp
 	local calm = Motion.isReduced()
 	local gone = false
 	local made: { Instance } = {}
@@ -409,14 +472,18 @@ FX.justAsPlanned = function(character, preview)
 		setSigil(0.4 + 8.6 * u)
 		setPool(0.4 + 10.6 * u)
 	end)
-	local tint = Create("PointLight", { Color = CRIMSON, Range = 12, Brightness = 0, Shadows = false, Parent = base })
+	local tint = Create(
+		"PointLight",
+		{ Color = CRIMSON, Range = 12, Brightness = 0, Shadows = false, Enabled = not fresh, Parent = base }
+	)
 	tween(tint, 1.3, { Brightness = 1.2 })
 
 	-- embers rising off it the whole time, dark smoke curling off its edge
 	local motes = Vfx.Emit.make(base, {
-		tex = "VfxEmber",
+		tex = if fresh then "VfxAshFlakes" else "VfxEmber",
 		color = EMBERS,
-		size = { { 0, 0.2 }, { 1, 0.04 } },
+		size = if fresh then { { 0, 0.5 }, { 1, 0.3 } } else { { 0, 0.2 }, { 1, 0.04 } },
+		alpha = if fresh then { { 0, 1 }, { 0.15, 0.15 }, { 0.8, 0.3 }, { 1, 1 } } else nil,
 		life = { 1.6, 2.6 },
 		speed = { 0.6, 1.4 },
 		accel = Vector3.new(0, 1.2, 0),
@@ -449,21 +516,27 @@ FX.justAsPlanned = function(character, preview)
 	local eye =
 		keep(Create("Attachment", { Name = "EmoteGlint", Position = Vector3.new(0.22, 0.12, -0.62), Parent = head }))
 	eye:SetAttribute("DGEmote", true)
-	local glint = Vfx.Emit.make(eye, {
-		tex = "VfxFlare",
-		color = BLOOD_HOT,
-		size = { { 0, 0.2 }, { 0.35, 1.6 }, { 1, 0 } },
-		life = 0.5,
-		rot = { 0, 45 },
-		spin = 120,
-		locked = true,
-		bright = 1.5,
-		z = 1,
-	})
+	local glint = if fresh
+		then nil
+		else Vfx.Emit.make(eye, {
+			tex = "VfxFlare",
+			color = BLOOD_HOT,
+			size = { { 0, 0.2 }, { 0.35, 1.6 }, { 1, 0 } },
+			life = 0.5,
+			rot = { 0, 45 },
+			spin = 120,
+			locked = true,
+			bright = 1.5,
+			z = 1,
+		})
 	local glow =
 		Create("PointLight", { Color = CRIMSON, Range = 7, Brightness = 0, Shadows = false, Parent = eye }) :: PointLight
 	local function catchRed()
-		glint:Emit(1)
+		if glint then
+			glint:Emit(1)
+		else
+			Fresh.glint(eye.WorldPosition, { ramp = ramp, scale = 0.9, lead = 0.04 })
+		end
 		if not calm then
 			glow.Brightness = 5
 			tween(glow, 0.5, { Brightness = 0 })
@@ -510,8 +583,18 @@ FX.justAsPlanned = function(character, preview)
 		end
 		below.Brightness = 6
 		tween(below, 0.9, { Brightness = 2.6 })
-		Vfx.Recipes.impact(CFrame.new(floor), { color = CRIMSON, scale = 1.3, ground = true, shake = own, flash = own })
-		FxKit.shape("dome", CFrame.new(floor), { size = 13, seconds = 0.5, color = BLOOD_HOT, transparency = 0.6 })
+		if fresh then
+			Fresh.impact(
+				CFrame.new(floor),
+				{ style = "heavy", ramp = ramp, scale = 1.3, ground = true, shake = own, flash = own, lead = 0.02 }
+			)
+		else
+			Vfx.Recipes.impact(
+				CFrame.new(floor),
+				{ color = CRIMSON, scale = 1.3, ground = true, shake = own, flash = own }
+			)
+			FxKit.shape("dome", CFrame.new(floor), { size = 13, seconds = 0.5, color = BLOOD_HOT, transparency = 0.6 })
+		end
 		Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.1, 0)), 1, 22, 0.75, {
 			tex = "VfxRingBand",
 			color = BLOOD_HOT,
@@ -541,7 +624,9 @@ FX.justAsPlanned = function(character, preview)
 		Vfx.Clock.after(1.5, function()
 			ring:Destroy()
 		end)
-		Vfx.Light.flash(head.Position, CRIMSON, 18, 4, 0.6)
+		if not fresh then
+			Vfx.Light.flash(head.Position, CRIMSON, 18, 4, 0.6)
+		end
 		if own then
 			Vfx.Screen.impact({ character }, 0.09)
 			LightingController.lean(0.6, BLOOD, 0.25, 0.3)
@@ -588,6 +673,13 @@ end
 -- Final Breakdown: a red light from below the face comes up as the laugh is held in; it flares as he is thrown
 -- back (2.25 s) with a ring of dark dust out across the floor and dark smoke pouring up off him while he laughs;
 -- everything dies away as he folds over (4.2 s). Under reduced motion there is no flare.
+-- On the new kit (stage 4b, Pilot.on.finalBreakdown; false = the old build). One sentence: a mind breaking, the floor taking the blow
+-- as he is thrown back (motif: stone and ash, dark smoke). Five moments, by the clip:
+--   gather    0 to 2.25 s    the red light under the face comes up, dark smoke begins to pour off him
+--   hit       2.25 s         the floor takes it: a crimson slam with a white core, dust ring, cracks, a light on the beat (Fresh.slam)
+--   body      2.25 to 4.2 s  the smoke pours harder, his edges lit red, the light easing from its flare
+--   break-up  4.2 s          the smoke is switched off and the light fades over a second
+--   residue   after          the slam's dust, scorch and ash settle on the floor
 FX.finalBreakdown = function(character, preview)
 	local head = character:FindFirstChild("Head")
 	local root = character:FindFirstChild("HumanoidRootPart")
@@ -595,6 +687,8 @@ FX.finalBreakdown = function(character, preview)
 		return nothing
 	end
 	local own = mine(character)
+	local fresh = Pilot.on.finalBreakdown
+	local ramp = Palette.emote("finalBreakdown") :: Palette.Ramp
 	local calm = Motion.isReduced()
 	local gone = false
 	local stops: { () -> () } = {}
@@ -642,8 +736,12 @@ FX.finalBreakdown = function(character, preview)
 		if sole then
 			-- thrown back: the floor takes the blow (a crimson slam: dust, smoke, cracks, bits of it thrown up)
 			local ground = floorUnder(sole, character)
-			Vfx.Recipes.slam(CFrame.new(ground), { color = CRIMSON, scale = 1.4, shake = own, flash = own })
-			FxKit.rocks(ground, 3.2, 12)
+			if fresh then
+				Fresh.slam(CFrame.new(ground), { ramp = ramp, scale = 1.4, shake = own, flash = own, lead = 0.02 })
+			else
+				Vfx.Recipes.slam(CFrame.new(ground), { color = CRIMSON, scale = 1.4, shake = own, flash = own })
+				FxKit.rocks(ground, 3.2, 12)
+			end
 		end
 		table.insert(stops, Vfx.Rim.glow(character, BLOOD_HOT, math.huge, { fill = 0.1, fadeIn = 0.3 }))
 		if own and not calm then

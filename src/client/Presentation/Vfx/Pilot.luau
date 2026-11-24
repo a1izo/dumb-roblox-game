@@ -7,7 +7,7 @@
 --   impact    the burst of a body hitting the floor (Presentation/DeathFx.burst)
 --   menacing  Menacing Pose's own effect (Controllers/EmoteFx/Poses.luau, the first pose only)
 --   cover     the highest Manual cover's tell (World/CoverTells.luau, the Black Mirror)
---   aura1, aura3  the aura an emote wears at level 1 and level 3 (Presentation/Aura)
+--   aura1, aura2, aura3  the aura an emote wears at level 1, 2 and 3 (Presentation/Aura)
 --   materialize   things drawn into being or taken out of it (Presentation/Materialize)
 
 local Pilot = {}
@@ -22,6 +22,11 @@ Pilot.on = {
 	aura3 = true,
 	-- stage 4b: level 2 on the same build (Menacing Pose and its kind wear it); false = the old level 2
 	aura2 = false,
+	-- stage 4b: the four Godhood emotes (Controllers/EmoteFx/Godhood.luau), each its own flag
+	finalBreakdown = false,
+	justAsPlanned = false,
+	reapersEyes = false,
+	newWorld = false,
 	-- stage 4a: Presentation/Materialize (the smoke and specks, and the glint when whole; callers that ask for quiet are unchanged)
 	materialize = true,
 	-- stage 4a: the glint where a soul is gathered (Specter/GhostController) and where the dive's string takes the body
