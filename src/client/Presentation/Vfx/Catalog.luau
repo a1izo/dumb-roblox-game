@@ -405,9 +405,9 @@ local FIRST_BEAT: { [string]: number } = {
 	impossibleLean = 0.95,
 	deducing = 1.1,
 	reapersCackle = 0,
-	sugarTower = 1,
-	sugarTowerAdd = 1.3,
-	sugarTowerTopple = 1.3,
+	sugarTower = 1.1, -- (the first cube's star lands 0.1 s after its time, as the dice's does)
+	sugarTowerAdd = 1.4,
+	sugarTowerTopple = 1.4,
 	diceTower = 0.9,
 	diceTowerAdd = 1.3,
 	diceTowerTopple = 1.3,
@@ -441,6 +441,10 @@ local FIRST_BEAT: { [string]: number } = {
 	appleToss = 0.5,
 	excuseMeSir = 0.4,
 	cuffedLead = 0.3,
+	-- (stage 4b third batch: read from the clip's own beats in EmoteFx so the report judges the real moment, not a guess)
+	chipAndPen = 7.05, -- the bite
+	writeAir = 2.3, -- the full stop
+	blindfoldLiftUp = 0.9, -- the blindfold goes up
 }
 
 -- The emote's own effect, and its aura, on the dummy, as a player sees it (the clip plays on the body too, so the effect

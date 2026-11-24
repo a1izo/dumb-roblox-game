@@ -34,6 +34,16 @@ Pilot.on = {
 	mushroomStroll = true,
 	preDawnBonk = true,
 	diceTower = true,
+	-- stage 4b, third batch (Controllers/EmoteFx: Older, Props, Dances), each its own flag, each on after the booth report (fewer reasons than before) and a still; false = the old build
+	writeAir = true,
+	blindfoldLift = true,
+	blindfoldLiftUp = false, -- the LIFT press (never seen in the booth: stays off)
+	aceCrouch = true,
+	chairPerch = true,
+	chipAndPen = true,
+	strawberryOnTop = true,
+	sugarTower = true,
+	bunnyEars = true,
 	-- stage 4a: Presentation/Materialize (the smoke and specks, and the glint when whole; callers that ask for quiet are unchanged)
 	materialize = true,
 	-- stage 4a: the glint where a soul is gathered (Specter/GhostController) and where the dive's string takes the body

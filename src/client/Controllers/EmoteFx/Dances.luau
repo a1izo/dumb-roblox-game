@@ -7,6 +7,9 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local Vfx = require(script.Parent.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Parent.Presentation.Vfx.Fresh)
+local Palette = require(script.Parent.Parent.Parent.Presentation.Vfx.Palette)
+local Pilot = require(script.Parent.Parent.Parent.Presentation.Vfx.Pilot)
 local Motion = require(script.Parent.Parent.Parent.UI.Core.Motion)
 
 local Common = require(script.Parent.Shared)
@@ -40,7 +43,37 @@ end)
 
 -- Bunny Ears: pastel sparkles flicked off the hands on the head, every other beat.
 local PASTEL = ColorSequence.new(Color3.fromRGB(255, 182, 220), Color3.fromRGB(170, 215, 255))
-FX.bunnyEars = accent(4 * 60 / 165, { 0.0, 2 * 60 / 165 }, function(character)
+-- On the new kit (stage 4b third batch, Pilot.on.bunnyEars; false = the old build below). One sentence: two hands up like ears flicking
+-- a pink spark and a blue one on the beat, and a pastel ring opening round the head (motif: sugar-bright light; Penned = one accent).
+-- The five moments, every other beat (165 bpm):
+--   gather    none (an accent that comes twice a turn)
+--   hit       the beat: a white-hot pink star at the right hand with its ring and a dark halo behind, a blue one at the left, sparks thrown (Fresh.tap, small)
+--   body      the stars close and the sparks fall
+--   break-up  the ring fades out
+--   residue   the last pastel sparks falling for 0.5 s
+local PINK_EAR = Palette.pair(Color3.fromRGB(255, 182, 220), Color3.fromRGB(255, 236, 246))
+local BLUE_EAR = Palette.pair(Color3.fromRGB(170, 215, 255), Color3.fromRGB(236, 246, 255))
+local bunnyFresh = accent(4 * 60 / 165, { 0.0, 2 * 60 / 165 }, function(character)
+	for k, arm in ipairs({ "Right Arm", "Left Arm" }) do
+		local part = character:FindFirstChild(arm)
+		if part and part:IsA("BasePart") then
+			local hand = (part.CFrame * CFrame.new(0, -1, 0)).Position + Vector3.new(0, 0.3, 0)
+			Fresh.tap(hand, {
+				ramp = if k == 1 then PINK_EAR else BLUE_EAR,
+				scale = 0.5,
+				lite = k == 2,
+				sparks = 3,
+				light = false,
+				lead = 0.02,
+			})
+		end
+	end
+end)
+local bunnyOld: Common.Fx
+FX.bunnyEars = function(character, preview, phase)
+	return (if Pilot.on.bunnyEars then bunnyFresh else bunnyOld)(character, preview, phase)
+end
+bunnyOld = accent(4 * 60 / 165, { 0.0, 2 * 60 / 165 }, function(character)
 	for k, arm in ipairs({ "Right Arm", "Left Arm" }) do
 		local part = character:FindFirstChild(arm)
 		if part and part:IsA("BasePart") then

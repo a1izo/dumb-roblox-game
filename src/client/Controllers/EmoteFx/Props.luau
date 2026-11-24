@@ -139,6 +139,16 @@ end
 
 -- Blindfold Lift: blue motes drifting round him while the blindfold is on (Infinity, idling).
 local INFINITY = ColorSequence.new(Color3.fromRGB(170, 220, 255), Color3.fromRGB(90, 160, 255))
+-- On the new kit (stage 4b third batch, Pilot.on.blindfoldLift for the waiting loop and Pilot.on.blindfoldLiftUp for the LIFT, one
+-- flag each; false = the old build). One sentence:
+-- a sorcerer behind a blindfold in a sphere of cold blue light, stars of it on the skin of the sphere and rings passing out, and
+-- when the blindfold goes up the eyes flare and the sphere opens (motif: cold light, the void). The five moments:
+--   gather    0.0 s            the loop starts with its motes already turning; at LIFT (0.9 s) none: the aura draws in
+--   hit       0.9 s (LIFT)     a white-hot star in each eye and the sphere opening (Fresh.tap on each eye, one soft blow at the chest)
+--   body      the loop         stars on the skin of the sphere and a ring now and then; the aura is the emote's own, unchanged
+--   break-up  the loops stop with the emote
+--   residue   the last stars of the sphere drift out for 1 to 2 s
+local BLUE = Palette.pair(Color3.fromRGB(90, 170, 255), Color3.fromRGB(220, 240, 255))
 FX.blindfoldLift = function(character, preview)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if preview or not root or not root:IsA("BasePart") then
@@ -149,6 +159,39 @@ FX.blindfoldLift = function(character, preview)
 	-- (motes on the skin of a sphere round him, a faint blue field breathing, now and then a thin ring of it
 	-- passing out through the air)
 	local calm = Motion.isReduced()
+	if Pilot.on.blindfoldLift then
+		-- (two layers, the aura being the emote's own bank: little four-point stars on the skin of the sphere, and the thin ring)
+		Vfx.Emit.make(at, {
+			tex = "VfxGlint",
+			ramp = BLUE,
+			size = { { 0, 0 }, { 0.3, 0.3 }, { 1, 0 } },
+			alpha = { { 0, 0.3 }, { 0.25, 0 }, { 0.7, 0.2 }, { 1, 1 } },
+			life = { 1.2, 2.0 },
+			speed = { 0.3, 0.8 },
+			spread = 180,
+			rot = { 0, 90 },
+			bright = 1.6,
+			rate = if calm then 3 else 9,
+			shape = Enum.ParticleEmitterShape.Sphere,
+			shapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+		})
+		if not calm then
+			Vfx.Emit.make(at, {
+				tex = "VfxShock",
+				ramp = BLUE,
+				size = { { 0, 2 }, { 1, 8 } },
+				alpha = { { 0, 0.75 }, { 0.4, 0.7 }, { 1, 1 } },
+				life = 1.4,
+				rate = 0.6,
+				locked = true,
+				light = 0.8,
+				bright = 1.2,
+			})
+		end
+		return function()
+			at:Destroy()
+		end
+	end
 	Vfx.Emit.make(at, {
 		tex = "VfxEmber",
 		color = INFINITY,
@@ -238,29 +281,46 @@ FX.blindfoldLiftUp = function(character, preview)
 			})
 			local torso = character:FindFirstChild("Torso")
 			if torso and torso:IsA("BasePart") then
-				burst(torso.Position, {
-					color = INFINITY,
-					count = if Motion.isReduced() then 10 else 30,
-					size = 0.18,
-					speed = NumberRange.new(5, 7),
-					life = NumberRange.new(0.5, 0.8),
-					spread = 180,
-					light = 1,
-				})
+				local fresh = Pilot.on.blindfoldLiftUp
+				if fresh then
+					-- (the new kit: a bright star in each eye and a larger one at the chest with the sphere's sparks thrown out of it;
+					-- the sphere, the floor ring, the rim and the flash below are the old build's)
+					if not Motion.isReduced() then
+						for _, eye in ipairs(parts) do
+							Fresh.tap(
+								eye.Position,
+								{ ramp = BLUE, scale = 0.55, lite = true, sparks = 3, light = false, lead = 0.04 }
+							)
+						end
+						Fresh.tap(torso.Position, { ramp = BLUE, scale = 1.5, lite = true, sparks = 16, lead = 0.04 })
+					end
+				else
+					burst(torso.Position, {
+						color = INFINITY,
+						count = if Motion.isReduced() then 10 else 30,
+						size = 0.18,
+						speed = NumberRange.new(5, 7),
+						life = NumberRange.new(0.5, 0.8),
+						spread = 180,
+						light = 1,
+					})
+				end
 				if not Motion.isReduced() then
 					-- (Infinity unveiled: a star in each eye, a sphere of pale blue opening round him and fading, a ring
 					-- of it out along the floor, his edges lit blue a moment)
 					local cold = Color3.fromRGB(140, 200, 255)
-					for _, eye in ipairs(parts) do
-						Vfx.Emit.burst(eye.Position, {
-							tex = "VfxFlare",
-							color = Color3.fromRGB(200, 235, 255),
-							size = { { 0, 0.2 }, { 0.25, 2.4 }, { 1, 0 } },
-							life = 0.45,
-							rot = { 0, 45 },
-							spin = 90,
-							bright = 1.6,
-						}, 1)
+					if not fresh then
+						for _, eye in ipairs(parts) do
+							Vfx.Emit.burst(eye.Position, {
+								tex = "VfxFlare",
+								color = Color3.fromRGB(200, 235, 255),
+								size = { { 0, 0.2 }, { 0.25, 2.4 }, { 1, 0 } },
+								life = 0.45,
+								rot = { 0, 45 },
+								spin = 90,
+								bright = 1.6,
+							}, 1)
+						end
 					end
 					Vfx.Shape.grow("sphere", CFrame.new(torso.Position), {
 						size = 11,
@@ -306,7 +366,23 @@ local SUGAR = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(23
 --   break-up  the dust thins out and the sparks fall
 --   residue   a faint thread of smoke and a few flakes where the tower stood, 2 to 3 s
 local DICE = Palette.pair(Color3.fromRGB(232, 236, 250), Color3.fromRGB(255, 255, 255))
-local function towerFx(at: { number }, base: Vector3, step: number, topple: number?, useFresh: (() -> boolean)?): Fx
+-- On the new kit for the Sugar Tower (stage 4b third batch, Pilot.on.sugarTower, `sugar` below; false = the old build). One sentence:
+-- each sugar cube set down catches the light with a small crystal glint and the first with a bigger two-star one, and when the tower
+-- comes down a soft blow and a puff of white dust fly (motif: sugar crystals, pale light; the dice's is a click).
+--   gather    the first cube's glint draws specks in (0.2 s) before it lands
+--   hit       each cube (0.1 s after its time): a small white-blue star and sparks (Fresh.tap, lite); the first a two-star glint (Fresh.glint)
+--   body      the topple (ADD ONE, one time in two): a soft pale blow on the floor, dust rolling out (Fresh.impact soft, in the sugar white)
+--   break-up  the sparks fall and the dust thins out
+--   residue   a faint haze and the last grains lying on the floor, 2 to 3 s
+local SUGAR_RAMP = Palette.pair(Color3.fromRGB(214, 224, 255), Color3.fromRGB(255, 255, 255))
+local function towerFx(
+	at: { number },
+	base: Vector3,
+	step: number,
+	topple: number?,
+	useFresh: (() -> boolean)?,
+	sugar: boolean?
+): Fx
 	return function(character, preview)
 		local root = character:FindFirstChild("HumanoidRootPart")
 		if preview or not root or not root:IsA("BasePart") then
@@ -322,8 +398,19 @@ local function towerFx(at: { number }, base: Vector3, step: number, topple: numb
 		local yaw = math.atan2(-look.X, -look.Z)
 		local foot = CFrame.new(floor) * CFrame.Angles(0, yaw, 0) * CFrame.new(base)
 		for k, t in ipairs(at) do
-			after(root, over, t + 0.1 - (if fresh then 0.06 else 0), function()
+			-- (the first cube of a tower, or the one added, lands with the two-star glint and its gather; the rest with a small star)
+			local first = sugar == true and k == 1
+			local lead = if first then 0.2 else 0.06
+			after(root, over, t + 0.1 - (if fresh then lead else 0), function()
 				local top = (foot * CFrame.new(0, step * (k - 0.5), 0)).Position
+				if fresh and sugar == true then
+					if first then
+						Fresh.glint(top, { ramp = SUGAR_RAMP, scale = 0.55, lead = lead })
+					else
+						Fresh.tap(top, { ramp = SUGAR_RAMP, scale = 0.45, lite = true, sparks = 5, lead = lead })
+					end
+					return
+				end
 				if fresh then
 					Fresh.tap(top, { ramp = DICE, scale = 0.55, sparks = 4, lead = 0.06 })
 					return
@@ -344,7 +431,7 @@ local function towerFx(at: { number }, base: Vector3, step: number, topple: numb
 				if fresh then
 					Fresh.impact(CFrame.new(floor + Vector3.new(0, 0.05, 0)) * foot.Rotation, {
 						style = "soft",
-						ramp = DICE,
+						ramp = if sugar == true then SUGAR_RAMP else DICE,
 						scale = 0.55,
 						ground = true,
 						lead = 0.04,
@@ -369,9 +456,12 @@ local function towerFx(at: { number }, base: Vector3, step: number, topple: numb
 		end
 	end
 end
-FX.sugarTower = towerFx({ 1.0, 1.8, 2.6, 3.4, 4.6 }, Vector3.new(1.45, 0, -0.7), 0.42)
-FX.sugarTowerAdd = towerFx({ 1.3 }, Vector3.new(1.45, 2.1, -0.7), 0.42)
-FX.sugarTowerTopple = towerFx({ 1.3 }, Vector3.new(1.45, 2.1, -0.7), 0.42, 1.6)
+local function sugarOn(): boolean
+	return Pilot.on.sugarTower
+end
+FX.sugarTower = towerFx({ 1.0, 1.8, 2.6, 3.4, 4.6 }, Vector3.new(1.45, 0, -0.7), 0.42, nil, sugarOn, true)
+FX.sugarTowerAdd = towerFx({ 1.3 }, Vector3.new(1.45, 2.1, -0.7), 0.42, nil, sugarOn, true)
+FX.sugarTowerTopple = towerFx({ 1.3 }, Vector3.new(1.45, 2.1, -0.7), 0.42, 1.6, sugarOn, true)
 FX.diceTower = towerFx({ 0.9, 1.6, 2.3, 3.0, 3.7, 4.6 }, Vector3.new(-0.05, 0, -1.35), 0.42, nil, function()
 	return Pilot.on.diceTower
 end)
@@ -384,7 +474,53 @@ end)
 
 -- Strawberry on Top: a soft pink sparkle off the strawberry as it is picked and as it is eaten, a warm light on it.
 local PINK = ColorSequence.new(Color3.fromRGB(255, 190, 210), Color3.fromRGB(255, 120, 150))
-FX.strawberryOnTop = accent(4.0, { 1.0, 2.8 }, function(character)
+-- On the new kit (stage 4b third batch, Pilot.on.strawberryOnTop; false = the old build below). One sentence: a strawberry plucked and
+-- bitten, a pink sparkle where it is picked and a pink burst of juice where it is eaten (motif: sugar and fruit, sweet pink light).
+-- The five moments (the clip loops every 4 s):
+--   gather    0.88 to 1.0 s and 2.68 to 2.8 s  specks of pink drawn in to the strawberry
+--   hit       1.0 s (picked): a two-star pink glint with a light (Fresh.glint); 2.8 s (eaten): a pink star and a burst of juice (Fresh.tap + Fresh.smokePuff)
+--   body      the stars close, the juice rolls up
+--   break-up  the juice thins out
+--   residue   a faint pink mist and a few drifting specks for 2 s
+local BERRY = Palette.pair(Color3.fromRGB(255, 120, 150), Color3.fromRGB(255, 214, 226))
+local BERRY_LEAD = 0.12
+local strawberryFresh: Fx = function(character, preview, phase)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not root then
+		return nothing
+	end
+	local gone = false
+	onBeats(
+		root,
+		function()
+			return gone
+		end,
+		4.0,
+		{ 1.0 - BERRY_LEAD, 2.8 - BERRY_LEAD },
+		phase,
+		function(at)
+			local arm = character:FindFirstChild("Right Arm")
+			if not arm or not arm:IsA("BasePart") then
+				return
+			end
+			local pos = (arm.CFrame * CFrame.new(0, -1.15, -0.12)).Position
+			if at < 2 then
+				Fresh.glint(pos, { ramp = BERRY, scale = 0.7, lead = BERRY_LEAD })
+			else
+				Fresh.tap(pos, { ramp = BERRY, scale = 0.6, gather = true, lite = true, sparks = 8, lead = BERRY_LEAD })
+				Fresh.smokePuff(pos, { ramp = BERRY, scale = 0.3, rise = 1.0, lead = BERRY_LEAD })
+			end
+		end
+	)
+	return function()
+		gone = true
+	end
+end
+local strawberryOld: Fx
+FX.strawberryOnTop = function(character, preview, phase)
+	return (if Pilot.on.strawberryOnTop then strawberryFresh else strawberryOld)(character, preview, phase)
+end
+strawberryOld = accent(4.0, { 1.0, 2.8 }, function(character)
 	local arm = character:FindFirstChild("Right Arm")
 	if arm and arm:IsA("BasePart") then
 		burst((arm.CFrame * CFrame.new(0, -1.15, -0.12)).Position, {

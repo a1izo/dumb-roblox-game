@@ -136,3 +136,4 @@
 - [vfx-rollout-4a-first-batch](vfx-rollout-4a-first-batch.md) — stage 4a first batch: Aura 1 and 3 + Materialize on, glints and ViewFx off; booth still limits
 - [vfx-rollout-4b-first-batch](vfx-rollout-4b-first-batch.md): stage 4b first batch (Aura 2, Menacing, three Godhood on, Reaper's Eyes off), report numbers, capture trap
 - [vfx-rollout-4b-second-batch](vfx-rollout-4b-second-batch.md): stage 4b second batch (Cuffed Together, Long Climb, Griddy, Mushroom Stroll, Pre-Dawn Bonk, Dice Tower on), Fresh/Small, how to test steps and loops in the booth
+- [vfx-rollout-4b-third-batch](vfx-rollout-4b-third-batch.md): stage 4b third batch (Write in the Air, Blindfold Lift, Ace's Crouch, Chair Perch, Chip and Pen, Strawberry on Top, Sugar Tower, Bunny Ears on; the LIFT off), report numbers, and how to run a worktree's client code in the booth without Rojo (rbxm in Studio's content folder + GetObjects)
