@@ -14,19 +14,19 @@ local Pilot = {}
 
 Pilot.on = {
 	impact = true,
-	-- (off: stage 3, a soft white blob and 26 emitters; the stage 4b retry on the rebuilt level-2 aura is untested)
-	menacing = false,
+	-- (stage 3 had it off: a soft white blob and 26 emitters; the stage 4b retry on the rebuilt level-2 aura reads clearly better, 13 emitters)
+	menacing = true,
 	cover = true,
 	-- stage 4a (Presentation/Aura.luau: levels 1, 2 and 3)
 	aura1 = true,
 	aura3 = true,
 	-- stage 4b: level 2 on the same build (Menacing Pose and its kind wear it); false = the old level 2
-	aura2 = false,
+	aura2 = true,
 	-- stage 4b: the four Godhood emotes (Controllers/EmoteFx/Godhood.luau), each its own flag
-	finalBreakdown = false,
-	justAsPlanned = false,
+	finalBreakdown = true,
+	justAsPlanned = true,
 	reapersEyes = false,
-	newWorld = false,
+	newWorld = true,
 	-- stage 4a: Presentation/Materialize (the smoke and specks, and the glint when whole; callers that ask for quiet are unchanged)
 	materialize = true,
 	-- stage 4a: the glint where a soul is gathered (Specter/GhostController) and where the dive's string takes the body

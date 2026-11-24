@@ -134,3 +134,4 @@
 - [Effects pilot: flags and booth pictures](vfx-pilot-booth-capture.md) - 2026-11-18: Pilot.on flags (impact on, menacing off, cover on), report before/after, how screen_capture with an explicit camera shows the booth
 - [vfx-pilot-redo-traps](vfx-pilot-redo-traps.md) - booth stills lie after ~10 s (Governor), rate emitters do not show, soft sheets are 25-60% opaque; where impact/cover/menacing stand (2026-11-18)
 - [vfx-rollout-4a-first-batch](vfx-rollout-4a-first-batch.md) — stage 4a first batch: Aura 1 and 3 + Materialize on, glints and ViewFx off; booth still limits
+- [vfx-rollout-4b-first-batch](vfx-rollout-4b-first-batch.md): stage 4b first batch (Aura 2, Menacing, three Godhood on, Reaper's Eyes off), report numbers, capture trap
