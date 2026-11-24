@@ -9,8 +9,8 @@
 --   break-up the bank thins as the emitters stop (no cut)
 --   residue  the motes and the last of the fog drift 3 to 4 s after
 --
--- With `lean` (under the level-2 aura, which has its own bank, specks, glint and light: stage 4b) it is the floor bank, the motes, the star
--- and the ring only, and holds no light of its own.
+-- With `lean` (under the level-2 aura, which has its own bank, specks, glint and light: stage 4b) it is the floor bank and the star
+-- only (no motes, no ring), and holds no light of its own.
 -- Twelve emitters and two lights at most (the showpiece budget, plan Part 9): four loop emitters, a gather, a star, a glint, a
 -- ring and sparks at the release, and the beat's light plus the held one.
 
@@ -27,7 +27,7 @@ export type Options = {
 	ramp: Palette.Ramp?, -- the pose's own colour (Palette.emote), full strength
 	floor: number?, -- studs below the chest to the floor (2.8 by default)
 	size: number?, -- the bank's width in studs
-	lean: boolean?, -- under an aura (it has its own bank, specks, glint and light): only the floor bank, the motes, the star and the ring
+	lean: boolean?, -- under an aura (it has its own bank, specks, glint and light): only the floor bank and the star
 }
 
 export type Handle = {
@@ -107,7 +107,7 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 		},
 	}
 	if o.lean then
-		specs = { specs[3], specs[4] }
+		specs = { specs[3] }
 	end
 	local made: { ParticleEmitter } = {}
 	local releaseLight: ((number?) -> ())? = nil
@@ -172,22 +172,27 @@ function Menace.menace(chest: Vector3, options: Options?): Handle
 			end
 			Emit.burst(chest, list)
 			-- the ring lies on the floor
-			Emit.burst(base, {
-				{
-					{
-						tex = "VfxShock",
-						ramp = ramp,
-						size = C.size("VfxShock", 7, { { 0, 2 }, { 0.5, 6 }, { 1, 7 } }),
-						alpha = { { 0, 0.4 }, { 0.5, 0.6 }, { 1, 1 } },
-						life = 0.5,
-						face = "flat",
-						speed = 0.001,
-						bright = 0.9,
-						z = 1,
-					},
-					1,
-				},
-			})
+			Emit.burst(
+				base,
+				if o.lean
+					then {}
+					else {
+						{
+							{
+								tex = "VfxShock",
+								ramp = ramp,
+								size = C.size("VfxShock", 7, { { 0, 2 }, { 0.5, 6 }, { 1, 7 } }),
+								alpha = { { 0, 0.4 }, { 0.5, 0.6 }, { 1, 1 } },
+								life = 0.5,
+								face = "flat",
+								speed = 0.001,
+								bright = 0.9,
+								z = 1,
+							},
+							1,
+						},
+					}
+			)
 			C.beat(chest, ramp[2], 16, 2.4, 0.04)
 		end,
 		body = function()

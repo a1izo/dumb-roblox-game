@@ -185,13 +185,15 @@ FX.newWorld = function(character, preview)
 			else
 				Vfx.Recipes.impact(CFrame.new(fist), { color = GOLD, scale = 1.15, shake = own, flash = own })
 			end
-			Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.1, 0)), 1, 24, 0.7, {
-				tex = "VfxRingBand",
-				color = warm,
-				width = 2.2,
-				light = 0.6,
-				bright = 1.1,
-			})
+			if not fresh then
+				Vfx.Beams.wave(CFrame.new(floor + Vector3.new(0, 0.1, 0)), 1, 24, 0.7, {
+					tex = "VfxRingBand",
+					color = warm,
+					width = 2.2,
+					light = 0.6,
+					bright = 1.1,
+				})
+			end
 			Vfx.Rim.glow(character, warm, 2.2, { fill = 0.25 })
 			if own and not calm then
 				Vfx.Screen.impact({ character }, 0.08)
@@ -304,7 +306,13 @@ FX.reapersEyes = function(character, preview)
 			local at = Create("Attachment", { Name = "EmoteEyeGlow", Parent = part })
 			at:SetAttribute("DGEmote", true)
 			if fresh then
-				Fresh.glint(part.Position, { ramp = ramp, scale = 1.1, lead = 0.04 })
+				if side < 0 then
+					-- (one glint between the eyes: two would put the effect over its emitter budget)
+					Fresh.glint(
+						head.Position + head.CFrame.LookVector * (head.Size.Z / 2 + 0.05),
+						{ ramp = ramp, scale = 1.6, lead = 0.04 }
+					)
+				end
 			else
 				local flare = Vfx.Emit.make(at, {
 					tex = "VfxFlare",
