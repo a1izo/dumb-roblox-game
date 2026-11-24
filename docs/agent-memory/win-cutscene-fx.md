@@ -22,3 +22,4 @@ win cutscenes (`src/shared/Cinema/WinCuts.luau`, clips `art/scripts/emotes/wins.
 - Retimed with their clips: finalPageBureau (shut 5.2, sealed 5.85, standing 6.4), newWorld (the spread at 5.62),
   newWorldBureau (down to the chest 6.05), checkmateCoven (no walk-off: pivots at 5.86-6.32 and faces the camera).
 - In a match the "<side> wins" card still runs from the cue's start ([[win-cutscene-name-card-timing]]).
+- Redone again 2026-11-24 (cameras, key/rim lights, six clips re-acted, the old acting kept as wins_old.py): [[win-cutscenes-redo-2026-11-24]].

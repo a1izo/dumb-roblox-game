@@ -58,12 +58,21 @@ def walk(m, t0, t1, z0, z1, steps, upper, rise=0.0):
 
 
 # The Final Page (winFinalPage) -------------------------------------------------------------------------------
+# Redone 2026-11-24 (art/refs/cinema/WinFinalPage.toml: the writing scene, episode 1): the body writes, not only the
+# hand: each stroke drives the shoulder and a small roll of the torso, the head follows the nib. The last stroke is a
+# hard slash, the pen is thrown clear, the eyes come up to the finished page (a held beat), the cover is snapped shut
+# (a flinch back first), the right fist lets go and drops to the thigh as he leans back (the left hand never lies
+# still: it steadies the page, then slides off the book and hangs over the chair's arm). The chin goes up and the
+# head turns to the window: the profile against the lightning.
 # Seated like the Potato Chip scene: the torso's middle 2.75 up and 0.75 back, so the table top is the torso frame's
 # y = 0. The open Manual lies on the table, its page's middle at torso (0.0, 0.1, -2.05).
 SEAT = (0, -0.25, 0.75)
 SIT = dict(rHip=J((84, 0, 3), (0, 0.05, 0)), lHip=J((84, 0, -3), (0, 0.05, 0)))
 FLAT_L = reach(-1, (-1.05, 0.45, -1.6), direction=(0.1, -0.25, -1.0))  # the left hand flat by the book
-FLAT_R = reach(1, (1.05, 0.45, -1.6), direction=(-0.1, -0.25, -1.0))
+HOLD_L = reach(-1, (-0.85, 0.45, -1.75), direction=(0.2, -0.25, -1.0))  # ... drawn in to hold the page down
+SLID_L = reach(-1, (-0.55, 0.45, -1.95), direction=(0.3, -0.25, -0.9))  # ... pushing the page up for the next line
+LAP_R = reach(1, (0.7, -0.38, -1.15), direction=(-0.1, -0.9, -0.45))  # the right fist on the thigh
+HANG_ARM_L = J((6, 0, -16))  # the left arm hanging off the chair's side
 
 
 def write_at(x, y, lift=0.0):
@@ -73,39 +82,52 @@ def write_at(x, y, lift=0.0):
 
 page = Motion("winFinalPage", LENGTH, note="The Final Page: the last name written, the Manual snapped shut, leaning "
               "back as the candles die; a silhouette in the lightning.", unwrap=True)
-page.key(0.0, "smooth", offset=SEAT, root=(-10, 0, 0), neck=(-26, 0, 0), rShoulder=write_at(-0.3, 0.0),
+page.key(0.0, "smooth", offset=SEAT, root=(-8, 0, 0), neck=(-18, 0, 0), rShoulder=write_at(-0.3, 0.0),
          lShoulder=FLAT_L, **SIT)
-for i in range(12):  # the last name, in hard quick strokes
+for i in range(12):  # the last name, in hard quick strokes; the torso rolls with them, the head follows the nib
     t = 0.2 + 0.17 * i
     x = -0.3 + 0.06 * i + (0.05 if i % 2 else -0.04)
     y = (0.06 if i % 3 == 0 else -0.04)
-    page.key(round(t, 4), "linear" if 0 < i < 11 else "smooth", offset=SEAT, root=(-10, 2 - 0.3 * i, 0),
-             neck=(-26, 4 - 0.8 * i, 0), rShoulder=write_at(x, y, 0.04 if i % 2 else 0.0), lShoulder=FLAT_L, **SIT)
-page.key(2.3, "out", offset=SEAT, root=(-8, -2, 0), neck=(-24, -4, 0), rShoulder=write_at(0.45, 0.3, 0.3),
-         lShoulder=FLAT_L, **SIT)  # the pen down by the book
-page.key(2.6, "smooth", offset=SEAT, root=(-6, 0, 0), neck=(-20, 0, 0),
-         rShoulder=reach(1, (0.95, 1.15, -2.0), direction=(-0.3, -0.4, -0.85)), lShoulder=FLAT_L, **SIT)  # the cover
-page.key(2.88, "in", offset=SEAT, root=(-4, 4, 0), neck=(-16, 4, 0),
-         rShoulder=reach(1, (0.35, 1.45, -2.0), direction=(-0.55, -0.2, -0.8)), lShoulder=FLAT_L, **SIT)  # lifted
-page.key(3.0, "snap", offset=SEAT, root=(-12, -2, 0), neck=(-22, 0, 0),
-         rShoulder=reach(1, (-0.15, 0.55, -2.0), direction=(-0.3, -0.7, -0.65)), lShoulder=FLAT_L, **SIT)  # SHUT
-# (2026-11-15, the motion report: both hands flat on the book, then both flat on the table, were mirror images. Now
-# the right hand keeps the shut Manual under it to the end while the left rests apart, on the table's edge.)
+    left = HOLD_L if 3 <= i <= 6 else (SLID_L if i == 7 else FLAT_L)  # the page held, then pushed up a line
+    page.key(round(t, 4), "linear" if 0 < i < 11 else "smooth", offset=SEAT,
+             root=(-8 - (1.5 if i % 2 else 0.0), 2 - 0.5 * i, 1.2 * (1 if i % 2 else -1) * 0.5),
+             neck=(-18 + (2 if i % 3 == 0 else 0), 4 - 1.1 * i, 0), rShoulder=write_at(x, y, 0.04 if i % 2 else 0.0),
+             lShoulder=left, **SIT)
+page.key(2.18, "in", offset=SEAT, root=(-10, -4, 0), neck=(-22, -6, 0), rShoulder=write_at(0.52, 0.2, 0.05),
+         lShoulder=FLAT_L, **SIT)  # the last name's tail drawn out, long and hard
+page.key(2.3, "snap", offset=SEAT, root=(-6, -3, 0), neck=(-14, -4, 0), rShoulder=write_at(0.62, 0.32, 0.55),
+         lShoulder=FLAT_L, **SIT)  # the pen thrown clear: a slash off the page's edge
+page.key(2.5, "out", offset=SEAT, root=(-3, 0, 0), neck=(-8, 0, 0),
+         rShoulder=reach(1, (1.1, 1.25, -1.9), direction=(-0.3, -0.3, -0.85)), lShoulder=FLAT_L,
+         **SIT)  # the head up: the eyes on the finished page (the held beat)
+page.key(2.72, "sine", offset=SEAT, root=(-2, 1, 0), neck=(-6, 2, 0),
+         rShoulder=reach(1, (1.0, 1.15, -1.95), direction=(-0.3, -0.3, -0.85)), lShoulder=FLAT_L, **SIT)
+page.key(2.88, "in", offset=SEAT, root=(-3, 3, 0), neck=(-10, 4, 0),
+         rShoulder=reach(1, (0.45, 1.5, -2.0), direction=(-0.55, -0.2, -0.8)), lShoulder=FLAT_L,
+         **SIT)  # the cover lifted, high
+page.key(3.0, "snap", offset=SEAT, root=(-13, -2, 0), neck=(-22, 0, 0),
+         rShoulder=reach(1, (-0.15, 0.55, -2.0), direction=(-0.3, -0.7, -0.65)), lShoulder=FLAT_L,
+         **SIT)  # SHUT
+page.key(3.12, "out", offset=(SEAT[0], SEAT[1], SEAT[2] + 0.08), root=(-4, -1, 0), neck=(-12, 2, 0),
+         rShoulder=reach(1, (0.1, 0.95, -1.85), direction=(-0.3, -0.5, -0.8)), lShoulder=FLAT_L,
+         **SIT)  # the slam's rebound: the whole body, the hand bounced off the cover
 COVER_R = reach(1, (0.35, 0.5, -1.88), direction=(-0.2, -0.6, -0.8))  # the right hand flat on the shut cover
-KEEP_R = reach(1, (0.42, 0.55, -1.72), direction=(-0.25, -0.6, -0.75))  # ... kept there, leaning back
-EDGE_L = reach(-1, (-0.75, 0.2, -1.2), direction=(0.35, -0.35, -0.85))  # the left forearm on the table's edge
-page.key(3.35, "out", offset=SEAT, root=(-9, 0, 0), neck=(-14, 0, 0), rShoulder=COVER_R, lShoulder=FLAT_L,
-         **SIT)  # the hand pressing it shut
-for t, neck, left in ((4.2, (-4, 2, 0), FLAT_L), (5.0, (2, 0, 0), EDGE_L)):  # the head up: the candles going
-    page.key(t, "sine", offset=SEAT, root=(-4 + t, 0, 0), neck=neck, rShoulder=COVER_R, lShoulder=left, **SIT)
-page.key(5.55, "in", offset=SEAT, root=(-3, 0, 0), neck=(-2, 0, 0), rShoulder=COVER_R, lShoulder=EDGE_L,
+page.key(3.4, "smooth", offset=SEAT, root=(-9, 0, 0), neck=(-14, 0, 0), rShoulder=COVER_R, lShoulder=FLAT_L, **SIT)
+for t, neck, left in ((4.2, (-4, 6, 0), FLAT_L), (5.0, (2, 14, 0), SLID_L)):
+    # the head up and round: the candles going, one by one (they bend towards him first)
+    page.key(t, "sine", offset=SEAT, root=(-4 + t, 3 if t < 4.5 else 6, 0), neck=neck, rShoulder=COVER_R,
+             lShoulder=left, **SIT)
+page.key(5.55, "in", offset=SEAT, root=(-3, 0, 0), neck=(-2, 6, 0), rShoulder=COVER_R, lShoulder=SLID_L,
          **SIT)  # a breath in, forward, before leaning back
-page.key(6.2, "sine", offset=(SEAT[0], SEAT[1], SEAT[2] + 0.12), root=(6, 0, 0), neck=(10, 0, 0), rShoulder=KEEP_R,
-         lShoulder=EDGE_L, **SIT)  # leaning back, the chin up: the silhouette
-page.key(7.1, "sine", offset=(SEAT[0], SEAT[1] + 0.02, SEAT[2] + 0.15), root=(8, 1, 0), neck=(11, 2, 0),
-         rShoulder=KEEP_R, lShoulder=EDGE_L, **SIT)  # a breath in the stillness (the body never freezes)
-page.key(8.0, "smooth", offset=(SEAT[0], SEAT[1], SEAT[2] + 0.14), root=(7, 2, 0), neck=(12, 4, 0), rShoulder=KEEP_R,
-         lShoulder=EDGE_L, **SIT)
+page.key(5.85, "out", offset=(SEAT[0], SEAT[1], SEAT[2] + 0.1), root=(5, -6, 0), neck=(6, -10, 0), rShoulder=LAP_R,
+         lShoulder=HANG_ARM_L, **SIT)  # the fist lets go of the book; the left arm slides off, to hang
+page.key(6.3, "sine", offset=(SEAT[0], SEAT[1] + 0.01, SEAT[2] + 0.16), root=(8, -10, 0), neck=(10, -22, 0),
+         rShoulder=LAP_R, lShoulder=J((8, 0, -18)), **SIT)  # leaning back, the chin up, turned to the window
+page.key(7.1, "sine", offset=(SEAT[0], SEAT[1] + 0.02, SEAT[2] + 0.18), root=(9, -9, 1), neck=(11, -24, 2),
+         rShoulder=LAP_R, lShoulder=J((6, 0, -17)),
+         **SIT)  # a breath in the stillness (the body never freezes)
+page.key(8.0, "smooth", offset=(SEAT[0], SEAT[1], SEAT[2] + 0.17), root=(8, -10, 0), neck=(12, -23, 3),
+         rShoulder=LAP_R, lShoulder=J((7, 0, -18)), **SIT)
 page.follow("neck", 3.0, 0.75).follow(("lShoulder",), 2.5, 0.8)
 page.build()
 
@@ -155,12 +177,18 @@ god.build()
 
 
 # Case Closed (winCaseClosed) ----------------------------------------------------------------------------------
-# Crouched on the chair (Chair Perch's way), the thumb at the lip, watching the board's strings snap (2.4-4.2);
-# then the stamp off the desk and slammed on the case file (4.8), and a sugar cube from the bowl to the lip.
+# Redone 2026-11-24 (art/refs/cinema/WinCaseClosed.toml: L crouched in his chair): crouched on the chair (Chair Perch's
+# way), the thumb at the lip, watching the board's strings snap (2.4-4.2); the head follows each snap and the left
+# hand flinches on its knee with them (it was frozen over the knees for the whole clip); then the left hand pins the
+# file's corner while the right brings the stamp up high and slams it (4.8), the body dropping on it; the stamp
+# lifted off, a sugar cube from the bowl to the lip, the left hand back on its knee, the other way.
 SEAT_TOP = 1.745
 STAMP_AT = (0.8, -0.65, -2.25)  # the stamp on the desk, torso frame (crouched)
 FILE_AT = (0.0, -0.4, -2.3)  # the case file's middle, under the stamp's blow
 BOWL_AT = (1.5, -0.6, -2.2)  # (on the right, past the stamp: the right hand never crosses the left arm)
+KNEE_L2 = reach(-1, (-0.2, -0.5, -1.5), direction=(0.35, -0.35, -0.9))  # the left hand drawn in on the knee
+KNEE_L3 = reach(-1, (-0.5, -0.6, -1.45), direction=(0.25, -0.4, -0.9))  # ... slid out along it
+PIN_L = reach(-1, (-0.85, -0.3, -2.15), direction=(0.2, -0.8, -0.6))  # the left hand holding the file's corner
 
 
 def perch(m, t, ease, root, **joints):
@@ -169,24 +197,31 @@ def perch(m, t, ease, root, **joints):
 
 case = Motion("winCaseClosed", LENGTH, note="Case Closed: crouched on the chair, watching the strings snap; the stamp "
               "slammed down, a sugar cube to the lip.", unwrap=True)
-for t, neck in ((0.0, (8, 0, -2)), (1.2, (9, -6, -4)), (2.4, (10, 4, -2)), (3.1, (8, -10, -6)), (3.7, (10, 8, 0)),
-                (4.15, (6, 0, 0))):
-    perch(case, t, "sine", (-12, 0, 0), neck=neck, rShoulder=THUMB_LIP, lShoulder=OVER_KNEES)
-perch(case, 4.45, "smooth", (-22, -6, 0), neck=(-14, 6, 0),
+for t, neck, left in ((0.0, (8, 0, -2), OVER_KNEES), (0.9, (9, -3, -3), OVER_KNEES), (1.6, (9, -6, -4), KNEE_L3),
+                      (2.4, (10, 4, -2), KNEE_L3), (2.62, (8, 10, -1), KNEE_L2), (3.1, (8, -10, -6), KNEE_L2),
+                      (3.33, (9, -4, -4), OVER_KNEES), (3.7, (10, 8, 0), OVER_KNEES), (4.15, (6, 0, 0), KNEE_L3)):
+    # (the head turned to each string as it goes: 2.5, 3.05, 3.55; the left hand tightens on the knee and eases)
+    perch(case, t, "sine" if t not in (2.62, 3.1) else "out", (-12, 0, 0), neck=neck, rShoulder=THUMB_LIP,
+          lShoulder=left)
+perch(case, 4.4, "smooth", (-22, -6, 0), neck=(-14, 6, 0),
       rShoulder=reach(1, (STAMP_AT[0], STAMP_AT[1] + 0.55, STAMP_AT[2]), direction=(-0.2, -0.75, -0.6)),
-      lShoulder=OVER_KNEES)  # a hand to the stamp
-perch(case, 4.68, "in", (-14, -2, 0), neck=(-12, 4, 0),
-      rShoulder=reach(1, (0.25, 0.4, -2.0), direction=(-0.2, -0.3, -0.9)), lShoulder=OVER_KNEES)  # lifted high
-perch(case, 4.8, "snap", (-26, 0, 0), neck=(-22, 0, 0),
+      lShoulder=PIN_L)  # a hand to the stamp, the other to the file's corner
+perch(case, 4.68, "in", (-12, -2, 0), neck=(-8, 4, 0),
+      rShoulder=reach(1, (0.25, 0.55, -2.0), direction=(-0.2, -0.3, -0.9)), lShoulder=PIN_L)  # lifted high, the head up
+perch(case, 4.8, "snap", (-27, 0, 0), neck=(-24, 0, 0),
       rShoulder=reach(1, (FILE_AT[0], FILE_AT[1] + 0.55, FILE_AT[2]), direction=(-0.1, -0.85, -0.5)),
-      lShoulder=OVER_KNEES)  # CLOSED
-perch(case, 5.25, "out", (-20, 0, 0), neck=(-16, 0, 0),
-      rShoulder=reach(1, (FILE_AT[0] + 0.1, FILE_AT[1] + 0.6, FILE_AT[2]), direction=(-0.1, -0.8, -0.55)),
-      lShoulder=OVER_KNEES)
-perch(case, 5.75, "smooth", (-16, -8, 0), neck=(-14, -12, 0),
+      lShoulder=PIN_L)  # CLOSED
+perch(case, 5.05, "out", (-22, 0, 0), neck=(-18, 0, 0),
+      rShoulder=reach(1, (FILE_AT[0] + 0.08, FILE_AT[1] + 0.58, FILE_AT[2]), direction=(-0.1, -0.8, -0.55)),
+      lShoulder=PIN_L)  # (held down a beat: the stamp stays on it)
+perch(case, 5.4, "smooth", (-17, -4, 0), neck=(-14, -6, 0),
+      rShoulder=reach(1, (BOWL_AT[0] - 0.25, BOWL_AT[1] + 0.9, BOWL_AT[2] + 0.3), direction=(0.1, -0.6, -0.7)),
+      lShoulder=KNEE_L2)  # up off it
+perch(case, 5.8, "smooth", (-16, -8, 0), neck=(-14, -12, 0),
       rShoulder=reach(1, (BOWL_AT[0], BOWL_AT[1] + 0.5, BOWL_AT[2]), direction=(0.2, -0.75, -0.6)),
-      lShoulder=OVER_KNEES)  # into the bowl
-perch(case, 6.5, "sine", (-12, 2, 0), neck=(0, 6, 0), rShoulder=THUMB_LIP, lShoulder=OVER_KNEES)  # to the lip
+      lShoulder=KNEE_L2)  # into the bowl
+perch(case, 6.5, "sine", (-12, 2, 0), neck=(0, 6, 0), rShoulder=THUMB_LIP, lShoulder=KNEE_L3)  # to the lip
+perch(case, 7.2, "sine", (-11, 3, 0), neck=(1, 7, 1), rShoulder=THUMB_LIP, lShoulder=KNEE_L3)
 perch(case, 8.0, "smooth", (-11, 2, 0), neck=(2, 8, 2), rShoulder=THUMB_LIP, lShoulder=OVER_KNEES)
 case.follow("neck", 2.2, 0.75).follow(("rShoulder", "lShoulder"), 3.0, 0.7)
 case.build()
@@ -210,7 +245,7 @@ PUSH = reach(1, (0.2, 1.15, -2.45), direction=(-0.1, 0.05, -1.0))
 def board_upper(t, k):
     swing = 12 * (1 if k % 2 else -1)
     return dict(root=(-1, 1.5 * (1 if k % 2 else -1), 0), neck=(-2, 0, 0), rShoulder=J((swing, 0, 7)),
-                lShoulder=BEHIND_L)
+                lShoulder=J((-22 + (5 if k % 2 else -3), 0, -14 - (2 if k % 2 else 0)), (0.0, 0.0, 0.18)))  # (the hand behind the back shifts with the steps)
 
 
 mate = Motion("winCheckmate", LENGTH, note="Checkmate: up to the giant black king, one finger, a push; it falls and "
@@ -261,7 +296,7 @@ LEAN = dict(rHip=J((14, 0, 1)), lHip=J((14, 0, -1)))  # (the hips back a little:
 PALM_L = reach(-1, (-1.15, -0.05, -1.55), direction=(0.15, -0.6, -0.8))  # the left hand flat on the table
 PAGE_R = reach(1, (0.75, 0.1, -2.05), direction=(-0.2, -0.55, -0.8))  # the right hand on the last page's corner
 TORN = reach(1, (0.75, 0.75, -1.15), direction=(-0.25, 0.35, -0.9))  # the page up off the book
-SHOWN = reach(1, (0.35, 1.0, -1.25), direction=(-0.3, 0.55, -0.75))  # held up before the face, burning
+SHOWN = reach(1, (0.95, 0.95, -1.2), direction=(-0.15, 0.6, -0.8))  # held up beside the face (2026-11-24: it covered the face), burning
 BOX_L = reach(-1, (-1.25, -0.05, -1.25), direction=(0.2, -0.55, -0.8))  # the matchbox on the table
 STRIKE_L = reach(-1, (-0.75, 0.35, -1.2), direction=(0.35, 0.05, -0.9))
 TO_PAGE = reach(-1, (0.05, 0.6, -1.2), direction=(0.55, 0.25, -0.75))  # the match to the page's lower corner
@@ -342,7 +377,7 @@ final.build()
 # down to the chest, held there, the chin up (6.3-8.0).
 STEPS_FROM, STEPS_TO = 1.6, 0.25
 HIGH = J((172, 0, 8), (0.0, 0.05, 0.0))  # the right arm straight up
-CHEST_R = reach(1, (0.15, 0.25, -1.1), direction=(-0.6, 0.0, -0.8))
+CHEST_R = J((128, 0, 14), (0.0, 0.05, 0.0))  # the right arm half raised, the Manual upright beside the head, its cover out
 CHEST_L = reach(-1, (-0.2, 0.0, -1.1), direction=(0.6, -0.2, -0.75))
 
 
@@ -367,14 +402,15 @@ court.key(3.3, "out", offset=(0, 0.06, STEPS_TO), root=(6, 0, 0), neck=(14, 0, 0
           lShoulder=J((20, 0, -26)), **STAND)  # raised
 court.key(3.55, "sine", offset=(0, 0.07, STEPS_TO), root=(7, 0, 0), neck=(16, 0, 0),
           rShoulder=J((176, 0, 6), (0.0, 0.06, 0.0)), lShoulder=J((22, 0, -30)), **STAND)
-for t, yaw in ((4.3, 12), (5.0, -10), (5.5, 2)):  # turned to one side of the press and the other
+for t, yaw, left in ((4.3, 12, J((18, 0, -26))), (5.0, -10, J((26, 0, -34))), (5.5, 2, J((14, 0, -22)))):
+    # turned to one side of the press and the other (the free arm opens to each side: it was dead before)
     court.key(t, "sine", offset=(0, 0.06, STEPS_TO), root=(6, yaw, 0), neck=(12, yaw * 0.6, 0), rShoulder=HIGH,
-              lShoulder=J((18, 0, -26)), **STAND)
-court.key(5.75, "in", offset=(0, 0.07, STEPS_TO), root=(7, 2, 0), neck=(14, 1, 0),
+              lShoulder=left, **STAND)
+court.key(5.6, "in", offset=(0, 0.07, STEPS_TO), root=(7, 2, 0), neck=(14, 1, 0),
           rShoulder=J((178, 0, 4), (0.0, 0.06, 0.0)), lShoulder=J((20, 0, -28)), **STAND)  # (up a last inch first)
-court.key(6.05, "out", offset=(0, 0.02, STEPS_TO), root=(2, 0, 0), neck=(8, 0, 0), rShoulder=CHEST_R,
-          lShoulder=J((4, 0, -6)), **STAND)  # down to the chest (2026-11-15: by 6.35 now, held to the end)
-court.key(6.35, "sine", offset=(0, 0.02, STEPS_TO), root=(3, 1, 0), neck=(11, 1, 0), rShoulder=CHEST_R,
+court.key(5.85, "out", offset=(0, 0.02, STEPS_TO), root=(2, 0, 0), neck=(8, 0, 0), rShoulder=CHEST_R,
+          lShoulder=J((4, 0, -6)), **STAND)  # down to the chest (2026-11-24: by 5.85 now, held 2.1 s to the end)
+court.key(6.2, "sine", offset=(0, 0.02, STEPS_TO), root=(3, 1, 0), neck=(11, 1, 0), rShoulder=CHEST_R,
           lShoulder=J((4, 0, -6)), **STAND)
 court.key(7.2, "sine", offset=(0, 0.02, STEPS_TO), root=(3, 2, 0), neck=(10, 2, 0), rShoulder=CHEST_R,
           lShoulder=J((5, 0, -7)), **STAND)
@@ -469,10 +505,11 @@ roof.key(2.62, "in", offset=(0, 0, -0.08), root=(-17, 0, 0), neck=(-26, 2, 0), r
 roof.key(2.7, "snap", offset=(0, 0, -0.12), root=(-19, 0, 0), neck=(-26, 0, 0), rShoulder=FLICK, lShoulder=BEHIND_L,
          **LEAN)  # the flick
 roof.key(3.1, "out", offset=(0, 0, -0.1), root=(-14, 0, 0), neck=(-36, 0, 0), rShoulder=J((6, 0, 10)),
-         lShoulder=BEHIND_L, **LEAN)
-for t, neck in ((3.9, (-44, 2, 0)), (4.7, (-48, -2, 0))):  # down after it, all the way
+         lShoulder=J((-30, 0, -12), (0.0, 0.0, 0.14)), **LEAN)  # (the hand behind the back flung out a little by the flick)
+for t, neck, left in ((3.9, (-44, 2, 0), J((-26, 0, -14), (0.0, 0.0, 0.16))),
+                       (4.7, (-48, -2, 0), BEHIND_L)):  # down after it, all the way
     roof.key(t, "sine", offset=(0, 0, -0.1), root=(-12, 0, 0), neck=neck, rShoulder=J((4, 0, 9)),
-             lShoulder=BEHIND_L, **LEAN)
+             lShoulder=left, **LEAN)
 roof.key(5.12, "in", offset=(0, -0.03, -0.1), root=(-17, 0, 0), neck=(-50, 0, 0), rShoulder=J((2, 0, 8)),
          lShoulder=BEHIND_L, **LEAN)  # (down, gathered, before the head goes back)
 roof.key(5.4, "out", offset=(0, 0.04, 0), root=(10, 0, 0), neck=(26, 0, 0), rShoulder=J((-8, 0, 30)),
@@ -488,7 +525,7 @@ roof.key(6.32, "out", offset=(0, 0, 0.22), root=(0, 182, 0), neck=(-3, -4, 0), r
 roof.key(6.55, "sine", offset=(0, 0, 0.22), root=(1, 180, 0), neck=(-2, -6, 0), rShoulder=J((3, 0, 8)),
          lShoulder=BEHIND_L, **STAND)
 roof.key(7.3, "sine", offset=(0.02, 0, 0.22), root=(2, 180, -1), neck=(-1, -5, 1), rShoulder=J((4, 0, 8)),
-         lShoulder=BEHIND_L, **STAND)
+         lShoulder=J((-23, 0, -13), (0.0, 0.0, 0.17)), **STAND)
 roof.key(8.0, "smooth", offset=(0, 0, 0.22), root=(1, 180, 0), neck=(-2, -6, 0), rShoulder=J((3, 0, 8)),
          lShoulder=BEHIND_L, **STAND)
 roof.follow("neck", 2.2, 0.75).follow(("rShoulder", "lShoulder"), 2.8, 0.72)

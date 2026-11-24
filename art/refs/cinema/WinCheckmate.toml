@@ -1,0 +1,65 @@
+# The Bureau's Checkmate win cutscene (WinCuts.checkmate, clip winCheckmate). Reference notes.
+id = "WinCheckmate"
+name = "Checkmate: one finger tips the king"
+status = "redone 2026-11-24 (cameras, light, the left hand); the old acting is art/scripts/emotes/wins_old.py; data in src/shared/Cinema/WinCuts.luau"
+
+[scene]
+sentence = "On a vast chessboard the winner straightens their tie, walks up to a giant black king and tips it over with one finger, and watches it fall and shatter while the white pieces light up."
+action = "The push (4.15 s): one fingertip laid on the king's side, drawn back a hair, then a short hard push, the other hand braced behind the back."
+mood = "Small figure, huge piece, a cold hall; the whole win is one finger."
+
+[origin]
+what = "L and Light's chess (Death Note 2, live action): a crouched player picking a piece up between finger and thumb, the camera wide from above then close on the hand."
+recognisable = "The smallness of the player, the finger-and-thumb precision, the other hand idle on the knee."
+ours = "R6 in a hall with a giant chessboard; the king is 12.5 studs tall."
+
+[source]
+url = "https://www.youtube.com/watch?v=zJlz4f2DGsc"
+title = "Death Note 2: The Last Name (2006) - L and Light play chess (149 s)"
+kind = "the live-action scene"
+watched = "2026-11-24: a 16-frame contact sheet over the whole clip (4.7 s to 144 s); the wide-from-above shot of two small figures over the board, the low close shots, the pinched piece"
+mirror = false
+
+[[beat]]
+src = "S 4.7-14"
+t = 0.0
+pose = "Standing small between the white pawns, one hand behind the back, the head down."
+[[beat]]
+src = "-"
+t = "0.4-1.3"
+pose = "A tug at the tie's knot with the right hand (the arm drawn back first)."
+[[beat]]
+src = "-"
+t = 1.7
+pose = "The eyes up to the king."
+[[beat]]
+src = "-"
+t = "2.0-3.4"
+pose = "Three steps up to the king, the right arm swinging, the left hand behind the back shifting with each step (it was dead 3.4 s)."
+[[beat]]
+src = "S 125-135"
+t = 3.75
+pose = "One finger laid on the king's side, held."
+[[beat]]
+src = "-"
+t = 4.06
+pose = "Drawn back a hair (the wind-up), then the push at 4.15."
+[[beat]]
+src = "S 144 (the wide)"
+t = "4.25-6.0"
+pose = "The king goes over (a low side view now, was a 36 stud top-down where he was a dot)."
+[[beat]]
+src = "-"
+t = "4.9-5.4"
+pose = "A step back, the arm easing."
+[[beat]]
+src = "-"
+t = "6.0-8.0"
+pose = "The king shatters; he stands facing the camera, the chin up, the weight easing from foot to foot, held 2 s."
+
+[camera]
+shots = "1 (0-2) from the front between the pawns, pushing in, 40; 2 (2-3.4) from high behind the king, 44; 3 (3.4-4.25) close on the head and arm, 38 to 35; 4 (4.25-6.15) NEW: low side view of the king going over from his right, 46 to 44; 5 (6.15-8) low from behind the king's base through the shatter, 46 to 42"
+lights = "RimBack (cold, behind) added to the white Key and the red KingRim."
+
+[check]
+by = "2026-11-24: check_motion --detail before/after, review_win boards in the room; game watch owed (the shatter and the king's fall are events the preview does not draw)"

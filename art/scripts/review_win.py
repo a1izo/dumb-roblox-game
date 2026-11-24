@@ -3,11 +3,15 @@ city, board and pieces), its star on the R6 mannequin in the cutscene's clip hol
 through the cutscene's own shots (background Blender):
 
     blender -b --factory-startup --python art/scripts/review_win.py -- cut [cut ...] [--build] [--size=480] [--room]
+                                                                          [--every=0.5]
 
 For each cut it writes art/export/previews/wins/<cut>/shot<i>_<a|b|c>.png (each shot's start, middle and end) and
 sheet.png (a row a shot). The set is what the game builds before anything happens to it (the events, the candles going
 out and the city dying, are not drawn): it shows the framing, not the effects. --room: in the cut's room from the
 built cutscene sets (art/blend/Maps_Sets.blend and its dressing) instead of its stand-in parts (writes <cut>_room).
+--build: the star's clip is built now from art/scripts/emotes (in memory), so a change to wins.py shows before any
+export. The cut names are WinCuts' keys (finalPage, not winFinalPage). --every=0.5 (2026-11-24): instead of three
+stills a shot, one still each 0.5 s through whichever shot is on then (f<t>.png) and board.png, four a row.
 """
 
 import math
@@ -243,6 +247,7 @@ def main():
     names = []
     build = False
     in_room = False
+    every = 0.0
     for a in argv:
         if a.startswith("--size="):
             size = int(a.split("=", 1)[1])
@@ -250,6 +255,8 @@ def main():
             build = True
         elif a == "--room":
             in_room = True
+        elif a.startswith("--every="):
+            every = float(a.split("=", 1)[1])
         else:
             names.append(a)
     cuts = emotemeta.read(WINCUTS)
@@ -325,16 +332,30 @@ def main():
         os.makedirs(folder, exist_ok=True)
         stills = []
         shots = cut["shots"]
-        for i, shot in enumerate(shots):
-            t1 = shots[i + 1]["at"] if i + 1 < len(shots) else length
-            for tag, u in (("a", 0.0), ("b", 0.5), ("c", 1.0)):
-                t = shot["at"] + (t1 - shot["at"]) * u - (0.05 if tag == "c" else 0.0)
-                scene.frame_set(int(round(max(0.0, t) * rv.FPS)))
-                camera_at(cam, shot, u)
-                path = os.path.join(folder, f"shot{i + 1}_{tag}.png")
+        if every > 0:
+            t = 0.0
+            while t < length - 0.04:
+                i = max(k for k, s in enumerate(shots) if s["at"] <= t + 1e-6)
+                t1 = shots[i + 1]["at"] if i + 1 < len(shots) else length
+                scene.frame_set(int(round(t * rv.FPS)))
+                camera_at(cam, shots[i], min(1.0, (t - shots[i]["at"]) / max(0.01, t1 - shots[i]["at"])))
+                path = os.path.join(folder, "f%04.1f.png" % t)
                 rv.render_still(path)
                 stills.append(path)
-        rv.make_sheet(stills, os.path.join(folder, "sheet.png"), cols=3, tile=size // 2, tall=int(size * 9 / 32))
+                t += every
+            tile = size // 2 + 80
+            rv.make_sheet(stills, os.path.join(folder, "board.png"), cols=4, tile=tile, tall=int(tile * 9 / 16))
+        else:
+            for i, shot in enumerate(shots):
+                t1 = shots[i + 1]["at"] if i + 1 < len(shots) else length
+                for tag, u in (("a", 0.0), ("b", 0.5), ("c", 1.0)):
+                    t = shot["at"] + (t1 - shot["at"]) * u - (0.05 if tag == "c" else 0.0)
+                    scene.frame_set(int(round(max(0.0, t) * rv.FPS)))
+                    camera_at(cam, shot, u)
+                    path = os.path.join(folder, f"shot{i + 1}_{tag}.png")
+                    rv.render_still(path)
+                    stills.append(path)
+            rv.make_sheet(stills, os.path.join(folder, "sheet.png"), cols=3, tile=size // 2, tall=int(size * 9 / 32))
         print(f"[win] {name}: {folder}")
 
 

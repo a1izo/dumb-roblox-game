@@ -1,0 +1,68 @@
+# The Bureau's New World win cutscene (WinCuts.newWorldBureau, clip winNewWorldBureau). Reference notes.
+id = "WinNewWorldBureau"
+name = "God of the New World, for the Bureau: the Manual raised over the press"
+status = "redone 2026-11-24 (cameras, light, the ending pose, the free arm); the old acting is art/scripts/emotes/wins_old.py; data in src/shared/Cinema/WinCuts.luau"
+
+[scene]
+sentence = "Ace comes down to the courthouse's top step with the Manual shut at his side, takes it in the right hand, raises it high over the press as the screens across the square show the news and the cameras go off, turns it to one side and the other, and brings it down beside his head, the cover to the world."
+action = "The raise (2.55 to 3.3 s): a dip first, then the right arm straight up with the Manual, the sun on his face, the flash at 3.55."
+mood = "Daylight and columns; a triumph that is public: flashbulbs, a bell at 6.6 s."
+
+[origin]
+what = "'I'll become the god of the new world' (Death Note), the Bureau's reading: the case won in public, the book held up as evidence, not as a weapon."
+recognisable = "A single figure on steps between columns, one arm high, a crowd below."
+ours = "R6 on the 'steps' room: six columns, the press (cameras on tripods) 16 studs ahead, a sun behind them."
+
+[source]
+url = "https://www.youtube.com/watch?v=XVd6ngs8Fr4"
+title = "I'll Become The God of This New World | Death Note (107 s)"
+kind = "the anime scene (movie opening)"
+watched = "2026-11-24: contact sheets over 2-100 s, 27-44 s and 71-94 s: the figure standing very still, backlit, then the close shot of the eyes; the raise itself is not in the clip and is staged from the story."
+mirror = false
+
+[[beat]]
+src = "X 80-86"
+t = 0.0
+pose = "Between the columns, upright, the Manual shut at the left side, far from the press (a 25 deg lens from their side)."
+[[beat]]
+src = "-"
+t = "0.3-1.4"
+pose = "Two steps down to the top step's edge, the arm swinging, the book steady."
+[[beat]]
+src = "X 80-86"
+t = 1.9
+pose = "A look down on the press."
+[[beat]]
+src = "-"
+t = "2.25-2.55"
+pose = "The book to the right hand before the chest; the dip (the wind-up)."
+[[beat]]
+src = "-"
+t = "3.3-3.55"
+pose = "RAISED: the right arm straight up, the left opening away from the body, the flash and the pillar at 3.55."
+[[beat]]
+src = "-"
+t = "4.3-5.5"
+pose = "Turned to one side of the press and the other with it up; the free arm opens to each side (it was a dead 1.9 s)."
+[[beat]]
+src = "-"
+t = 5.6
+pose = "Up a last inch."
+[[beat]]
+src = "X 89"
+t = 5.85
+pose = "Down to beside the head in one snap: the right arm half raised, the Manual upright, the cover (the skull) to the camera."
+[[beat]]
+src = "X 89-90.5"
+t = "6.2-8.0"
+pose = "Held 2.1 s, the chin up, a breath; was a head-on bust that hid the book."
+
+[camera]
+shots = "1 (0-1.9) the long lens from the press, 25 to 23 deg; 2 (1.9-2.9) the profile from the left, 40; 3 (2.9-3.7) low on the raise, 50 to 48; 4 (3.7-5.6) NEW: the raised book from the press's low angle with the sun on his face, 40 to 38; 5 (5.6-8) NEW: a 3/4 from the right, pulling back, 40 to 38 (the 0.45 s shot at 5.6 is gone)"
+lights = "RimBack (cold, behind right, high) and FillPress (warm, the press's side) added to the sun."
+
+[r6]
+notes = "A right arm bent forward held to chest height sends the book out sideways like a plank (seen 2026-11-24): hold it up beside the head instead, J((128,0,14))."
+
+[check]
+by = "2026-11-24: check_motion --detail before/after, review_win boards in the room; game watch owed"

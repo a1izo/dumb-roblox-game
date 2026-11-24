@@ -1,0 +1,65 @@
+# The Coven's Case Closed win cutscene (WinCuts.caseClosedCoven, clip winCaseClosedCoven). Reference notes.
+id = "WinCaseClosedCoven"
+name = "Case Closed, for the Coven: the file thrown on the fire, the laugh"
+status = "redone 2026-11-24 (cameras and light only: the acting was kept, Tool 1 already passed); the old acting is art/scripts/emotes/wins_old.py; data in src/shared/Cinema/WinCuts.luau"
+
+[scene]
+sentence = "Diavolo in the detective's armchair before the fire reads the case file, shuts it, throws it on the flames, laughs with a palm over the face as the string wall burns, and ends with the chin on a fist, watching it burn."
+action = "The throw (3.2 s): drawn back, then one snap of the arm; the file in the fire, and the laugh that follows it."
+mood = "Fire-lit, slow-burning, then gleeful; the laugh builds from a bowed head to a head thrown back, then it goes quiet."
+
+[origin]
+what = "Kira's laugh (Death Note, the warehouse): the head bowed and shadowed, then thrown back with a wide mouth and a red eye, and a small figure held in a lit hall afterwards."
+recognisable = "The bowed head, then the head back; the figure alone and still at the end."
+ours = "R6 in an armchair in the 'den': a fire ahead, the evidence board burning on the left wall."
+
+[source]
+url = "https://www.youtube.com/watch?v=C65oaIHsdYM"
+title = "Death Note - Kira's Laugh (Original) (37 s)"
+kind = "the anime scene"
+watched = "2026-11-24: a 16-frame contact sheet over the clip: the head bowed under a lit shutter (15 s), the low shot with the head thrown back (19.6 s), the wide of one small figure standing alone in a hall (31 s)"
+mirror = false
+
+[[beat]]
+src = "K 15"
+t = "0-1.5"
+pose = "Sat back reading the file held up in the right hand, the left turning pages, the head bowed a little."
+[[beat]]
+src = "-"
+t = "1.72-2.0"
+pose = "The cover pushed shut by the left hand."
+[[beat]]
+src = "-"
+t = "2.55"
+pose = "A look at the fire."
+[[beat]]
+src = "-"
+t = "2.95-3.2"
+pose = "Drawn back, then THROWN (snap)."
+[[beat]]
+src = "-"
+t = "3.72-4.0"
+pose = "The hands down on the armrests; the shake begins."
+[[beat]]
+src = "K 19.6"
+t = "4.0-5.4"
+pose = "The laugh: thrown back and forward again, shaking, the left palm over the face."
+[[beat]]
+src = "K 19.6"
+t = "5.55"
+pose = "The palm pressed up over the brow at the laugh's top."
+[[beat]]
+src = "-"
+t = "6.0-6.3"
+pose = "The hands down; the laugh dies."
+[[beat]]
+src = "K 31-36"
+t = "6.3-8.0"
+pose = "The chin on the right fist, the left hand on its armrest, watching the wall burn, held 1.7 s."
+
+[camera]
+shots = "1 (0-1.9) NEW: from the fire's side so the fire lights his face, 44 to 40 (was from behind: the back of his head); 2 (1.9-3.15) low from the front, 46; 3 (3.15-3.9) the throw from the right, 44 to 42; 4 (3.9-5) the board burning, 40 to 38; 5 (5-6.4) NEW: low from the front left for the laugh, 52 to 50; 6 (6.4-8) NEW: from the front right and further back, 44 to 42 (was 36 to 34 at 5 studs: 2.5 studs of frame filled with arms)"
+lights = "RimBack (cold, behind right) added to the fire and the board's flames."
+
+[check]
+by = "2026-11-24: check_motion --detail before/after, review_win boards in the room; game watch owed (the file, the fire and the board burning are events the preview does not draw)"

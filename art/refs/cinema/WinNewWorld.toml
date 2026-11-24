@@ -1,0 +1,62 @@
+# The Coven's New World win cutscene (WinCuts.newWorld, clip winNewWorld). Reference notes.
+id = "WinNewWorld"
+name = "God of the New World: the roof's edge, the arms out"
+status = "redone 2026-11-24 (cameras and light only: the acting was kept, Tool 1 already passed); the old acting is art/scripts/emotes/wins_old.py; data in src/shared/Cinema/WinCuts.luau"
+
+[scene]
+sentence = "The winner walks to the roof's edge with the Manual, opens it as its pages tear loose and the city's lights die, looks down on the dark city, then throws both arms out under the red sky."
+action = "The arms thrown out (5.62 s): a gather inward and down first, then out past where they rest, landing in the Godhood pose and holding 2 s."
+mood = "Stillness before the throw; a red sky, a black city, a figure with a cold edge of light on its shoulders."
+
+[origin]
+what = "'I will become the god of this new world' (Death Note), as the movie opening plays it: a still figure backlit by a sunset in a doorway, the eyes lit red."
+recognisable = "Upright and still, the arms open, the face up, the light behind."
+ours = "R6 on a roof, a red sky and a black skyline; the Manual in the left hand, the right opening it."
+
+[source]
+url = "https://www.youtube.com/watch?v=XVd6ngs8Fr4"
+title = "I'll Become The God of This New World | Death Note (107 s)"
+kind = "the anime scene (movie opening)"
+watched = "2026-11-24: contact sheets over 2-100 s, 27-44 s and 71-94 s"
+mirror = false
+
+[[beat]]
+src = "X 74-80"
+t = 0.0
+pose = "The figure stands still, the book hanging in the left hand."
+[[beat]]
+src = "-"
+t = "0.4-2.6"
+pose = "Four steps to the roof's edge, the right arm swinging, the body bobbing, the book steady."
+[[beat]]
+src = "-"
+t = 2.85
+pose = "The right hand turns the Manual open before the chest, the head bowed to it."
+[[beat]]
+src = "-"
+t = 3.1
+pose = "The pages tear loose: a flinch back."
+[[beat]]
+src = "X 80-86"
+t = "3.7-4.95"
+pose = "Looking down on the city, the head moving slowly from side to side, the lights going block by block."
+[[beat]]
+src = "-"
+t = 5.3
+pose = "Gathering in and down: the wind-up."
+[[beat]]
+src = "X 89"
+t = 5.62
+pose = "The arms thrown out wide, past where they rest, the head back."
+[[beat]]
+src = "X 89-90.5"
+t = "5.9-8.0"
+pose = "Settled in the Godhood pose, held 2.1 s with a breath; the right arm high and wide, the left lower and forward with the open Manual."
+
+[camera]
+shots = "1 (0-2.6) from behind and wide on the walk, 48 to 46; 2 (2.6-3.9) low and close on the book opening, 50 to 47; 3 (3.9-5.5) NEW: his face from out past the edge, lit by the dying city, 40 to 36; 4 (5.5-8) NEW: low and near, looking up at the silhouette against the red, 46 to 44, drifting wider"
+before = "shot 3 was a shot of the city with his head in the corner; the ending was a small figure in the lower third of a 62 deg frame."
+lights = "RimBack (cold, behind left, high) added to the red Rim and the cold Fill."
+
+[check]
+by = "2026-11-24: check_motion --detail before/after, review_win boards in the room; game watch owed"

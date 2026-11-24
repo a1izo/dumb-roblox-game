@@ -1,0 +1,88 @@
+# The Coven's Final Page win cutscene (WinCuts.finalPage, clip winFinalPage). Reference notes, the way art/refs/cinema/*.toml keep theirs.
+id = "WinFinalPage"
+name = "The Final Page: the last name written, the Manual shut"
+status = "redone 2026-11-24 (the owner: 'redo the win cutscenes with the workflow'); the old acting is art/scripts/emotes/wins_old.py, kept unimported; the data is src/shared/Cinema/WinCuts.luau"
+
+[scene]
+sentence = "The writer finishes the last name with a hard stroke, throws the pen clear, lifts their eyes to what they wrote, snaps the Manual shut and leans back with the chin up and the head turned to the storm as the candles go out one by one."
+action = "The shut: the cover lifted high, then slammed (3.0 s) with the whole body flinching on it, and the face that comes up out of the page a beat before it."
+mood = "Cold and certain. Candle and page light on the face from below, a cold key and a warm rim so the face is never the darkest thing; lightning at 5.9 and 7.2 s; held still at the end."
+
+[origin]
+what = "Light writing the names (Death Note, episode 1's writing montage) and the 'I am Kira' stillness at the end of the Kira's Laugh clip."
+recognisable = "A hunched body writing with the whole forearm, the pen held upright in a closed fist, a bright eye with a red glint under the fringe, the figure small and still against a lit wall afterwards."
+ours = "R6 writer in a library at night: the Manual open on a desk, three candles, a rain-streaked window ahead. Same side (Coven), same 8 s, same WinCuts keys."
+
+[source]
+url = "https://www.youtube.com/watch?v=kAHNiJ9T2-M"
+title = "Yagami Light | Death Note Writing Scene (39 s)"
+kind = "the anime scene"
+watched = "2026-11-24: a 16-frame contact sheet over the whole clip (0.3 s to 38 s) in the built-in browser"
+mirror = false
+
+[source2]
+url = "https://www.youtube.com/watch?v=XVd6ngs8Fr4"
+title = "I'll Become The God of This New World (107 s)"
+kind = "the anime scene (the movie's opening monologue)"
+watched = "2026-11-24: contact sheets over 2-100 s, 27-44 s and 71-94 s; the standing, backlit figure in a doorway with a sunset behind (80-86 s) and the close shot of the eyes (90 s) are what the ending borrows"
+mirror = false
+
+[[beat]]
+src = "S 3.7-6.1"
+t = 0.0
+pose = "Hunched over the page, head bowed and turned, the pen upright in the right fist, the left hand holding the page down."
+[[beat]]
+src = "S 13.5-23.3"
+t = "0.2-2.1"
+pose = "Twelve hard quick strokes: the forearm drives them, the torso rolls a little each time, the head follows the nib, the left hand holds, then pushes the page up a line."
+[[beat]]
+src = "S 23.3"
+t = 2.18
+pose = "The last stroke drawn out long and hard."
+[[beat]]
+src = "S 33.1 (overhead)"
+t = 2.3
+pose = "The pen thrown clear off the page's edge in one flick."
+[[beat]]
+src = "S 6.1 (the eye)"
+t = 2.5
+pose = "The head comes up out of the page: eyes on the finished name, held for a beat."
+[[beat]]
+src = "-"
+t = 2.88
+pose = "The cover lifted high in the right hand, the elbow out."
+[[beat]]
+src = "-"
+t = 3.0
+pose = "SHUT: one snap, the whole body flinching forward on it; the rebound at 3.12 bounces the hand off the cover."
+[[beat]]
+src = "-"
+t = 3.4
+pose = "The right hand flat on the closed cover, the left flat by it."
+[[beat]]
+src = "-"
+t = "4.2-5.0"
+pose = "The head turns up and round to the candles going out one by one; the left hand pushes the Manual a little away."
+[[beat]]
+src = "-"
+t = 5.55
+pose = "A breath in, forward, before the lean back."
+[[beat]]
+src = "X 80-90"
+t = 5.85
+pose = "The fist lets go of the book and drops to the thigh; the left arm slides off the desk to hang by the chair."
+[[beat]]
+src = "X 89-90.5"
+t = "6.3-8.0"
+pose = "Leaning back, chin up, the head turned to the window, held 1.7 s to the end with a breath; lightning at 5.9 and 7.2 s."
+
+[camera]
+shots = "1 (0-1.7) a 3/4 from the front left at head height, 34 to 31 deg, creeping in; 2 (1.7-2.6) the pen and page from above-left, 30 to 27; 3 (2.6-3.45) overhead on the book for the shut, 36; 4 (3.45-5.6) low from the front left, the candles' light on the face, 42 to 34; 5 (5.6-8) from the front right, 40 to 37, pulling back"
+before = "four shots; the first two were from above and behind and showed a black back and no hand; the last was from behind and showed the back of a blank head."
+lights = "KeyCold (cold, front right, high) and RimWarm (warm, behind left, high) added next to the candles and the page glow."
+
+[r6]
+notes = "Total head pitch kept to about -26 while writing (was -36: the face was only a top of head from the front). Seated thighs: the right fist on the thigh needs y -0.38, z -1.15 in the torso frame."
+
+[check]
+by = "2026-11-24: check_motion --detail before/after, review_win boards (in the real room), game watch owed"

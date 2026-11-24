@@ -1,0 +1,80 @@
+# The Bureau's Case Closed win cutscene (WinCuts.caseClosed, clip winCaseClosed). Reference notes.
+id = "WinCaseClosed"
+name = "Case Closed: the strings snap, the stamp comes down"
+status = "redone 2026-11-24; the old acting is art/scripts/emotes/wins_old.py (unimported); the data is src/shared/Cinema/WinCuts.luau"
+
+[scene]
+sentence = "The detective crouched on his chair watches the evidence board's strings snap one by one, then pins the case file with one hand and slams the stamp down with the other, and eats a sugar cube with the thumb at the lip."
+action = "The stamp: brought up high with the other hand pinning the file's corner, held a breath, then slammed (4.8 s) with the whole body dropping on it."
+mood = "Dry and exact. Cold lamp over the desk, the board behind, a sugar cube as the only sweetness; the body small and folded, the sound of the stamp the loudest thing."
+
+[origin]
+what = "L (Death Note) crouched in his chair, thumb at his lip, a sugar cube between finger and thumb; the case closed with a stamp."
+recognisable = "Knees up, the feet on the seat, the torso upright on the legs, the head tipped, the thumb at the lip, one hand hung over the knees."
+ours = "R6 crouch (the owner's drawing: legs forward along the seat, torso upright on them). The desk, board, lamp, file, stamp and bowl are the 'office' room's."
+
+[source]
+url = "https://www.youtube.com/watch?v=CmVV4q_fSCk"
+title = "[Death Note] L explains why he can't sit right"
+kind = "the anime scene (L crouched on the chair, front and three-quarter shots)"
+watched = "2026-10-20 by the aceCrouch emote note (art/refs/emotes/aceCrouch.toml); not re-watched on 2026-11-24"
+mirror = false
+
+[source2]
+url = "https://www.youtube.com/watch?v=zJlz4f2DGsc"
+title = "Death Note 2: The Last Name (2006) - L and Light play chess (149 s)"
+kind = "the live-action scene"
+watched = "2026-11-24: a 16-frame contact sheet over the clip; L crouched over a board picking up a piece between finger and thumb, the other hand on his knee, the camera wide from above then close on the hands"
+mirror = false
+
+[[beat]]
+src = "S2 4.7-14"
+t = "0-1.6"
+pose = "Crouched, the thumb at the lip, the left hand over the knee, the head tilting slowly; the board ahead."
+[[beat]]
+src = "S2 51-60"
+t = "1.6-2.4"
+pose = "The head turns to the board; the left hand eases along its knee."
+[[beat]]
+src = "-"
+t = "2.5-3.55"
+pose = "Four strings snap at 2.5, 3.05, 3.55: the head turns to each, the left hand tightens on the knee and eases (it was frozen all clip)."
+[[beat]]
+src = "-"
+t = 4.15
+pose = "The last string lands on the photo; a held look."
+[[beat]]
+src = "S2 88-98"
+t = 4.4
+pose = "The right hand comes to the stamp, the left to the file's corner; the torso leans in."
+[[beat]]
+src = "-"
+t = 4.68
+pose = "The stamp lifted high, the head up (the wind-up)."
+[[beat]]
+src = "-"
+t = 4.8
+pose = "CLOSED: the stamp slams on the file, the body drops on it."
+[[beat]]
+src = "-"
+t = "5.05-5.4"
+pose = "Held down a beat, then lifted off."
+[[beat]]
+src = "S2 125-135 / S1"
+t = "5.8-6.5"
+pose = "The right hand into the sugar bowl, a cube between finger and thumb, to the lip."
+[[beat]]
+src = "S1"
+t = "6.5-8.0"
+pose = "Back to the crouch: the thumb at the lip, the left hand back over the knees, the head tilted, held 1.5 s."
+
+[camera]
+shots = "1 (0-1.7) over his shoulder to the board, 44 to 42; 2 (1.7-2.9) the board close as it goes; 3 (2.9-4.3) his face from the front left over the desk, 46 to 42; 4 (4.3-5.5) the slam from his right at desk height, 48 to 44; 5 (5.5-8) the ending from the front right, 46 to 42, drifting back"
+before = "the first 4.4 s had no actor in frame (a head at the edge, then the board, then a top view of a dark blob); every close lens was 32 to 36 deg and filled with an arm."
+lights = "RimBack (warm, behind left) and KeyFront (cold, front right) added to the office lamp."
+
+[r6]
+notes = "A whole crouched R6 needs about 5 studs of frame: at d 7 that is fov 46 to 50. The left hand lies on the file's corner at torso (-0.85, -0.3, -2.15)."
+
+[check]
+by = "2026-11-24: check_motion --detail before/after, review_win boards in the room; game watch owed"

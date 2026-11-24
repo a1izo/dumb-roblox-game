@@ -229,6 +229,22 @@ return {
 				light = { color = { 255, 186, 110 }, range = 9, brightness = 1.3 },
 				emit = "flame",
 			},
+			-- (2026-11-24) the writer's own light: a cold key from the front right, high, so the face is never the darkest
+			-- thing once the candles go, and a warm rim from behind on the shoulders and the back of the head
+			{
+				name = "KeyCold",
+				size = { 0.2, 0.2, 0.2 },
+				at = { 2.6, 5.9, -3.6 },
+				alpha = 1,
+				light = { color = { 180, 196, 240 }, range = 10, brightness = 0.55 },
+			},
+			{
+				name = "RimWarm",
+				size = { 0.2, 0.2, 0.2 },
+				at = { -1.4, 6.0, 2.6 },
+				alpha = 1,
+				light = { color = { 255, 170, 100 }, range = 9, brightness = 0.7 },
+			},
 			-- the Manual's pages light the face from below (dimmed when it shuts)
 			{
 				name = "PageGlow",
@@ -239,33 +255,42 @@ return {
 			},
 		},
 		shots = {
+			-- (redone 2026-11-24, art/refs/cinema/WinFinalPage.toml: the writer is seen writing, the pen and the page,
+			-- the shut from above, the candles' light on the face, then the face in the lightning)
 			{
 				at = 0,
-				eye = { 2.4, 5.8, 0.4 },
-				look = { 0.25, 2.9, -2.1 },
-				fov = 42,
-				to = { eye = { 2.0, 5.5, 0.0 }, fov = 40 },
+				eye = { -3.4, 4.1, -4.5 },
+				look = { 0.1, 4.0, 0.3 },
+				fov = 34,
+				to = { eye = { -2.7, 4.0, -3.9 }, fov = 31 },
 			},
 			{
-				at = 2.55,
+				at = 1.7,
+				eye = { -1.5, 4.5, -3.4 },
+				look = { 0.35, 3.45, -1.8 },
+				fov = 30,
+				to = { eye = { -0.9, 4.2, -3.0 }, fov = 27 },
+			},
+			{
+				at = 2.6,
 				eye = { 0.35, 8.2, -1.9 },
 				look = { 0.25, 2.9, -2.05 },
 				fov = 36,
 				to = { eye = { 0.3, 7.6, -1.95 } },
 			},
 			{
-				at = 3.3,
-				eye = { 0.6, 3.35, -4.6 },
+				at = 3.45,
+				eye = { -1.5, 3.45, -4.4 },
 				look = { 0, 4.55, 0.65 },
-				fov = 44,
-				to = { eye = { 0.35, 3.7, -3.6 }, fov = 36 },
+				fov = 42,
+				to = { eye = { -0.9, 3.7, -3.5 }, fov = 34 },
 			},
 			{
 				at = 5.6,
-				eye = { 2.6, 4.3, 5.0 },
-				look = { 0, 5.0, -6.5 },
-				fov = 52,
-				to = { eye = { 3.1, 4.6, 6.5 }, fov = 48 },
+				eye = { 2.8, 4.2, -4.6 },
+				look = { 0.1, 4.7, 0.5 },
+				fov = 40,
+				to = { eye = { 3.6, 4.3, -5.8 }, fov = 37 },
 			},
 		},
 		beats = {
@@ -417,6 +442,14 @@ return {
 			{ key = "Crate", stand = true, at = { 15.6, 0, 8.2 }, turn = 20, size = 3.2, color = { 90, 70, 44 } },
 		},
 		parts = {
+			-- (2026-11-24) the star's own light: a cold rim from behind-left on his shoulders and the back of the head, so the Godhood silhouette has an edge against the red sky
+			{
+				name = "RimBack",
+				size = { 0.2, 0.2, 0.2 },
+				at = { -3.0, 8.0, 5.0 },
+				alpha = 1,
+				light = { color = { 190, 200, 240 }, range = 12, brightness = 0.5 },
+			},
 			{
 				name = "Roof",
 				stand = true,
@@ -525,33 +558,36 @@ return {
 		-- the city: rows of buildings from 40 to 240 studs out, their tops from 30 below the roof to 25 above it
 		city = { near = 40, far = 240, width = 240, ground = -70, low = 30, high = 95, seed = 7 },
 		shots = {
+			-- (redone 2026-11-24, art/refs/cinema/WinNewWorld.toml: the walk from behind, the book low and close, his face lit by
+			-- the dying city from out past the edge (it was a shot of the city with his head in the corner), and the
+			-- Godhood silhouette from low and near enough to read, drifting wider as it holds)
 			{
 				at = 0,
 				eye = { 3.2, 2.4, 8.5 },
-				look = { 0, 3.2, -6 },
+				look = { 0.0, 3.2, -6.0 },
 				fov = 48,
 				to = { eye = { 2.0, 2.3, 4.2 }, fov = 46 },
 			},
 			{
 				at = 2.6,
 				eye = { 2.6, 1.6, -7.8 },
-				look = { 0, 5.2, -4.4 },
+				look = { 0.0, 5.2, -4.4 },
 				fov = 50,
 				to = { eye = { 2.1, 1.7, -7.5 }, fov = 47 },
 			},
 			{
 				at = 3.9,
-				eye = { 3.0, 6.6, -1.2 },
-				look = { -2, -6, -48 },
-				fov = 46,
-				to = { eye = { 2.4, 6.8, -2.0 }, fov = 44 },
+				eye = { 2.2, 5.2, -10.8 },
+				look = { 0.0, 5.0, -4.5 },
+				fov = 40,
+				to = { eye = { 1.4, 5.0, -9.6 }, fov = 36 },
 			},
 			{
 				at = 5.5,
-				eye = { 0.7, 1.1, 2.0 },
-				look = { 0, 6.5, -12 },
-				fov = 62,
-				to = { eye = { 1.4, 2.4, 8.0 }, fov = 54 },
+				eye = { -2.6, 1.4, 3.0 },
+				look = { 0.0, 5.6, -4.5 },
+				fov = 46,
+				to = { eye = { -3.4, 1.8, 5.0 }, fov = 44 },
 			},
 		},
 		beats = {
@@ -700,6 +736,21 @@ return {
 			{ key = "FilingCabinet", at = { -6.6, 0, -6.9 }, turn = 180, size = 5, color = { 75, 79, 76 } },
 		},
 		parts = {
+			-- (2026-11-24) the star's own light: a warm rim from behind-left on the shoulders and the back of the head, and a cold key from the front right so the face is never the darkest thing in frame
+			{
+				name = "RimBack",
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.2, 6.4, 3.0 },
+				alpha = 1,
+				light = { color = { 255, 190, 130 }, range = 9, brightness = 0.7 },
+			},
+			{
+				name = "KeyFront",
+				size = { 0.2, 0.2, 0.2 },
+				at = { 3.0, 6.0, -4.6 },
+				alpha = 1,
+				light = { color = { 190, 206, 246 }, range = 11, brightness = 0.5 },
+			},
 			{
 				name = "Floor",
 				stand = true,
@@ -805,33 +856,43 @@ return {
 			{ from = { 1.2, 9.2, -7.6 }, to = { -5.6, 7.0, -7.6 } },
 		},
 		shots = {
+			-- (redone 2026-11-24, art/refs/cinema/WinCaseClosed.toml: he is in frame for the whole clip: over his shoulder to
+			-- the board, the board as the strings go, his face as they snap, the stamp's slam from the side, the face again;
+			-- every lens far enough back for a whole crouched R6, 5 studs tall in frame)
 			{
 				at = 0,
-				eye = { -2.4, 6.2, 2.6 },
-				look = { 0.3, 5.6, -7.6 },
-				fov = 46,
-				to = { eye = { -2.0, 6.2, 1.8 } },
+				eye = { -3.2, 5.0, 3.2 },
+				look = { 0.3, 5.2, -3.5 },
+				fov = 44,
+				to = { eye = { -2.6, 5.0, 2.2 }, fov = 42 },
 			},
 			{
-				at = 2.4,
+				at = 1.7,
 				eye = { 1.8, 5.9, -3.4 },
-				look = { 0, 5.7, -7.6 },
+				look = { 0.0, 5.7, -7.6 },
 				fov = 42,
 				to = { eye = { 1.2, 5.8, -3.9 }, fov = 40 },
 			},
 			{
-				at = 4.4,
-				eye = { 0.45, 7.8, -1.9 },
-				look = { 0.3, 2.8, -2.45 },
-				fov = 36,
-				to = { eye = { 0.4, 7.4, -2.0 } },
+				at = 2.9,
+				eye = { -2.4, 4.9, -6.5 },
+				look = { 0.0, 3.9, 0.3 },
+				fov = 46,
+				to = { eye = { -1.8, 4.8, -5.8 }, fov = 42 },
 			},
 			{
-				at = 5.6,
-				eye = { -4.6, 5.2, -1.6 },
-				look = { 0, 4.8, 0.1 },
-				fov = 34,
-				to = { eye = { -4.2, 5.1, -1.5 }, fov = 32 },
+				at = 4.3,
+				eye = { 6.4, 4.1, -2.0 },
+				look = { 0.4, 3.4, -1.6 },
+				fov = 48,
+				to = { eye = { 5.6, 4.0, -2.4 }, fov = 44 },
+			},
+			{
+				at = 5.5,
+				eye = { 2.2, 4.6, -6.6 },
+				look = { 0.1, 3.9, 0.3 },
+				fov = 46,
+				to = { eye = { 3.2, 4.8, -7.0 }, fov = 42 },
 			},
 		},
 		beats = {
@@ -938,6 +999,14 @@ return {
 			{ key = "ChessKing", name = "King", at = { 0, 0, -9 }, size = 12.5, color = { 23, 24, 21 } },
 		},
 		parts = {
+			-- (2026-11-24) a cold rim from behind on the star's shoulders, so he separates from the dark pieces
+			{
+				name = "RimBack",
+				size = { 0.2, 0.2, 0.2 },
+				at = { 2.0, 7.0, 8.0 },
+				alpha = 1,
+				light = { color = { 190, 204, 244 }, range = 14, brightness = 0.5 },
+			},
 			{
 				name = "Ground",
 				stand = true,
@@ -983,8 +1052,22 @@ return {
 			{ kind = "pawn", color = "black", z = -21, xs = { -21, -15, -9, 9, 15, 21 } },
 		},
 		shots = {
-			{ at = 0, eye = { 0, 2.2, 17 }, look = { 0, 3.4, -1 }, fov = 40, to = { eye = { 0, 2.0, 9.5 } } },
-			{ at = 2.0, eye = { 9, 10, -19 }, look = { 0, 3.2, -2.5 }, fov = 44, to = { eye = { 7.5, 9, -18 } } },
+			-- (redone 2026-11-24, art/refs/cinema/WinCheckmate.toml: the 36-stud top-down, where he was a dot, is a low side
+			-- view of the king going over; the ending is nearer)
+			{
+				at = 0,
+				eye = { 0.0, 2.2, 17.0 },
+				look = { 0.0, 3.4, -1.0 },
+				fov = 40,
+				to = { eye = { 0.0, 2.0, 9.5 } },
+			},
+			{
+				at = 2.0,
+				eye = { 9.0, 10.0, -19.0 },
+				look = { 0.0, 3.2, -2.5 },
+				fov = 44,
+				to = { eye = { 7.5, 9.0, -18.0 } },
+			},
 			{
 				at = 3.4,
 				eye = { 5.4, 4.4, -4.8 },
@@ -992,13 +1075,19 @@ return {
 				fov = 38,
 				to = { eye = { 4.9, 4.3, -4.4 }, fov = 35 },
 			},
-			{ at = 4.25, eye = { 0.6, 36, -9 }, look = { 0, 0, -9.5 }, fov = 48, to = { eye = { 0.6, 38, -9 } } },
+			{
+				at = 4.25,
+				eye = { 14.0, 6.0, -3.5 },
+				look = { 0.0, 5.6, -8.0 },
+				fov = 46,
+				to = { eye = { 12.5, 5.2, -4.8 }, fov = 44 },
+			},
 			{
 				at = 6.15,
-				eye = { 2.6, 0.9, -16 },
-				look = { 0, 4.6, -2.6 },
-				fov = 56,
-				to = { eye = { 2.0, 1.1, -13.5 }, fov = 52 },
+				eye = { 2.6, 0.9, -16.0 },
+				look = { 0.0, 4.4, -2.6 },
+				fov = 46,
+				to = { eye = { 2.0, 1.1, -13.5 }, fov = 42 },
 			},
 		},
 		beats = {
@@ -1131,6 +1220,21 @@ return {
 			},
 		},
 		parts = {
+			-- (2026-11-24) a warm key from the dawn side on his face and a cool rim from behind-left on the shoulders
+			{
+				name = "KeyFace",
+				size = { 0.2, 0.2, 0.2 },
+				at = { 2.0, 6.4, -4.2 },
+				alpha = 1,
+				light = { color = { 255, 214, 170 }, range = 10, brightness = 0.45 },
+			},
+			{
+				name = "RimBack",
+				size = { 0.2, 0.2, 0.2 },
+				at = { -2.0, 6.5, 3.5 },
+				alpha = 1,
+				light = { color = { 190, 205, 245 }, range = 10, brightness = 0.5 },
+			},
 			{
 				name = "Floor",
 				stand = true,
@@ -1207,12 +1311,14 @@ return {
 			},
 		},
 		shots = {
+			-- (redone 2026-11-24, art/refs/cinema/WinFinalPageBureau.toml: the burning page is held beside his face so the face
+			-- is seen over the flame, and the ending is from the front, into the dawn, not from behind)
 			{
 				at = 0,
-				eye = { 2.6, 6.4, 2.8 },
-				look = { 0.15, 3.0, -1.8 },
-				fov = 42,
-				to = { eye = { 2.2, 6.2, 2.2 }, fov = 40 },
+				eye = { -1.6, 3.8, -4.0 },
+				look = { 0.2, 4.4, -0.9 },
+				fov = 48,
+				to = { eye = { -1.0, 3.9, -3.6 }, fov = 44 },
 			},
 			{
 				at = 2.2,
@@ -1223,10 +1329,10 @@ return {
 			},
 			{
 				at = 3.0,
-				eye = { 0.35, 4.6, -3.8 },
-				look = { 0.3, 4.4, -0.6 },
-				fov = 34,
-				to = { eye = { 0.3, 4.5, -3.4 }, fov = 32 },
+				eye = { -0.9, 4.7, -4.2 },
+				look = { 0.4, 4.4, -0.6 },
+				fov = 38,
+				to = { eye = { -0.5, 4.6, -3.7 }, fov = 34 },
 			},
 			{
 				at = 4.95,
@@ -1237,10 +1343,10 @@ return {
 			},
 			{
 				at = 6.3,
-				eye = { 2.4, 3.6, 7.0 },
-				look = { 0, 5.6, -9 },
-				fov = 52,
-				to = { eye = { 2.0, 3.6, 6.2 }, fov = 50 },
+				eye = { 1.8, 4.4, -5.8 },
+				look = { 0.1, 4.7, 0.4 },
+				fov = 46,
+				to = { eye = { 2.6, 4.6, -7.4 }, fov = 42 },
 			},
 		},
 
@@ -1413,6 +1519,21 @@ return {
 		vignette = { strength = 0.4 },
 		props = {},
 		parts = {
+			-- (2026-11-24) the star's own light: the sun is his key (it faces him), a cold rim from behind-right on the hair and shoulders so he separates from the grey stone, and a soft fill from the press's side
+			{
+				name = "RimBack",
+				size = { 0.2, 0.2, 0.2 },
+				at = { 2.4, 7.4, 3.4 },
+				alpha = 1,
+				light = { color = { 200, 214, 255 }, range = 10, brightness = 0.6 },
+			},
+			{
+				name = "FillPress",
+				size = { 0.2, 0.2, 0.2 },
+				at = { -3.0, 3.0, -6.0 },
+				alpha = 1,
+				light = { color = { 255, 226, 196 }, range = 11, brightness = 0.35 },
+			},
 			-- (stand-ins: the landing, the flight down, the square)
 			{ stand = true, size = { 38, 1, 10 }, at = { 0, -0.5, 5 }, color = { 214, 210, 200 }, material = "Marble" },
 			{
@@ -1546,29 +1667,43 @@ return {
 			},
 		},
 		shots = {
+			-- (redone 2026-11-24, art/refs/cinema/WinNewWorldBureau.toml: five shots, none under a second: the long lens from
+			-- the press, the profile, the low raise, the raised book seen from the press's low angle with the sun on his
+			-- face, and an ending that pulls back from a three-quarter view with the book at his chest)
 			{
 				at = 0,
-				eye = { 2.2, 0.6, -20 },
-				look = { 0, 3.8, 0.8 },
-				fov = 30,
-				to = { eye = { 1.9, 0.7, -18.8 }, fov = 29 },
+				eye = { 2.2, 0.6, -20.0 },
+				look = { 0.0, 3.8, 0.8 },
+				fov = 25,
+				to = { eye = { 1.9, 0.7, -18.8 }, fov = 23 },
 			},
-			{ at = 1.9, eye = { -6, 3.6, -2.6 }, look = { 0, 4.4, 0.3 }, fov = 40, to = { eye = { -5.6, 3.6, -2.2 } } },
+			{
+				at = 1.9,
+				eye = { -6.0, 3.6, -2.6 },
+				look = { 0.0, 4.4, 0.3 },
+				fov = 40,
+				to = { eye = { -5.6, 3.6, -2.2 } },
+			},
 			{
 				at = 2.9,
 				eye = { 1.0, 1.8, -4.2 },
-				look = { 0, 6.2, 0.3 },
+				look = { 0.0, 6.2, 0.3 },
 				fov = 50,
 				to = { eye = { 0.9, 1.7, -3.9 }, fov = 48 },
 			},
-			{ at = 3.7, eye = { 0.9, 6.0, 3.6 }, look = { 0, -2, -60 }, fov = 44, to = { eye = { 0.8, 5.9, 3.2 } } },
-			{ at = 5.6, eye = { 14, -1.0, -14 }, look = { 0, 4.6, 0.2 }, fov = 44, to = { eye = { 13, -0.8, -13 } } },
 			{
-				at = 6.05,
-				eye = { 0.6, 4.6, -4.4 },
-				look = { 0, 4.4, 0.25 },
-				fov = 32,
-				to = { eye = { 0.5, 4.6, -4.0 }, fov = 30 },
+				at = 3.7,
+				eye = { -3.4, 1.6, -9.5 },
+				look = { 0.2, 5.0, 0.3 },
+				fov = 40,
+				to = { eye = { -2.4, 1.8, -8.0 }, fov = 38 },
+			},
+			{
+				at = 5.6,
+				eye = { 3.8, 3.2, -5.4 },
+				look = { 0.1, 4.3, 0.3 },
+				fov = 40,
+				to = { eye = { 4.6, 3.6, -6.8 }, fov = 38 },
 			},
 		},
 
@@ -1701,6 +1836,14 @@ return {
 			{ key = "EvidenceBoard", at = { -5.6, 5.8, -7.75 }, turn = 180, size = 5.6, color = { 72, 54, 43 } },
 		},
 		parts = {
+			-- (2026-11-24) a cold rim from behind on the star in the armchair, against the firelight on his face
+			{
+				name = "RimBack",
+				size = { 0.2, 0.2, 0.2 },
+				at = { 2.4, 6.5, 3.5 },
+				alpha = 1,
+				light = { color = { 170, 190, 240 }, range = 10, brightness = 0.5 },
+			},
 			{
 				name = "Floor",
 				stand = true,
@@ -1757,14 +1900,23 @@ return {
 			{ from = { -3.2, 7.2, -7.45 }, to = { -6.6, 5.2, -7.45 } },
 		},
 		shots = {
+			-- (redone 2026-11-24, art/refs/cinema/WinCaseClosedCoven.toml: the opening is from the fire's side so his face is lit
+			-- by it (it was his back), and the last two are far enough back for a whole R6 in an armchair: they were 2.5 studs
+			-- of frame and filled with his arms)
 			{
 				at = 0,
-				eye = { 2.6, 6.6, 5.6 },
-				look = { -0.8, 2.8, -6.5 },
+				eye = { -2.8, 4.6, -5.2 },
+				look = { 0.0, 4.2, 0.6 },
 				fov = 44,
-				to = { eye = { 2.3, 6.4, 5.0 }, fov = 42 },
+				to = { eye = { -2.2, 4.5, -4.4 }, fov = 40 },
 			},
-			{ at = 1.9, eye = { 0.6, 1.5, -5.6 }, look = { 0, 3.6, 0.8 }, fov = 40, to = { eye = { 0.5, 1.6, -5.2 } } },
+			{
+				at = 1.9,
+				eye = { 0.6, 1.5, -5.6 },
+				look = { 0.0, 3.6, 0.8 },
+				fov = 46,
+				to = { eye = { 0.5, 1.6, -5.2 } },
+			},
 			{
 				at = 3.15,
 				eye = { 6.5, 3.0, -3.0 },
@@ -1781,17 +1933,17 @@ return {
 			},
 			{
 				at = 5.0,
-				eye = { -1.4, 1.8, -4.2 },
-				look = { 0, 4.2, 0.6 },
-				fov = 46,
-				to = { eye = { -1.2, 1.9, -3.8 } },
+				eye = { -1.8, 2.2, -5.6 },
+				look = { 0.0, 4.2, 0.6 },
+				fov = 52,
+				to = { eye = { -1.4, 2.4, -5.0 }, fov = 50 },
 			},
 			{
 				at = 6.4,
-				eye = { 0.9, 5.0, -4.4 },
-				look = { 0, 4.8, 0.6 },
-				fov = 36,
-				to = { eye = { 0.8, 5.0, -4.0 }, fov = 34 },
+				eye = { 1.6, 4.6, -6.6 },
+				look = { 0.0, 4.3, 0.6 },
+				fov = 44,
+				to = { eye = { 2.2, 4.7, -7.0 }, fov = 42 },
 			},
 		},
 

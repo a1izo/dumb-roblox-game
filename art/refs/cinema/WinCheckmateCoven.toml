@@ -1,0 +1,61 @@
+# The Coven's Checkmate win cutscene (WinCuts.checkmateCoven, clip winCheckmateCoven). Reference notes.
+id = "WinCheckmateCoven"
+name = "Checkmate, for the Coven: the white king flicked over the parapet"
+status = "redone 2026-11-24 (the left hand only: the cameras and the lights were kept); the old acting is art/scripts/emotes/wins_old.py; data in src/shared/Cinema/WinCuts.luau"
+
+[scene]
+sentence = "At a crate by the roof's edge in the rain Diavolo looks down at a small chessboard, flicks the white king off it and over the parapet, watches it fall all the way down, throws his head back in the lightning, turns his back on the drop and stands facing the camera."
+action = "The flick (2.7 s): a finger laid on the king, drawn back, one hard flick; he watches it fall 2 s."
+mood = "Rain, a red sign, a black city, lightning; the flick tiny, the standing at the end huge."
+
+[origin]
+what = "Kira's laugh (Death Note) for the thrown-back head and the lone standing figure; the chess finger from the live-action chess scene (L picking a piece between finger and thumb)."
+recognisable = "A small figure alone, still, in a storm."
+ours = "R6 on a roof in the rain; the crate with a chessboard, a red sign, the city below."
+
+[source]
+url = "https://www.youtube.com/watch?v=C65oaIHsdYM"
+title = "Death Note - Kira's Laugh (Original) (37 s)"
+kind = "the anime scene"
+watched = "2026-11-24: a 16-frame contact sheet (see WinCaseClosedCoven.toml); the live-action chess clip zJlz4f2DGsc as well"
+mirror = false
+
+[[beat]]
+src = "Z 4.7-14"
+t = "0-1.5"
+pose = "Leaning over the board, the left hand behind the back, looking down at it."
+[[beat]]
+src = "-"
+t = "1.85-2.15"
+pose = "A breath in, the arm back, then leaning in."
+[[beat]]
+src = "Z 125-135"
+t = "2.5-2.62"
+pose = "One finger on the white king; drawn back."
+[[beat]]
+src = "-"
+t = 2.7
+pose = "The flick (snap); the left hand behind the back flung out a little by it (new)."
+[[beat]]
+src = "-"
+t = "3.1-5.0"
+pose = "Down after it, all the way, the head tipping further, the left hand shifting behind (new)."
+[[beat]]
+src = "K 19.6"
+t = 5.4
+pose = "The head thrown back in the lightning."
+[[beat]]
+src = "-"
+t = "5.86-6.08"
+pose = "A counter-turn, then one pivot from the edge."
+[[beat]]
+src = "K 31-36"
+t = "6.32-8.0"
+pose = "Facing the camera, the lightning behind him, the weight easing from foot to foot, the left hand adjusting behind the back; held 1.7 s."
+
+[camera]
+shots = "unchanged: seven shots from 52 down to 34 deg, the fall seen from straight down at 2.95 (the king falls through it)"
+lights = "unchanged: the red SignLight and the cold FaceFill were already the key and the fill, the lightning is the rim."
+
+[check]
+by = "2026-11-24: check_motion --detail before/after; game watch owed"
