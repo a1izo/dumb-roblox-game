@@ -27,6 +27,8 @@
 --   scatter(at: CFrame, { kind = "paper" | "feathers" | "shards", ramp, scale, count, wind, flash, lead })
 --   mist(at: CFrame | Vector3, { ramp, size, density }) -> { stop, destroy }
 --   menace(chest: Vector3, { ramp, floor, size }) -> { stop, destroy }
+--   tap(at, { ramp, scale, flat, sparks, gather, light, lead }), stepDust(at: CFrame, { ramp, scale, dir, lead }), spores(at, { ramp, scale, lead })
+--     (the small accents of Fresh/Small, for emotes that fire on every beat or step)
 --
 -- Fresh.Defs is the pure declaration of all of them (textures, moments, parameters, booth variants).
 
@@ -38,6 +40,7 @@ local Menace = require(script.Menace)
 local Scatter = require(script.Scatter)
 local Shine = require(script.Shine)
 local Slash = require(script.Slash)
+local Small = require(script.Small)
 local Smoke = require(script.Smoke)
 
 local Fresh = {}
@@ -60,5 +63,9 @@ Fresh.menace = Menace.menace
 Fresh.dissolve = Scatter.dissolve
 Fresh.scatter = Scatter.scatter
 Fresh.sigil = Floor.sigil
+Fresh.Small = Small
+Fresh.tap = Small.tap
+Fresh.stepDust = Small.stepDust
+Fresh.spores = Small.spores
 
 return Fresh
