@@ -23,6 +23,7 @@ export type TapOptions = {
 	sparks: number?, -- how many sparks are thrown (7)
 	gather: boolean?, -- a few specks drawn in first (off)
 	light: boolean?, -- a light on the beat (on)
+	lite: boolean?, -- only the star and the sparks, no ring and no dark halo (off)
 	lead: number?,
 }
 
@@ -43,7 +44,7 @@ function Small.tap(at: CFrame | Vector3, options: TapOptions?): () -> ()
 			end
 			else nil,
 		hit = function()
-			Emit.burst(frame, {
+			local list: { any } = {
 				{
 					{
 						tex = "VfxGlint",
@@ -100,7 +101,12 @@ function Small.tap(at: CFrame | Vector3, options: TapOptions?): () -> ()
 					},
 					1,
 				},
-			})
+			}
+			if o.lite == true then
+				table.remove(list, 4)
+				table.remove(list, 2)
+			end
+			Emit.burst(frame, list)
 			if o.light ~= false then
 				C.beat(pos, ramp[1], 7 * s, 1.5 * s, 0.04)
 			end
@@ -167,6 +173,19 @@ function Small.stepDust(at: CFrame, options: StepOptions?): () -> ()
 				},
 				{
 					{
+						-- (the heel's own flash: the white-hot core of the step)
+						tex = "VfxGlint",
+						ramp = hot,
+						size = C.size("VfxGlint", 1.2 * s, { { 0, 0 }, { 0.3, 1.2 * s }, { 1, 0 } }),
+						alpha = { { 0, 0 }, { 0.5, 0.1 }, { 1, 1 } },
+						life = 0.55,
+						bright = 2.3,
+						z = 2,
+					},
+					1,
+				},
+				{
+					{
 						-- (a scuff of sparks where the heel struck)
 						tex = "VfxSparks",
 						ramp = hot,
@@ -183,6 +202,7 @@ function Small.stepDust(at: CFrame, options: StepOptions?): () -> ()
 					4,
 				},
 			})
+			C.beat(pos + up * 0.3, ramp[1], 5 * s, 0.7 * s, 0.04)
 		end,
 	})
 end
@@ -255,13 +275,14 @@ function Small.spores(at: CFrame | Vector3, options: SporeOptions?): () -> ()
 				{
 					{
 						-- (the dark layer under the puff: laid over, never added)
-						tex = "VfxSmokePuff",
+						-- (a short-lived mist, not the long puff sheet: a step comes every half second)
+						tex = "VfxMist",
 						ramp = shade,
-						size = C.size("VfxSmokePuff", 2.2 * s, { { 0, 0.7 * s }, { 1, 2.4 * s } }),
-						alpha = { { 0, 1 }, { 0.2, 0.62 }, { 0.7, 0.78 }, { 1, 1 } },
-						life = { 2.1, 2.3 },
-						speed = { 0.2, 0.5 },
-						accel = Vector3.new(0, 0.6, 0),
+						size = { { 0, 1.6 * s }, { 1, 2.4 * s } },
+						alpha = { { 0, 1 }, { 0.25, 0.6 }, { 0.8, 0.75 }, { 1, 1 } },
+						life = 1.3,
+						speed = { 0.1, 0.4 },
+						accel = Vector3.new(0, 0.5, 0),
 						light = 0,
 						lit = 0.2,
 						z = -1,

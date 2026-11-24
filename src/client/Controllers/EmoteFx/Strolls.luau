@@ -577,12 +577,13 @@ end
 local SPORES = ColorSequence.new(Color3.fromRGB(236, 230, 210), Color3.fromRGB(200, 192, 170))
 
 -- The strolls on the move: each footfall of the walk (LocomotionController.Footfall) leaves its own mark; the old mark
--- (or the new kit's when its flag is on: never faster than one mark every 0.25 s, never on low graphics or under
+-- (or the new kit's when its flag is on: never faster than one mark every `gap` seconds, never on low graphics or under
 -- Reduce motion, like the old dust): `fresh(character, sole)` makes the mark.
 local function strollFresh(
 	on: () -> boolean,
 	old: (character: Model) -> (),
-	fresh: (character: Model, sole: Vector3) -> ()
+	fresh: (character: Model, sole: Vector3) -> (),
+	gap: number
 ): Fx
 	return function(character, preview)
 		if preview then
@@ -599,7 +600,7 @@ local function strollFresh(
 			end
 			local now = os.clock()
 			local sole = lowerSole(character)
-			if sole and now - last >= 0.25 and not Governor.low("emoteFx") and not Motion.isReduced() then
+			if sole and now - last >= gap and not Governor.low("emoteFx") and not Motion.isReduced() then
 				last = now
 				fresh(character, sole)
 			end
@@ -637,7 +638,7 @@ end, function(character, sole)
 		Vector3.new(sole.X, floor.Y + 0.08, sole.Z) + heading
 	)
 	Fresh.stepDust(at, { ramp = DUST_RAMP, scale = 1 })
-end)
+end, 0.35)
 -- Mushroom Stroll: pale spores puffing up where each foot comes down.
 -- On the new kit (stage 4b second batch, Pilot.on.mushroomStroll; false = the old build). One sentence: each foot puffs up a
 -- little cloud of pale spores that rise and wander off (motif: spores, soft pale light). Each step, by the footfall:
@@ -665,6 +666,6 @@ end, function(character)
 	end
 end, function(_, sole)
 	Fresh.spores(sole + Vector3.new(0, 0.25, 0), { ramp = SPORE_RAMP, scale = 1 })
-end)
+end, 0.6)
 
 return FX

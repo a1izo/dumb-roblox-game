@@ -67,7 +67,7 @@ FX.preDawnBonk = function(character, preview)
 					Common.pieces(tip, Color3.fromRGB(170, 120, 70), if big then 12 else 7, 0.22, 7)
 				end
 				if not big then
-					Fresh.tap(tip, { ramp = DAWN, scale = 0.7, sparks = 5, light = false, lead = 0.04 })
+					Fresh.tap(tip, { ramp = DAWN, scale = 0.7, sparks = 5, lite = true, light = false, lead = 0.04 })
 				end
 			else
 				burst(tip, {
@@ -83,7 +83,7 @@ FX.preDawnBonk = function(character, preview)
 			end
 		end
 		local sole = lowerSole(character)
-		if sole and not (fresh and big) then
+		if sole and not fresh then
 			EmoteFx.thud(CFrame.new(sole), if big then 5 else 1.4)
 		end
 	end
