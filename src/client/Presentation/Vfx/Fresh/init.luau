@@ -28,6 +28,9 @@
 --   mist(at: CFrame | Vector3, { ramp, size, density }) -> { stop, destroy }
 --   menace(chest: Vector3, { ramp, floor, size }) -> { stop, destroy }
 --   tap(at, { ramp, scale, flat, sparks, gather, light, lead }), stepDust(at: CFrame, { ramp, scale, dir, lead }), spores(at, { ramp, scale, lead })
+--   breath(at: Vector3, { ramp, scale, dir, lead })  (a thin blown mist for a cough or a sigh)
+--   flecks(at: CFrame, { ramp, scale, tex, count, fall, lead })  (a few loose pieces thrown up and falling: shavings, crumbs, chips)
+--   scuff(at: CFrame, { ramp, scale, lead })  (a quick puff and a few sparks, gone inside 0.6 s, for a dance that steps every third of a second)
 --     (the small accents of Fresh/Small, for emotes that fire on every beat or step)
 --
 -- Fresh.Defs is the pure declaration of all of them (textures, moments, parameters, booth variants).
@@ -67,5 +70,8 @@ Fresh.Small = Small
 Fresh.tap = Small.tap
 Fresh.stepDust = Small.stepDust
 Fresh.spores = Small.spores
+Fresh.scuff = Small.scuff
+Fresh.breath = Small.breath
+Fresh.flecks = Small.flecks
 
 return Fresh

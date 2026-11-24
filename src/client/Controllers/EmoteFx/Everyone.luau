@@ -1,6 +1,9 @@
 -- Everyone's emotes, the Scrawl ones and the Penned ones: one small touch each, timed to its clip. Moved
 -- unchanged from the old one-file Controllers/EmoteFx.luau (V2.1).
 
+local Fresh = require(script.Parent.Parent.Parent.Presentation.Vfx.Fresh)
+local Palette = require(script.Parent.Parent.Parent.Presentation.Vfx.Palette)
+
 local Common = require(script.Parent.Shared)
 local EmoteFx = Common.EmoteFx
 local floorUnder = Common.floorUnder
@@ -232,5 +235,39 @@ FX.excuseMeSir = accent(1.6, { 0.4 }, function(character)
 		})
 	end
 end)
+
+-- The fourth batch, on the new kit (stage 4b): the two Penned ones of this family (the rest are Scrawl: the motion alone) keep
+-- their idea and beat, each behind its flag in Vfx/Pilot (false = the old build above, which stays as it was).
+local flag = Common.flag
+local beats = Common.beats
+
+-- Apple Toss: the apple catches the light as it leaves the hand (0.5 s) and as it is caught (2.9 s): a small white-hot star, with
+-- the red of the apple in its edge.
+local APPLE_RAMP = Palette.pair(Color3.fromRGB(255, 150, 150), Color3.fromRGB(255, 244, 240))
+FX.appleToss = flag(
+	"appleToss",
+	beats(3.6, { 0.5, 2.9 }, 0.1, function(character, lead)
+		local at = hand(character, "Right")
+		if at then
+			Fresh.glint(at, { ramp = APPLE_RAMP, scale = 0.6, lead = lead })
+		end
+	end),
+	FX.appleToss
+)
+
+-- Excuse Me, Sir: a polite little cough into the air before the look up: a short, thin breath of pale smoke at the lips.
+FX.excuseMeSir = flag(
+	"excuseMeSir",
+	beats(1.6, { 0.4 }, 0.06, function(character, lead)
+		local at = onHead(character, Vector3.new(0, -0.25, -0.7))
+		if at then
+			Fresh.breath(
+				at,
+				{ scale = 0.5, dir = (character:GetPivot().LookVector + Vector3.new(0, 0.15, 0)).Unit, lead = lead }
+			)
+		end
+	end),
+	FX.excuseMeSir
+)
 
 return FX

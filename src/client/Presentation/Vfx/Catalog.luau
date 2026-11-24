@@ -445,6 +445,19 @@ local FIRST_BEAT: { [string]: number } = {
 	chipAndPen = 7.05, -- the bite
 	writeAir = 2.3, -- the full stop
 	blindfoldLiftUp = 0.9, -- the blindfold goes up
+	-- (stage 4b fourth batch: the same, read from the effect's own timers)
+	itsYou = 0.24, -- the point lands
+	appleBite = 0.93, -- the crunch
+	fortySeconds = 3.45, -- the heartbeat
+	furiousScribbling = 0.3, -- the first scratch
+	furiousScribblingSlash = 1.2, -- the red slash
+	lowBattery = 3.75, -- the first fizzle when it is empty
+	lowBatteryCharge = 0.15, -- the first jolt
+	twoFingerGrip = 0,
+	puppetDance = 0,
+	puppetPop = 0,
+	jackpotShuffle = 0,
+	animatronicWelcome = 0,
 }
 
 -- The emote's own effect, and its aura, on the dummy, as a player sees it (the clip plays on the body too, so the effect

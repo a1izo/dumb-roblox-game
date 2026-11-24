@@ -307,11 +307,41 @@ FX.reapersEyes = function(character, preview)
 			at:SetAttribute("DGEmote", true)
 			if fresh then
 				if side < 0 then
-					-- (one glint between the eyes: two would put the effect over its emitter budget)
-					Fresh.glint(
-						head.Position + head.CFrame.LookVector * (head.Size.Z / 2 + 0.05),
-						{ ramp = ramp, scale = 1.6, lead = 0.04 }
-					)
+					-- (one star between the eyes: two would put the effect over its emitter budget. Fourth batch, a second try: the
+					-- recipe's glint (gather, two stars, a halo, a light and its sparks) was six emitters and a light of its own over
+					-- the eyes' lamp and the pulse's light, so the two stars are made here, no gather, no halo (the dark bank at the feet is the dark layer), no light)
+					local between = head.Position + head.CFrame.LookVector * (head.Size.Z / 2 + 0.05)
+					local hot = { ramp[1], ramp[2], ramp[3] }
+					Vfx.Emit.burst(between, {
+						{
+							{
+								tex = "VfxGlint",
+								ramp = hot,
+								size = Vfx.Tex.real("VfxGlint") and { { 0, 2.6 }, { 1, 2.8 } }
+									or { { 0, 0 }, { 0.35, 2.6 }, { 1, 0 } },
+								alpha = { { 0, 0 }, { 0.5, 0.05 }, { 1, 1 } },
+								life = 0.55,
+								rot = { -12, 12 },
+								bright = 2.4,
+								z = 2,
+							},
+							1,
+						},
+						{
+							{
+								tex = "VfxGlint",
+								ramp = hot,
+								size = Vfx.Tex.real("VfxGlint") and { { 0, 1.5 }, { 1, 1.6 } }
+									or { { 0, 0 }, { 0.35, 1.5 }, { 1, 0 } },
+								alpha = { { 0, 0 }, { 0.5, 0.1 }, { 1, 1 } },
+								life = 0.55,
+								rot = { 44, 50 },
+								bright = 2,
+								z = 3,
+							},
+							1,
+						},
+					})
 				end
 			else
 				local flare = Vfx.Emit.make(at, {
@@ -327,18 +357,21 @@ FX.reapersEyes = function(character, preview)
 				})
 				flare:Emit(1)
 			end
-			local _, stopGlow = Vfx.Emit.hold(at, {
-				tex = "VfxGlow",
-				color = BLOOD_HOT,
-				size = 0.9,
-				life = 4,
-				rate = 1 / 3.8,
-				alpha = { { 0, 1 }, { 0.05, 0.25 }, { 0.95, 0.25 }, { 1, 1 } },
-				locked = true,
-				bright = 1.2,
-				z = 0.8,
-			})
-			table.insert(stops, stopGlow)
+			if not fresh then
+				-- (the new kit has no plain glow dots on the eyes: the eyes are lit parts, the star and the pulse's light are enough)
+				local _, stopGlow = Vfx.Emit.hold(at, {
+					tex = "VfxGlow",
+					color = BLOOD_HOT,
+					size = 0.9,
+					life = 4,
+					rate = 1 / 3.8,
+					alpha = { { 0, 1 }, { 0.05, 0.25 }, { 0.95, 0.25 }, { 1, 1 } },
+					locked = true,
+					bright = 1.2,
+					z = 0.8,
+				})
+				table.insert(stops, stopGlow)
+			end
 		end
 		if preview then
 			return
@@ -366,11 +399,44 @@ FX.reapersEyes = function(character, preview)
 				Vector3.new(5, 0.1, 5)
 			)
 			if fresh then
-				-- (a bank of red mist lying round the feet, a dark bank under it: Fresh.mist)
-				local bank = Fresh.mist(ground.Position, { ramp = ramp, size = 5 })
+				-- (a bank of red mist lying round the feet and a dark bank under it. Fourth batch, a second try: Fresh.mist is eight
+				-- emitters with its first fill and its flat bank and motes, which put the eyes over the scene budget on top of the
+				-- aura; these are its two held banks only, the pulse and the stars carry the rest)
+				local shade = Fresh.Small.shadow(ramp)
+				local bank = Fresh.Small.loop(ground, {
+					{
+						tex = "VfxMist",
+						ramp = ramp,
+						size = { { 0, 2.8 }, { 1, 4 } },
+						alpha = { { 0, 1 }, { 0.25, 0.72 }, { 0.75, 0.72 }, { 1, 1 } },
+						life = { 8, 10 },
+						speed = { 0.2, 0.8 },
+						spread = 180,
+						rot = { 0, 360 },
+						rate = 1.4,
+						light = 0.4,
+						lit = 0.4,
+						shape = Enum.ParticleEmitterShape.Box,
+					},
+					{
+						tex = "VfxMist",
+						ramp = shade,
+						size = { { 0, 3.2 }, { 1, 4.6 } },
+						alpha = { { 0, 1 }, { 0.3, 0.82 }, { 0.75, 0.84 }, { 1, 1 } },
+						life = { 10, 12 },
+						speed = { 0.1, 0.5 },
+						spread = 180,
+						rot = { 0, 360 },
+						rate = 0.7,
+						light = 0,
+						lit = 0.1,
+						z = -1,
+						shape = Enum.ParticleEmitterShape.Box,
+					},
+				})
 				table.insert(stops, function()
 					bank.stop()
-					Vfx.Clock.after(3, function()
+					Vfx.Clock.after(12, function()
 						bank.destroy()
 						ground:Destroy()
 					end)

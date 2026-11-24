@@ -207,6 +207,202 @@ function Small.stepDust(at: CFrame, options: StepOptions?): () -> ()
 	})
 end
 
+export type ScuffOptions = {
+	ramp: Palette.Ramp?, -- the dust (the world's dust by default)
+	scale: number?,
+	lead: number?,
+}
+
+-- A quick scuff of a foot (fourth batch, for dances that step every third of a second): a small puff of dust off the floor and a
+-- few sparks, both gone inside 0.6 s so the next step finds nothing of this one alive (two emitters, no light).
+function Small.scuff(at: CFrame, options: ScuffOptions?): () -> ()
+	local o = options or {}
+	local ramp = o.ramp or Palette.WORLD.dust
+	local hot = C.hotter(ramp)
+	local s = o.scale or 1
+	local lead = o.lead or 0.04
+	return Moment.play(at, {
+		lead = lead,
+		hit = function()
+			Emit.burst(at, {
+				{
+					{
+						tex = "VfxDust",
+						ramp = ramp,
+						size = { { 0, 0.5 * s }, { 1, 1.7 * s } },
+						alpha = { { 0, 0.1 }, { 0.5, 0.4 }, { 1, 1 } },
+						life = { 0.55, 0.6 },
+						speed = { 1.5 * s, 3.5 * s },
+						drag = 4,
+						spread = 80,
+						rot = { 0, 360 },
+						light = 0,
+						lit = 0.55,
+						z = 1,
+					},
+					2,
+				},
+				{
+					{
+						tex = "VfxSparks",
+						ramp = hot,
+						size = { { 0, 0.4 * s }, { 1, 0.08 * s } },
+						alpha = { { 0, 1 }, { 0.08, 0 }, { 0.7, 0.25 }, { 1, 1 } },
+						life = { 0.25, 0.45 },
+						speed = { 4 * s, 9 * s },
+						drag = 3,
+						accel = Vector3.new(0, -26 * s, 0),
+						spread = 70,
+						face = "along",
+						bright = 2.2,
+					},
+					3,
+				},
+			})
+		end,
+	})
+end
+
+export type FleckOptions = {
+	ramp: Palette.Ramp?,
+	scale: number?,
+	tex: string?, -- the pieces' texture: "VfxPaper" (default), "VfxShards" or "VfxFeatherTumble"
+	count: number?, -- pieces thrown (4)
+	fall: number?, -- how hard they fall (14 studs a second squared; a paper flutters slower)
+	lead: number?,
+}
+
+-- A few loose pieces thrown from `at` (its up the way they fly) and falling (fourth batch, for shavings, crumbs and chips):
+-- the pieces, and two specks of the same colour catching the light as the white-hot core (two emitters, no light).
+function Small.flecks(at: CFrame, options: FleckOptions?): () -> ()
+	local o = options or {}
+	local ramp = C.ramp(o)
+	local hot = C.hotter(ramp)
+	local s = o.scale or 1
+	local lead = o.lead or 0.06
+	local still = C.still()
+	return Moment.play(at, {
+		lead = lead,
+		hit = function()
+			Emit.burst(at, {
+				{
+					{
+						tex = o.tex or "VfxPaper",
+						ramp = ramp,
+						size = { { 0, 0.5 * s, 0.2 * s }, { 1, 0.4 * s, 0.15 * s } },
+						alpha = { { 0, 1 }, { 0.08, 0 }, { 0.8, 0 }, { 1, 1 } },
+						life = { 0.7, 1 },
+						speed = { 3 * s, 6 * s },
+						drag = 2,
+						spread = 55,
+						accel = Vector3.new(0, -(o.fall or 14), 0),
+						rot = { 0, 360 },
+						spin = if still then 0 else { -300, 300 },
+						light = 0,
+						lit = 0.65,
+					},
+					o.count or 4,
+				},
+				{
+					{
+						tex = "VfxSparks",
+						ramp = hot,
+						size = { { 0, 0.3 * s }, { 1, 0.08 * s } },
+						alpha = { { 0, 1 }, { 0.1, 0.05 }, { 0.7, 0.25 }, { 1, 1 } },
+						life = { 0.3, 0.5 },
+						speed = { 3 * s, 7 * s },
+						drag = 2,
+						spread = 60,
+						accel = Vector3.new(0, -20, 0),
+						face = "along",
+						bright = 2.2,
+					},
+					2,
+				},
+			})
+		end,
+	})
+end
+
+export type BreathOptions = {
+	ramp: Palette.Ramp?, -- the breath (the world's pale by default)
+	scale: number?,
+	dir: Vector3?, -- the way it is blown (up by default)
+	dark: boolean?, -- the darker thread laid under it (on); off for a breath of smoke that is dark already
+	lead: number?,
+}
+
+-- A breath at `at` (fourth batch, for a cough or a sigh): a thin soft mist blown out and thinning, two specks catching the light
+-- in it and a darker thread under it (three emitters, no light).
+function Small.breath(at: Vector3, options: BreathOptions?): () -> ()
+	local o = options or {}
+	local ramp = o.ramp or Palette.WORLD.pale
+	local hot, shade = C.hotter(ramp), C.shadow(ramp)
+	local s = o.scale or 1
+	local lead = o.lead or 0.05
+	local way = o.dir or Vector3.yAxis
+	local frame = CFrame.lookAt(at, at + way) * CFrame.Angles(math.rad(-90), 0, 0)
+	return Moment.play(frame, {
+		lead = lead,
+		hit = function()
+			local list: { any } = {
+				{
+					{
+						tex = "VfxMist",
+						ramp = ramp,
+						size = { { 0, 0.3 * s }, { 1, 1.3 * s } },
+						alpha = { { 0, 1 }, { 0.2, 0.45 }, { 0.7, 0.6 }, { 1, 1 } },
+						life = { 0.8, 1 },
+						speed = { 0.8 * s, 1.6 * s },
+						drag = 2,
+						spread = 18,
+						rot = { 0, 360 },
+						light = 0.3,
+						lit = 0.4,
+						z = 1,
+					},
+					1,
+				},
+				{
+					{
+						tex = "VfxSparks",
+						ramp = hot,
+						size = { { 0, 0.25 * s }, { 1, 0.06 * s } },
+						alpha = { { 0, 1 }, { 0.15, 0.1 }, { 0.8, 0.3 }, { 1, 1 } },
+						life = { 0.6, 0.9 },
+						speed = { 0.6 * s, 1.4 * s },
+						drag = 2,
+						spread = 24,
+						rot = { 0, 360 },
+						bright = 2.2,
+					},
+					2,
+				},
+				{
+					{
+						tex = "VfxMist",
+						ramp = shade,
+						size = { { 0, 0.4 * s }, { 1, 1.5 * s } },
+						alpha = { { 0, 1 }, { 0.25, 0.6 }, { 0.8, 0.75 }, { 1, 1 } },
+						life = 0.9,
+						speed = { 0.5 * s, 1.2 * s },
+						drag = 2,
+						spread = 18,
+						light = 0,
+						lit = 0.3,
+						z = -1,
+					},
+					1,
+				},
+			}
+			if o.dark == false then
+				table.remove(list, 3)
+			end
+			Emit.burst(frame, list)
+		end,
+	})
+end
+
 export type SporeOptions = {
 	ramp: Palette.Ramp?,
 	scale: number?,

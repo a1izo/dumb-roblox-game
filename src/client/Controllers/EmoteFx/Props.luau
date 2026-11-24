@@ -286,13 +286,16 @@ FX.blindfoldLiftUp = function(character, preview)
 					-- (the new kit: a bright star in each eye and a larger one at the chest with the sphere's sparks thrown out of it;
 					-- the sphere, the floor ring, the rim and the flash below are the old build's)
 					if not Motion.isReduced() then
-						for _, eye in ipairs(parts) do
-							Fresh.tap(
-								eye.Position,
-								{ ramp = BLUE, scale = 0.55, lite = true, sparks = 3, light = false, lead = 0.04 }
-							)
-						end
-						Fresh.tap(torso.Position, { ramp = BLUE, scale = 1.5, lite = true, sparks = 16, lead = 0.04 })
+						-- (fourth batch, a second try at the budget: one star between the eyes, not one in each, and no light from the
+						-- chest's star: the eyes' own lamp and the flash below are the lights)
+						Fresh.tap(
+							(parts[1].Position + parts[#parts].Position) / 2,
+							{ ramp = BLUE, scale = 0.8, lite = true, sparks = 4, light = false, lead = 0.04 }
+						)
+						Fresh.tap(
+							torso.Position,
+							{ ramp = BLUE, scale = 1.5, lite = true, sparks = 16, light = false, lead = 0.04 }
+						)
 					end
 				else
 					burst(torso.Position, {
@@ -811,7 +814,7 @@ FX.fortySeconds = function(character, preview)
 		3.45,
 		function()
 			-- (a heartbeat: two red pulses out across the floor, lub and dub, a red glow under him beating with them,
-			-- the light throbbing; his own screen kicks with each beat)
+			-- the light throbbing; his own screen kicks with each beat) [the old build; the new kit's is fortyFresh below]
 			local floor = floorUnder(root.Position, character)
 			local calm = Motion.isReduced()
 			local own = mine(character)
@@ -848,5 +851,294 @@ FX.fortySeconds = function(character, preview)
 		gone = true
 	end
 end
+
+-- The fourth batch, on the new kit (stage 4b): the Penned prop emotes below keep their idea, colour and beat, each behind its own
+-- flag in Vfx/Pilot (false = the old build above, which stays as it was). Penned is an accent: 60 particles, 2 big sprites, 6
+-- emitters, 1 light.
+local flag = Common.flag
+local beats = Common.beats
+local throwing = Common.throwing
+
+-- Two-Finger Grip: the phone's screen lights the face. The lamp is the old build's; the screen's glow is a soft cold bank with a
+-- few specks of dust turning in its light (a loop, two emitters).
+local SCREEN_RAMP = Palette.pair(Color3.fromRGB(190, 215, 255), Color3.fromRGB(240, 248, 255))
+local function gripFresh(character: Model, preview: boolean): () -> ()
+	local arm = character:FindFirstChild("Right Arm")
+	if preview or not arm or not arm:IsA("BasePart") then
+		return nothing
+	end
+	local at = Create("Attachment", { Name = "EmoteScreen", Position = Vector3.new(0, -1.6, -0.3), Parent = arm })
+	at:SetAttribute("DGEmote", true)
+	local lamp = Create("PointLight", {
+		Color = Color3.fromRGB(200, 225, 255),
+		Range = 5,
+		Brightness = 1.6,
+		Shadows = false,
+		Parent = at,
+	})
+	lamp:SetAttribute("DGEmote", true)
+	local loop = Fresh.Small.loop(at, {
+		{
+			-- (the screen's own white-hot core: a small star that swells and dims, like a notification light)
+			tex = "VfxGlint",
+			ramp = Fresh.Small.hotter(SCREEN_RAMP),
+			size = { { 0, 0.2 }, { 0.5, 0.7 }, { 1, 0.2 } },
+			alpha = { { 0, 1 }, { 0.2, 0.15 }, { 0.8, 0.3 }, { 1, 1 } },
+			life = 1.8,
+			rate = 0.55,
+			locked = true,
+			bright = 2.2,
+			z = 1,
+		},
+		{
+			tex = "VfxMist",
+			ramp = SCREEN_RAMP,
+			size = { { 0, 1.1 }, { 1, 1.8 } },
+			alpha = { { 0, 1 }, { 0.3, 0.5 }, { 0.7, 0.6 }, { 1, 1 } },
+			life = { 2, 2.6 },
+			speed = 0.05,
+			rate = 0.7,
+			light = 0.9,
+			lit = 0.1,
+			bright = 1,
+			locked = true,
+		},
+		{
+			tex = "VfxSparks",
+			ramp = SCREEN_RAMP,
+			size = { { 0, 0.2 }, { 1, 0.06 } },
+			alpha = { { 0, 1 }, { 0.2, 0.2 }, { 0.8, 0.4 }, { 1, 1 } },
+			life = { 1.4, 2 },
+			speed = { 0.2, 0.6 },
+			spread = 180,
+			rot = { 0, 360 },
+			rate = 3,
+			bright = 1.2,
+		},
+	})
+	return function()
+		loop.destroy()
+		at:Destroy()
+	end
+end
+FX.twoFingerGrip = flag("twoFingerGrip", gripFresh, FX.twoFingerGrip)
+
+-- Furious Scribbling: shavings of paper scratched up off the page by the pen (a few loose pieces of paper, thrown and falling) and
+-- the name written on the page as before (scribbleOn).
+local scribblingOld: Common.Fx = FX.furiousScribbling
+local function scribblingFresh(character: Model, preview: boolean): () -> ()
+	local arm = character:FindFirstChild("Right Arm")
+	if not arm or not arm:IsA("BasePart") then
+		return nothing
+	end
+	local gone = false
+	local function over()
+		return gone
+	end
+	scribbleOn(character, over, 60, 0.2)
+	if not preview then
+		onBeats(arm, over, 2.4, { 0.3, 1.1, 1.9 }, nil, function()
+			local tip = (arm.CFrame * CFrame.new(0, -1.6, -0.3)).Position
+			Fresh.flecks(
+				throwing(tip, Vector3.yAxis),
+				{ ramp = Palette.WORLD.bone, scale = 0.5, count = 4, fall = 10, lead = 0.1 }
+			)
+		end)
+	end
+	return function()
+		gone = true
+	end
+end
+FX.furiousScribbling = flag("furiousScribbling", scribblingFresh, scribblingOld)
+
+-- WRITE IT: the name written huge in red and the slash flaring red across the page with a red star and sparks at the pen.
+local WRITE_RAMP = Palette.pair(CRIMSON, Color3.fromRGB(255, 200, 200))
+local function slashFresh(character: Model, preview: boolean): () -> ()
+	local arm = character:FindFirstChild("Right Arm")
+	if not arm or not arm:IsA("BasePart") then
+		return nothing
+	end
+	local gone = false
+	local function over()
+		return gone
+	end
+	scribbleOn(character, over, 4, 0.18, true)
+	local lead = 0.16
+	after(arm, over, 1.2 - lead, function()
+		if preview then
+			return
+		end
+		local tip = (arm.CFrame * CFrame.new(0, -1.6, -0.3)).Position
+		if Motion.isReduced() then
+			Fresh.tap(tip, { ramp = WRITE_RAMP, scale = 0.4, lite = true, sparks = 6, lead = lead })
+		else
+			-- (the stroke: a red slash flaring across the page, a dark halo under it, and the star and sparks at the pen; the full
+			-- slash recipe is eight emitters, too many for an accent, so this is its band and halo only)
+			local frame = CFrame.lookAt(tip, tip + arm.CFrame.LookVector)
+			Fresh.tap(tip, { ramp = WRITE_RAMP, scale = 0.5, lite = true, sparks = 8, lead = lead })
+			Vfx.Clock.after(lead, function()
+				Vfx.Emit.burst(frame, {
+					{
+						{
+							tex = "VfxSlashA",
+							ramp = WRITE_RAMP,
+							size = { { 0, 1.2 }, { 0.3, 3.2 }, { 1, 3.6 } },
+							alpha = { { 0, 0 }, { 0.5, 0.2 }, { 1, 1 } },
+							life = 0.55,
+							rot = { -30, -10 },
+							bright = 1.3,
+							z = 1,
+						},
+						1,
+					},
+					{
+						{
+							tex = "VfxMist",
+							ramp = Fresh.Small.shadow(WRITE_RAMP),
+							size = { { 0, 1.5 }, { 1, 3 } },
+							alpha = { { 0, 1 }, { 0.25, 0.6 }, { 0.8, 0.75 }, { 1, 1 } },
+							life = 0.9,
+							light = 0,
+							z = -1,
+						},
+						1,
+					},
+				})
+			end)
+		end
+	end)
+	return function()
+		gone = true
+	end
+end
+FX.furiousScribblingSlash = flag("furiousScribbling", slashFresh, FX.furiousScribblingSlash)
+
+-- TOSS: the apple is taken at the top of its flight by an unseen death god, in a puff of black feathers and dark smoke.
+local FEATHER_RAMP = Palette.ramp(Color3.fromRGB(96, 90, 104), Color3.fromRGB(26, 24, 32), Color3.fromRGB(8, 8, 10))
+FX.appleTossThrow = flag(
+	"appleTossThrow",
+	beats(2.0, { 1.15 }, 0.2, function(character, lead)
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if root and root:IsA("BasePart") then
+			-- (where the apple's flight peaks: thrown 7 studs up off the raised hand)
+			local peak = (root.CFrame * CFrame.new(1.4, 8.5, -0.6)).Position
+			Fresh.flecks(throwing(peak, Vector3.yAxis), {
+				tex = "VfxFeatherTumble",
+				ramp = FEATHER_RAMP,
+				scale = 1.1,
+				count = 9,
+				fall = 5,
+				lead = lead,
+			})
+			Fresh.breath(peak, { ramp = Palette.WORLD.soot, scale = 2.4, lead = lead })
+		end
+	end),
+	FX.appleTossThrow
+)
+
+-- Chocolate Snap: crumbs of chocolate off each bite, thrown out along the face and falling.
+local CHOCOLATE_RAMP = Palette.pair(Color3.fromRGB(96, 58, 36), Color3.fromRGB(196, 150, 112))
+FX.chocolateSnap = flag(
+	"chocolateSnap",
+	beats(3.2, { 0.75, 1.95 }, 0.1, function(character, lead)
+		local head = character:FindFirstChild("Head")
+		if head and head:IsA("BasePart") then
+			local bite = (head.CFrame * CFrame.new(0.2, -0.3, -0.7)).Position
+			Fresh.flecks(throwing(bite, head.CFrame.LookVector + Vector3.new(0, 0.3, 0)), {
+				tex = "VfxShards",
+				ramp = CHOCOLATE_RAMP,
+				scale = 0.5,
+				count = 6,
+				fall = 26,
+				lead = lead,
+			})
+		end
+	end),
+	FX.chocolateSnap
+)
+
+-- Forty Seconds: at forty (3.45 s) a heartbeat: two red pulses (lub and dub) ring out across the floor, a red glow under him
+-- beating with them, the light throbbing, his own screen kicking with each beat. Each pulse: a ring, a red-hot bank flat on
+-- the floor and a dark layer under it; one light, on the lub.
+local HEART_RAMP = Palette.pair(Color3.fromRGB(230, 50, 64), Color3.fromRGB(255, 214, 220))
+local function fortyFresh(character: Model, preview: boolean): () -> ()
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not root or not root:IsA("BasePart") then
+		return nothing
+	end
+	local gone = false
+	after(
+		root,
+		function()
+			return gone
+		end,
+		3.45,
+		function()
+			local floor = floorUnder(root.Position, character)
+			local calm = Motion.isReduced()
+			local own = mine(character)
+			for k, beat in ipairs({ 0, 0.28 }) do
+				Vfx.Clock.after(beat, function()
+					local strength = if k == 1 then 1 else 0.7
+					Vfx.Emit.burst(CFrame.new(floor + Vector3.new(0, 0.08, 0)), {
+						{
+							{
+								tex = "VfxShock",
+								ramp = HEART_RAMP,
+								size = { { 0, 1 }, { 0.5, 11 * strength }, { 1, 14 * strength } },
+								alpha = { { 0, 0.5 }, { 0.5, 0.7 }, { 1, 1 } },
+								life = 0.8,
+								face = "flat",
+								speed = 0.001,
+								bright = 1.1,
+								z = 1,
+							},
+							1,
+						},
+						{
+							{
+								tex = "VfxMist",
+								ramp = HEART_RAMP,
+								size = { { 0, 2 }, { 0.3, 6 * strength }, { 1, 7 * strength } },
+								alpha = { { 0, 0.3 }, { 0.5, 0.5 }, { 1, 1 } },
+								life = 0.7,
+								face = "flat",
+								speed = 0.001,
+								light = 0.8,
+								bright = 1,
+								z = 0.5,
+							},
+							1,
+						},
+						{
+							{
+								tex = "VfxMist",
+								ramp = Fresh.Small.shadow(HEART_RAMP),
+								size = { { 0, 3 }, { 1, 7.5 * strength } },
+								alpha = { { 0, 1 }, { 0.25, 0.55 }, { 0.8, 0.75 }, { 1, 1 } },
+								life = 0.9,
+								face = "flat",
+								speed = 0.001,
+								light = 0,
+								z = -1,
+							},
+							1,
+						},
+					})
+					if k == 1 then
+						Vfx.Light.flash(floor + Vector3.new(0, 2, 0), HEART_RAMP[2], 16, 3, 0.45)
+					end
+					if own and not calm then
+						Vfx.Screen.punch(2.5 * strength, 0.2)
+					end
+				end)
+			end
+		end
+	)
+	return function()
+		gone = true
+	end
+end
+FX.fortySeconds = flag("fortySeconds", fortyFresh, FX.fortySeconds)
 
 return FX

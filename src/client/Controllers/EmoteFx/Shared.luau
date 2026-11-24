@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Create = require(Shared:WaitForChild("Create"))
 local Vfx = require(script.Parent.Parent.Parent.Presentation.Vfx)
+local Pilot = require(script.Parent.Parent.Parent.Presentation.Vfx.Pilot)
 
 local EmoteFx = {}
 
@@ -360,6 +361,73 @@ local function accent(length: number, times: { number }, make: (character: Model
 	end
 end
 
+-- (stage 4b fourth batch) The new kit's build or the old one, by the pilot's flag AT CALL TIME (a play test flips it): the old
+-- build stays exactly as it was and `FX.x = flag("x", fresh, FX.x)` is written after it.
+local function flag(name: string, fresh: Fx, old: Fx?): Fx
+	local original: Fx = old or nothing
+	return function(character, preview, phase)
+		local on = (Pilot.on :: any)[name]
+		return (if on then fresh else original)(character, preview, phase)
+	end
+end
+
+-- Like `accent`, for the new kit: each beat is started `lead` seconds early (the recipes wait that long for their own hit),
+-- and `make` is told the lead it really got (a beat at 0 s cannot start before the clip).
+local function beats(length: number, times: { number }, lead: number, make: (character: Model, lead: number) -> ()): Fx
+	return function(character, preview, phase)
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if preview or not root then
+			return nothing
+		end
+		local early: { number } = {}
+		local given: { [number]: number } = {}
+		for _, at in ipairs(times) do
+			local l = math.min(lead, at)
+			table.insert(early, at - l)
+			given[at - l] = l
+		end
+		local gone = false
+		onBeats(
+			root,
+			function()
+				return gone
+			end,
+			length,
+			early,
+			phase,
+			function(at)
+				make(character, given[at] or lead)
+			end
+		)
+		return function()
+			gone = true
+		end
+	end
+end
+
+-- Where the lower sole is, as a frame on the floor facing the way the body faces (its up the world's).
+local function soleFrame(character: Model): CFrame?
+	local sole = lowerSole(character)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not sole or not root or not root:IsA("BasePart") then
+		return nil
+	end
+	local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	if look.Magnitude < 0.01 then
+		look = Vector3.new(0, 0, -1)
+	end
+	return CFrame.lookAt(sole, sole + look)
+end
+
+-- A frame at `at` whose UP points along `dir` (what the scatter recipe throws along).
+local function throwing(at: Vector3, dir: Vector3): CFrame
+	if dir.Magnitude < 1e-3 or math.abs(dir.Unit.Y) > 0.99 then
+		-- (straight up or down: a look along the world's up has no side to turn about)
+		return if dir.Y < 0 then CFrame.new(at) * CFrame.Angles(math.pi, 0, 0) else CFrame.new(at)
+	end
+	return CFrame.lookAt(at, at + dir) * CFrame.Angles(math.rad(-90), 0, 0)
+end
+
 local function chest(character: Model): Vector3?
 	local torso = character:FindFirstChild("Torso")
 	return if torso and torso:IsA("BasePart") then torso.Position else nil
@@ -441,7 +509,11 @@ return {
 	THOUGHT = THOUGHT,
 	accent = accent,
 	after = after,
+	beats = beats,
 	burst = burst,
+	flag = flag,
+	soleFrame = soleFrame,
+	throwing = throwing,
 	chest = chest,
 	floatSign = floatSign,
 	floorUnder = floorUnder,

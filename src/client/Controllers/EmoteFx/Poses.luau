@@ -38,6 +38,7 @@ type Menace = {
 	every: number,
 	place: (Random, number) -> (Vector3, number),
 	fresh: boolean?, -- wears the new kit's menace (the pilot, V3.2: only the first pose; Pilot.on.menacing)
+	pose: string?, -- (fourth batch) the other poses wear it behind Pilot.on.menacingPoses, in the colours of this clip (Vfx/Palette.emote)
 }
 
 local MENACES: { [string]: Menace } = {
@@ -55,6 +56,7 @@ local MENACES: { [string]: Menace } = {
 		end,
 	},
 	menacingPose2 = {
+		pose = "menacingPose2",
 		colour = Color3.fromRGB(236, 230, 214),
 		stroke = Color3.fromRGB(12, 12, 14),
 		size = 1.5,
@@ -64,6 +66,7 @@ local MENACES: { [string]: Menace } = {
 		end,
 	},
 	menacingPose3 = {
+		pose = "menacingPose3",
 		colour = Color3.fromRGB(26, 22, 30),
 		stroke = Color3.fromRGB(236, 230, 214),
 		size = 2.2,
@@ -75,6 +78,7 @@ local MENACES: { [string]: Menace } = {
 	},
 	-- (4: DIO thrown back, the signs bursting up out of him in a crown, blood red on black)
 	menacingPose4 = {
+		pose = "menacingPose4",
 		colour = Color3.fromRGB(196, 24, 44),
 		stroke = Color3.fromRGB(10, 4, 6),
 		size = 2.0,
@@ -86,6 +90,7 @@ local MENACES: { [string]: Menace } = {
 	},
 	-- (5: Jotaro's point, the signs in a line down his pointing side, steel blue)
 	menacingPose5 = {
+		pose = "menacingPose5",
 		colour = Color3.fromRGB(120, 170, 232),
 		stroke = Color3.fromRGB(8, 14, 30),
 		size = 1.6,
@@ -97,6 +102,7 @@ local MENACES: { [string]: Menace } = {
 	},
 	-- (6: Kira side-on, the signs drifting up behind the raised hand, a dull gold)
 	menacingPose6 = {
+		pose = "menacingPose6",
 		colour = Color3.fromRGB(214, 180, 96),
 		stroke = Color3.fromRGB(30, 18, 6),
 		size = 1.7,
@@ -127,12 +133,14 @@ local function menace(kind: Menace): Fx
 		--   break-up the bank thins away as the emitters stop when the pose ends (no cut)
 		--   residue  the motes and the last of the fog drift 3 to 4 s after
 		-- (this replaces the old haze and ember emitters only; the aura and the signs are untouched, AURAS' colours kept)
-		local useFresh = kind.fresh == true and Pilot.on.menacing and not Vfx.quiet()
+		-- (fourth batch: the other five poses wear the same bank in their own colours, behind Pilot.on.menacingPoses)
+		local useFresh = (if kind.pose ~= nil then Pilot.on.menacingPoses else kind.fresh == true and Pilot.on.menacing)
+			and not Vfx.quiet()
 		local haze: Attachment? = nil
 		local bank: { stop: () -> (), destroy: () -> () }? = nil
 		if useFresh then
 			bank = Fresh.menace(root.Position + Vector3.new(0, 0.6, 0), {
-				ramp = Palette.emote("menacingPose") :: Palette.Ramp,
+				ramp = Palette.emote(kind.pose or "menacingPose") :: Palette.Ramp,
 				floor = 3.4,
 				lean = Pilot.on.aura2,
 			})
@@ -679,5 +687,207 @@ FX.menacingPose3 = menace(MENACES.menacingPose3)
 FX.menacingPose4 = menace(MENACES.menacingPose4)
 FX.menacingPose5 = menace(MENACES.menacingPose5)
 FX.menacingPose6 = menace(MENACES.menacingPose6)
+
+-- The fourth batch, on the new kit (stage 4b): the Penned poses below keep their idea, colour and beat, each behind its own flag in
+-- Vfx/Pilot (false = the old build above, which stays as it was). Penned is an accent: 60 particles, 2 big sprites, 6 emitters, 1 light.
+local flag = Common.flag
+local beats = Common.beats
+local soleFrame = Common.soleFrame
+
+-- Low Battery's fizzle on the new kit: a few white-hot sparks and a thread of smoke where the battery is empty, now and then.
+local FIZZLE_RAMP = Palette.pair(Color3.fromRGB(255, 150, 100), Color3.fromRGB(255, 244, 224))
+local function lowBatteryFresh(character: Model, preview: boolean): () -> ()
+	local head = character:FindFirstChild("Head")
+	if preview or not head or not head:IsA("BasePart") then
+		return nothing
+	end
+	local gui, fill = battery(head)
+	local info = TweenInfo.new(2.6, Enum.EasingStyle.Linear)
+	TweenService
+		:Create(fill, info, { Size = UDim2.fromScale(0.06, 0.68), BackgroundColor3 = Color3.fromRGB(205, 40, 40) })
+		:Play()
+	local going = true
+	local calm = Motion.isReduced()
+	task.delay(2.7, function()
+		local k = 0
+		while going and gui.Parent do
+			fill.Visible = not fill.Visible
+			k += 1
+			-- (empty: a fizzle every third blink, a short spit of sparks off the battery and a grey thread of smoke)
+			if not calm and fill.Visible and k % 3 == 1 then
+				local at = (head.CFrame * CFrame.new(0, 1.8, 0)).Position
+				Fresh.tap(at, { ramp = FIZZLE_RAMP, scale = 0.45, lite = true, sparks = 5, light = false, lead = 0.03 })
+				Fresh.breath(at, { ramp = Palette.WORLD.smoke, scale = 0.7, lead = 0.03 })
+			end
+			task.wait(0.35)
+		end
+	end)
+	return function()
+		going = false
+		gui:Destroy()
+	end
+end
+FX.lowBattery = flag("lowBattery", lowBatteryFresh, FX.lowBattery)
+
+-- Low Battery's CHARGE on the new kit: each jolt is a blue-white star and sparks at the chest and one crackling arc over the
+-- body, its edges lit blue-white; the battery fills in jumps as before.
+local CHARGE_RAMP = Palette.pair(Color3.fromRGB(120, 210, 255), Color3.fromRGB(255, 250, 220))
+local function lowBatteryChargeFresh(character: Model, preview: boolean): () -> ()
+	local head = character:FindFirstChild("Head")
+	if preview or not head or not head:IsA("BasePart") then
+		return nothing
+	end
+	local gui, fill = battery(head)
+	fill.Size = UDim2.fromScale(0.06, 0.68)
+	fill.BackgroundColor3 = Color3.fromRGB(205, 40, 40)
+	local gone = false
+	local function zap(at: number, to: number, color: Color3, last: boolean?)
+		task.delay(at, function()
+			if gone or not head.Parent then
+				return
+			end
+			fill.Visible = true
+			TweenService
+				:Create(fill, TweenInfo.new(0.12), { Size = UDim2.fromScale(to, 0.68), BackgroundColor3 = color })
+				:Play()
+			local torso = character:FindFirstChild("Torso")
+			if torso and torso:IsA("BasePart") then
+				-- (a star and sparks at the chest on each jolt, its light on the last only; the crackling arcs of the old build are
+				-- gone, three jolts of them were 20 emitters, and the body's blue-white edge lighting stays)
+				Fresh.tap(
+					torso.Position,
+					{ ramp = CHARGE_RAMP, scale = 0.9, lite = true, sparks = 8, light = last == true, lead = 0.04 }
+				)
+				if not Motion.isReduced() then
+					Vfx.Rim.glow(
+						character,
+						Color3.fromRGB(170, 215, 255),
+						0.05,
+						{ fill = 0.25, fadeIn = 0.03, fadeOut = 0.3 }
+					)
+				end
+			end
+		end)
+	end
+	zap(0.15, 0.3, Color3.fromRGB(230, 170, 40))
+	zap(0.62, 0.6, Color3.fromRGB(200, 210, 60))
+	zap(1.6, 0.84, Color3.fromRGB(110, 200, 110), true)
+	return function()
+		gone = true
+		gui:Destroy()
+	end
+end
+FX.lowBatteryCharge = flag("lowBattery", lowBatteryChargeFresh, FX.lowBatteryCharge)
+
+-- Impossible Lean: the dust swept back off the floor from under the feet as the body tips (0.95 s), a low roll, a flat ring
+-- and a scuff of sparks.
+FX.impossibleLean = flag(
+	"impossibleLean",
+	beats(4.2, { 0.95 }, 0.06, function(character, lead)
+		local at = soleFrame(character)
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if at and root and root:IsA("BasePart") then
+			Fresh.stepDust(at, { scale = 1.3, dir = -root.CFrame.LookVector, lead = lead })
+		end
+	end),
+	FX.impossibleLean
+)
+
+-- It's You: the point lands (0.24 s) with a white crack of light off the fingertip (a sharp impact star, small), speed lines flash
+-- out behind the body and ドドド stands beside it while the point is held; the speed lines and the signs are the old build's.
+local CRACK_RAMP = Palette.pair(Color3.fromRGB(200, 220, 255), Color3.fromRGB(255, 255, 255))
+local itsYouOld: Common.Fx = FX.itsYou
+local function itsYouFresh(character: Model, preview: boolean): () -> ()
+	local root = character:FindFirstChild("HumanoidRootPart")
+	local arm = character:FindFirstChild("Right Arm")
+	if preview or not root or not root:IsA("BasePart") or not arm or not arm:IsA("BasePart") then
+		return nothing
+	end
+	local calm = Motion.isReduced()
+	local gone = false
+	local function over()
+		return gone
+	end
+	local made: { Instance } = {}
+	local own = mine(character)
+	local lead = 0.1
+	after(root, over, 0.24 - lead, function()
+		local tip = (arm.CFrame * CFrame.new(0, -1.2, 0)).Position
+		Fresh.tap(tip, { ramp = CRACK_RAMP, scale = 2, sparks = 14, gather = true, lead = lead })
+		after(root, over, lead, function()
+			if own and not calm then
+				Vfx.Screen.punch(4, 0.25)
+			end
+			if not calm then
+				local lines = speedLines(root)
+				table.insert(made, lines)
+				for _, line in ipairs(lines:GetChildren()) do
+					TweenService:Create(line, TweenInfo.new(0.9, Enum.EasingStyle.Quad), { BackgroundTransparency = 1 })
+						:Play()
+				end
+			end
+			for k = 0, 2 do
+				after(root, over, 0.08 * k, function()
+					local gui, label = signLabel(root, {
+						text = "ド",
+						colour = Color3.fromRGB(236, 230, 214),
+						stroke = Color3.fromRGB(12, 12, 14),
+						size = 1.7 - 0.2 * k,
+						at = Vector3.new(-2.6 - 0.35 * k, 1.8 - 1.2 * k, 0),
+						tilt = -10 + 6 * k,
+					})
+					table.insert(made, gui)
+					label.TextTransparency = 1
+					TweenService:Create(label, TweenInfo.new(0.12), { TextTransparency = 0 }):Play()
+					after(root, over, 1.76 - 0.08 * k, function()
+						TweenService
+							:Create(label, TweenInfo.new(0.3), { TextTransparency = 1, TextStrokeTransparency = 1 })
+							:Play()
+					end)
+				end)
+			end
+		end)
+	end)
+	return function()
+		gone = true
+		for _, item in ipairs(made) do
+			item:Destroy()
+		end
+	end
+end
+FX.itsYou = flag("itsYou", itsYouFresh, itsYouOld)
+
+-- Deducing: a faint spark of a thought by the temple on each tap of the thumb (1.1 s and 3.1 s of the loop), a small cold star.
+local THOUGHT_RAMP = Palette.pair(Color3.fromRGB(180, 215, 255), Color3.fromRGB(240, 248, 255))
+FX.deducing = flag(
+	"deducing",
+	beats(4.0, { 1.1, 3.1 }, 0.1, function(character, lead)
+		local head = character:FindFirstChild("Head")
+		if head and head:IsA("BasePart") then
+			Fresh.glint(
+				(head.CFrame * CFrame.new(0.55, 0.45, -0.2)).Position,
+				{ ramp = THOUGHT_RAMP, scale = 0.5, lead = lead }
+			)
+		end
+	end),
+	FX.deducing
+)
+
+-- Reaper's Cackle: a breath of dark smoke off the shoulders with each burst of the laugh, rising (Fresh.breath, dark smoke, no
+-- second dark layer: a burst comes every 0.4 s).
+local CACKLE_SMOKE = Palette.WORLD.smoke
+FX.reapersCackle = flag(
+	"reapersCackle",
+	beats(1.6, { 0.0, 0.4, 0.8, 1.2 }, 0.08, function(character, lead)
+		local torso = character:FindFirstChild("Torso")
+		if torso and torso:IsA("BasePart") then
+			Fresh.breath(
+				(torso.CFrame * CFrame.new(0, 1.1, 0)).Position,
+				{ ramp = CACKLE_SMOKE, scale = 1.6, dark = false, lead = lead }
+			)
+		end
+	end),
+	FX.reapersCackle
+)
 
 return FX

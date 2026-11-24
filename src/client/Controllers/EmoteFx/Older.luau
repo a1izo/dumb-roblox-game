@@ -379,7 +379,7 @@ end
 -- On the new kit (stage 4b third batch, Pilot.on.writeAir; false = the old build). One sentence: a god writing a name in the air in
 -- pale gold light, the line hanging in little stars and the full stop landing as a bright star (motif: written light, a sparkler's
 -- sparks; the aura is the emote's own, unchanged). The five moments:
---   gather    0.1 to 0.4 s    specks drawn in to the fingertip; and again 2.1 to 2.3 s before the full stop
+--   gather    2.1 to 2.3 s    specks drawn in to the fingertip before the full stop (the 0.1 s gather before the line is gone: fourth batch)
 --   hit       0.4 s           the line starts; 2.3 s the full stop: a white-hot star, sparks thrown and the light up (Fresh.tap)
 --   body      0.4 to 1.95 s   the fingertip's chain of stars and its spitting sparks, a warm light on the finger
 --   break-up  1.95 to 2.4 s   the stars fade out one by one as they age
@@ -474,15 +474,8 @@ FX.writeAir = function(character, preview)
 		bright = 1.5,
 	})
 	sparks.Enabled = false
-	if fresh and not calm then
-		-- (the gather: specks drawn in to the fingertip a moment before it touches the air at 0.4 s)
-		after(arm, over, 0.1, function()
-			Fresh.tap(
-				tip.WorldPosition,
-				{ ramp = WRITE, scale = 0.45, gather = true, lite = true, sparks = 3, light = false, lead = 0.3 }
-			)
-		end)
-	end
+	-- (fourth batch: the gather tap at 0.1 s is gone, a second try at the emitter budget: the level-2 aura has the emitters of the
+	-- first nine, so the written line, its sparks and the full stop's own star are what is left of the six an accent may have)
 	after(arm, over, 0.4, function()
 		line.Enabled = true
 		if not calm then
@@ -499,10 +492,15 @@ FX.writeAir = function(character, preview)
 	after(arm, over, 2.3 - (if fresh then 0.2 else 0), function()
 		if fresh then
 			if not calm then
+				-- (the star carries no light of its own now: the finger's own lamp flares with it, as the old build's did)
 				Fresh.tap(
 					tip.WorldPosition,
-					{ ramp = WRITE, scale = 1.0, gather = true, lite = true, sparks = 10, lead = 0.2 }
+					{ ramp = WRITE, scale = 1.0, gather = true, lite = true, sparks = 10, light = false, lead = 0.2 }
 				)
+				after(arm, over, 0.2, function()
+					light.Brightness = 5
+					TweenService:Create(light, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { Brightness = 0 }):Play()
+				end)
 			end
 			after(arm, over, 0.2, function()
 				line:Emit(4)
@@ -697,5 +695,97 @@ end
 FX.puppetPop = function(character, preview, phase)
 	return FX.puppetDance(character, preview, phase)
 end
+
+-- The fourth batch, on the new kit (stage 4b): Apple Bite and the puppets below keep their idea, colour and beat, each behind its
+-- own flag in Vfx/Pilot (false = the old build above, which stays as it was). Penned is an accent: 60 particles, 2 big sprites,
+-- 6 emitters, 1 light.
+local flag = Common.flag
+local throwing = Common.throwing
+
+-- Apple Bite: the crunch (0.93 s) sprays juice and flecks of the apple's white flesh out of the mouth, falling, with a few chips
+-- of the red skin. The five moments: gather none (a bite), hit 0.93 s a small cream-white star at the lips with its sparks of
+-- juice (Fresh.tap), body red skin chips thrown out along the face and falling (Fresh.flecks, shards), break-up they thin out,
+-- residue none (a bite).
+local FLESH_RAMP = Palette.pair(Color3.fromRGB(250, 240, 214), Color3.fromRGB(255, 252, 242))
+local SKIN_RAMP = Palette.pair(Color3.fromRGB(170, 24, 32), Color3.fromRGB(255, 170, 170))
+local function appleBiteFresh(character: Model, preview: boolean): () -> ()
+	local head = character:FindFirstChild("Head")
+	if preview or not head or not head:IsA("BasePart") then
+		return nothing
+	end
+	local gone = false
+	local lead = 0.1
+	after(
+		head,
+		function()
+			return gone
+		end,
+		0.93 - lead,
+		function()
+			local mouth = (head.CFrame * CFrame.new(0, -0.3, -0.75)).Position
+			local way = head.CFrame:VectorToWorldSpace(Vector3.new(0, 0.5, -1)).Unit
+			Fresh.tap(mouth, { ramp = FLESH_RAMP, scale = 0.45, lite = true, sparks = 9, light = false, lead = lead })
+			Fresh.flecks(throwing(mouth, way), {
+				tex = "VfxShards",
+				ramp = SKIN_RAMP,
+				scale = 0.4,
+				count = 5,
+				fall = 26,
+				lead = lead,
+			})
+		end
+	)
+	return function()
+		gone = true
+	end
+end
+FX.appleBite = flag("appleBite", appleBiteFresh, FX.appleBite)
+
+-- Puppet Dance and Bye Bye Bye: the marionette's strings (the old build's beams, unchanged) and now the dust they shake loose,
+-- pale specks of it coming down off the strings above the dancer (one loop emitter on a holder that follows the root). Puppet Pop
+-- calls Puppet Dance, so one flag covers both.
+local STRING_RAMP = Palette.pair(Color3.fromRGB(226, 220, 204), Color3.fromRGB(255, 252, 240))
+local puppetOld: Common.Fx = FX.puppetDance
+local function puppetFresh(character: Model, preview: boolean, phase: number?): () -> ()
+	local stopOld = puppetOld(character, preview, phase)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if preview or not root or not root:IsA("BasePart") or Motion.isReduced() then
+		return stopOld
+	end
+	local holder = Vfx.Emit.point(root.Position + Vector3.new(0, 5, 0), Vector3.new(3.4, 0.2, 1.4))
+	local loop = Fresh.Small.loop(holder, {
+		{
+			tex = "VfxSparks",
+			ramp = STRING_RAMP,
+			size = { { 0, 0.26 }, { 1, 0.08 } },
+			alpha = { { 0, 1 }, { 0.2, 0.2 }, { 0.8, 0.4 }, { 1, 1 } },
+			life = { 1.8, 2.6 },
+			speed = { 0.1, 0.5 },
+			accel = Vector3.new(0, -0.6, 0),
+			spread = 180,
+			rot = { 0, 360 },
+			rate = 5,
+			shape = Enum.ParticleEmitterShape.Box,
+			bright = 2.2,
+		},
+	})
+	local follow = Vfx.Clock.every(function()
+		if not root.Parent then
+			return false
+		end
+		holder.CFrame = CFrame.new(root.Position + Vector3.new(0, 5, 0))
+		return true
+	end)
+	return function()
+		stopOld()
+		follow()
+		loop.stop()
+		task.delay(2.6, function()
+			loop.destroy()
+			holder:Destroy()
+		end)
+	end
+end
+FX.puppetDance = flag("puppetDance", puppetFresh, puppetOld)
 
 return FX
