@@ -10,6 +10,9 @@ local EmoteMedia = require(Shared:WaitForChild("EmoteMedia"))
 local LocomotionController = require(script.Parent.Parent.Parent.Anim.LocomotionController)
 local Stage = require(script.Parent.Parent.Parent.Presentation.Stage)
 local FxKit = require(script.Parent.Parent.Parent.Presentation.FxKit)
+local Fresh = require(script.Parent.Parent.Parent.Presentation.Vfx.Fresh)
+local Palette = require(script.Parent.Parent.Parent.Presentation.Vfx.Palette)
+local Pilot = require(script.Parent.Parent.Parent.Presentation.Vfx.Pilot)
 local Motion = require(script.Parent.Parent.Parent.UI.Core.Motion)
 local Governor = require(script.Parent.Parent.Parent.World.Governor)
 
@@ -313,16 +316,95 @@ FX.theLongClimb = function(character, preview)
 		glow = climbPart("ClimbGlow", Vector3.new(0.2, 0.2, 0.2), CLIMB_GREEN, Enum.Material.SmoothPlastic)
 		Create("PointLight", { Color = CLIMB_GREEN, Range = 8, Brightness = 1.4, Shadows = false, Parent = glow })
 	end
+	-- On the new kit (stage 4b second batch, Pilot.on.theLongClimb; false = the old build). One sentence: the endless stair
+	-- lighting up under the climber, green light rising off every step and a green mist trailing behind (motif: cold green
+	-- light, rain, mist). The five moments, by the clip (it begins at 0, the flight comes up in 0.3 s, the image in 0.9 s):
+	--   gather    0.0 to 0.3 s  specks of green drawn in to the first step, a ring on the floor
+	--   hit       0.3 s         a column of light standing out of the floor (Fresh.pillar), a white-hot base, a green light
+	--   body      0.3 s on      green motes rising off the feet and a bank of green mist trailing, a dark bank under it; each
+	--                           footfall a green star and ring on its step (Fresh.tap)
+	--   break-up  at the end    the loops are let go, the last motes and mist thin out by their own lives
+	--   residue   1.3 s on      the column's scorch and one glowing mark where it stood
+	local fresh = Pilot.on.theLongClimb and not low
+	local ramp = Palette.emote("theLongClimb") :: Palette.Ramp
+	local cancelPillar: (() -> ())? = nil
+	local feet: Attachment? = nil
+	local loop: { stop: () -> (), destroy: () -> () }? = nil
+	if fresh then
+		if not calm then
+			cancelPillar = Fresh.pillar(
+				CFrame.new(floorUnder(root.Position, character)),
+				{ ramp = ramp, height = 11, radius = 1.3, seconds = 1.0, lead = 0.3 }
+			)
+		end
+		local shade = Fresh.Small.shadow(ramp)
+		local hot = Fresh.Small.hotter(ramp)
+		feet = Create("Attachment", { Name = "EmoteClimbMist", Position = Vector3.new(0, -2.6, 0), Parent = root })
+		feet:SetAttribute("DGEmote", true)
+		loop = Fresh.Small.loop(feet :: Attachment, {
+			{
+				-- (a low bank of green mist trailing behind the climber, lit from within)
+				tex = "VfxMist",
+				ramp = ramp,
+				size = { { 0, 2.6 }, { 1, 3.8 } },
+				alpha = { { 0, 1 }, { 0.25, 0.7 }, { 0.75, 0.75 }, { 1, 1 } },
+				life = { 3, 4 },
+				speed = { 0.2, 0.8 },
+				spread = 180,
+				rot = { 0, 360 },
+				rate = 1.4,
+				light = 0.3,
+				lit = 0.4,
+			},
+			{
+				-- (the dark bank under it: laid over, never added)
+				tex = "VfxMist",
+				ramp = shade,
+				size = { { 0, 2.8 }, { 1, 4 } },
+				alpha = { { 0, 1 }, { 0.3, 0.8 }, { 0.75, 0.84 }, { 1, 1 } },
+				life = { 3.5, 4.5 },
+				speed = { 0.1, 0.5 },
+				spread = 180,
+				rot = { 0, 360 },
+				rate = 0.9,
+				light = 0,
+				lit = 0.1,
+				z = -1,
+			},
+			{
+				-- (green light rising off the steps in motes)
+				tex = "VfxSparks",
+				ramp = hot,
+				size = { { 0, 0.35 }, { 1, 0.1 } },
+				alpha = { { 0, 1 }, { 0.12, 0.1 }, { 0.75, 0.3 }, { 1, 1 } },
+				life = { 1.2, 2 },
+				speed = { 0.8, 2.4 },
+				spread = 40,
+				accel = Vector3.new(0, 1.4, 0),
+				drag = 0.8,
+				rot = { 0, 360 },
+				rate = 9,
+				bright = 1.3,
+			},
+		})
+	end
 	local footfall = LocomotionController.Footfall:Connect(function(who: Model)
 		local sole = if who == character and not gone and not low then lowerSole(character) else nil
 		if sole then
 			local floor = floorUnder(sole, character)
-			FxKit.shape("ring", CFrame.new(Vector3.new(sole.X, floor.Y + 0.06, sole.Z)), {
-				size = 2.6,
-				seconds = 0.3,
-				color = CLIMB_GREEN,
-				transparency = 0.45,
-			})
+			if fresh then
+				Fresh.tap(
+					CFrame.new(Vector3.new(sole.X, floor.Y + 0.08, sole.Z)),
+					{ ramp = ramp, scale = 0.9, flat = true, sparks = 4, lead = 0.04 }
+				)
+			else
+				FxKit.shape("ring", CFrame.new(Vector3.new(sole.X, floor.Y + 0.06, sole.Z)), {
+					size = 2.6,
+					seconds = 0.3,
+					color = CLIMB_GREEN,
+					transparency = 0.45,
+				})
+			end
 		end
 	end)
 
@@ -451,6 +533,18 @@ FX.theLongClimb = function(character, preview)
 		if glow then
 			glow:Destroy()
 		end
+		if cancelPillar then
+			cancelPillar()
+		end
+		if loop and feet then
+			-- (the mist and motes make no more; the last of them thin out on their own before the holder goes)
+			local mine, holder = loop, feet
+			mine.stop()
+			task.delay(4.7, function()
+				mine.destroy()
+				holder:Destroy()
+			end)
+		end
 		-- the image fades out on its own clock, the rain stops falling, the flight goes down into the floor
 		fadeTo, fadeTime = 0, IMAGE_OUT
 		local emitter = if rain then rain:FindFirstChildOfClass("ParticleEmitter") else nil
@@ -474,15 +568,32 @@ end
 
 local SPORES = ColorSequence.new(Color3.fromRGB(236, 230, 210), Color3.fromRGB(200, 192, 170))
 
--- The strolls on the move: each footfall of the walk (LocomotionController.Footfall) leaves its own mark.
-local function strollSteps(make: (character: Model) -> ()): Fx
+-- The strolls on the move: each footfall of the walk (LocomotionController.Footfall) leaves its own mark; the old mark
+-- (or the new kit's when its flag is on: never faster than one mark every 0.25 s, never on low graphics or under
+-- Reduce motion, like the old dust): `fresh(character, sole)` makes the mark.
+local function strollFresh(
+	on: () -> boolean,
+	old: (character: Model) -> (),
+	fresh: (character: Model, sole: Vector3) -> ()
+): Fx
 	return function(character, preview)
 		if preview then
 			return nothing
 		end
+		local last = 0
 		local connection = LocomotionController.Footfall:Connect(function(who: Model)
-			if who == character then
-				make(character)
+			if who ~= character then
+				return
+			end
+			if not on() then
+				old(character)
+				return
+			end
+			local now = os.clock()
+			local sole = lowerSole(character)
+			if sole and now - last >= 0.25 and not Governor.low("emoteFx") and not Motion.isReduced() then
+				last = now
+				fresh(character, sole)
 			end
 		end)
 		return function()
@@ -490,12 +601,47 @@ local function strollSteps(make: (character: Model) -> ()): Fx
 		end
 	end
 end
+
 -- Griddy: dust kicked up off each landing heel.
-FX.griddy = strollSteps(function(character)
+-- On the new kit (stage 4b second batch, Pilot.on.griddy; false = the old build). One sentence: a dance step that kicks the
+-- floor, dust thrown back off each landing heel in a low roll with a scuff of sparks (motif: stone and dust). Each step,
+-- by the footfall (a heel plant every 0.3 to 0.5 s of the walk):
+--   gather    the 0.04 s before the heel lands (the call comes with the footfall, so the hit is at once)
+--   hit       the landing: a flat ring on the floor and a scuff of white-hot sparks off the heel (Fresh.stepDust)
+--   body      a low roll of dust thrown back along the floor, lit from above, rolling and slowing
+--   break-up  the roll thins as it runs out
+--   residue   a trail of the last of the dust behind a walker, 2 s long
+local DUST_RAMP = Palette.WORLD.dust
+FX.griddy = strollFresh(function()
+	return Pilot.on.griddy
+end, function(character)
 	stepDust(character, 1.2)
+end, function(character, sole)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root or not root:IsA("BasePart") then
+		return
+	end
+	local heading = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	heading = if heading.Magnitude > 1e-3 then heading.Unit else Vector3.new(0, 0, -1)
+	local floor = floorUnder(sole, character)
+	local at = CFrame.lookAt(
+		Vector3.new(sole.X, floor.Y + 0.08, sole.Z),
+		Vector3.new(sole.X, floor.Y + 0.08, sole.Z) + heading
+	)
+	Fresh.stepDust(at, { ramp = DUST_RAMP, scale = 1 })
 end)
 -- Mushroom Stroll: pale spores puffing up where each foot comes down.
-FX.mushroomStroll = strollSteps(function(character)
+-- On the new kit (stage 4b second batch, Pilot.on.mushroomStroll; false = the old build). One sentence: each foot puffs up a
+-- little cloud of pale spores that rise and wander off (motif: spores, soft pale light). Each step, by the footfall:
+--   gather    none (the foot is already down)
+--   hit       the landing: a small white-hot glint on the cap of the puff and a soft light on the floor (Fresh.spores)
+--   body      the cream puff swelling and rising, the dark layer under it, the spores lifting off in all directions
+--   break-up  the puff thins away over 2 s
+--   residue   the last spores drifting up, 1.4 to 2.2 s
+local SPORE_RAMP = Palette.pair(Color3.fromRGB(236, 230, 210), Color3.fromRGB(255, 252, 238))
+FX.mushroomStroll = strollFresh(function()
+	return Pilot.on.mushroomStroll
+end, function(character)
 	local sole = lowerSole(character)
 	if sole then
 		burst(sole + Vector3.new(0, 0.2, 0), {
@@ -509,6 +655,8 @@ FX.mushroomStroll = strollSteps(function(character)
 			light = 0.3,
 		})
 	end
+end, function(_, sole)
+	Fresh.spores(sole + Vector3.new(0, 0.25, 0), { ramp = SPORE_RAMP, scale = 1 })
 end)
 
 return FX
