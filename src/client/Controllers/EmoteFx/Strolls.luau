@@ -10,6 +10,7 @@ local EmoteMedia = require(Shared:WaitForChild("EmoteMedia"))
 local LocomotionController = require(script.Parent.Parent.Parent.Anim.LocomotionController)
 local Stage = require(script.Parent.Parent.Parent.Presentation.Stage)
 local FxKit = require(script.Parent.Parent.Parent.Presentation.FxKit)
+local Vfx = require(script.Parent.Parent.Parent.Presentation.Vfx)
 local Fresh = require(script.Parent.Parent.Parent.Presentation.Vfx.Fresh)
 local Palette = require(script.Parent.Parent.Parent.Presentation.Vfx.Palette)
 local Pilot = require(script.Parent.Parent.Parent.Presentation.Vfx.Pilot)
@@ -326,9 +327,9 @@ FX.theLongClimb = function(character, preview)
 	--   break-up  at the end    the loops are let go, the last motes and mist thin out by their own lives
 	--   residue   1.3 s on      the column's scorch and one glowing mark where it stood
 	local fresh = Pilot.on.theLongClimb and not low
-	local ramp = Palette.emote("theLongClimb") :: Palette.Ramp
+	local ramp = Palette.pair(CLIMB_GREEN, Color3.fromRGB(170, 255, 200))
 	local cancelPillar: (() -> ())? = nil
-	local feet: Attachment? = nil
+	local feet: Part? = nil
 	local loop: { stop: () -> (), destroy: () -> () }? = nil
 	if fresh then
 		if not calm then
@@ -339,21 +340,28 @@ FX.theLongClimb = function(character, preview)
 		end
 		local shade = Fresh.Small.shadow(ramp)
 		local hot = Fresh.Small.hotter(ramp)
-		feet = Create("Attachment", { Name = "EmoteClimbMist", Position = Vector3.new(0, -2.6, 0), Parent = root })
-		feet:SetAttribute("DGEmote", true)
-		loop = Fresh.Small.loop(feet :: Attachment, {
+		feet = Vfx.Emit.point(CFrame.new(root.Position - Vector3.new(0, 2.6, 0)), Vector3.new(5, 0.1, 5))
+		local holder = feet :: Part
+		Vfx.Clock.every(function(): boolean?
+			if gone or not root.Parent then
+				return false
+			end
+			holder.CFrame = CFrame.new(root.Position - Vector3.new(0, 2.6, 0))
+			return true
+		end)
+		loop = Fresh.Small.loop(holder, {
 			{
 				-- (a low bank of green mist trailing behind the climber, lit from within)
 				tex = "VfxMist",
 				ramp = ramp,
 				size = { { 0, 2.6 }, { 1, 3.8 } },
-				alpha = { { 0, 1 }, { 0.25, 0.7 }, { 0.75, 0.75 }, { 1, 1 } },
+				alpha = { { 0, 1 }, { 0.25, 0.4 }, { 0.75, 0.5 }, { 1, 1 } },
 				life = { 3, 4 },
 				speed = { 0.2, 0.8 },
 				spread = 180,
 				rot = { 0, 360 },
 				rate = 1.4,
-				light = 0.3,
+				light = 0.5,
 				lit = 0.4,
 			},
 			{
@@ -361,7 +369,7 @@ FX.theLongClimb = function(character, preview)
 				tex = "VfxMist",
 				ramp = shade,
 				size = { { 0, 2.8 }, { 1, 4 } },
-				alpha = { { 0, 1 }, { 0.3, 0.8 }, { 0.75, 0.84 }, { 1, 1 } },
+				alpha = { { 0, 1 }, { 0.3, 0.6 }, { 0.75, 0.7 }, { 1, 1 } },
 				life = { 3.5, 4.5 },
 				speed = { 0.1, 0.5 },
 				spread = 180,
