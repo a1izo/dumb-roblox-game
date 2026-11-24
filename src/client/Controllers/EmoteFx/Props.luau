@@ -9,6 +9,9 @@ local ManualBook = require(Shared:WaitForChild("ManualBook"))
 local Create = require(Shared:WaitForChild("Create"))
 local FxKit = require(script.Parent.Parent.Parent.Presentation.FxKit)
 local Vfx = require(script.Parent.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Parent.Presentation.Vfx.Fresh)
+local Palette = require(script.Parent.Parent.Parent.Presentation.Vfx.Palette)
+local Pilot = require(script.Parent.Parent.Parent.Presentation.Vfx.Pilot)
 local Motion = require(script.Parent.Parent.Parent.UI.Core.Motion)
 
 local Common = require(script.Parent.Shared)
@@ -33,11 +36,23 @@ local FX: { [string]: Fx } = {}
 -- Pre-Dawn Bonk: chips of wood off the bat and dust at the feet with each knock; the last one from on high
 -- cracks with a warm flash of dawn and a ring of dust.
 local WOOD = ColorSequence.new(Color3.fromRGB(170, 120, 70), Color3.fromRGB(110, 76, 44))
+-- On the new kit (stage 4b second batch, Pilot.on.preDawnBonk; false = the old build). One sentence: three knocks on the head
+-- and then one from on high that breaks the dawn over the floor, warm light and a ring of dust (motif: wood, dust, dawn light).
+-- The five moments, by the clip (knocks at 0.75, 1.25 and 1.75 s, the big one at 2.55 s):
+--   gather    2.29 to 2.55 s  specks of warm light drawn in to where the bat will land
+--   hit       0.75, 1.25, 1.75 s the knock: a white-hot star on the bat tip, wood chips, a dust puff (Fresh.tap, small)
+--             2.55 s             the blow from on high: a warm heavy blow on the floor with its white core and ring (Fresh.impact), the light
+--   body      2.55 s on       the dark puff laid over, the floor's chips thrown, a roll of dust out round him, the cracks
+--   break-up  2.6 to 3.4 s    the chips fall, the roll thins out
+--   residue   3 to 5 s        warm ash hanging in the dawn light and one thread of smoke
+local DAWN = Palette.pair(Color3.fromRGB(255, 170, 90), Color3.fromRGB(255, 240, 205))
+local BONK_LEAD = 0.26
 FX.preDawnBonk = function(character, preview)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if preview or not root then
 		return nothing
 	end
+	local fresh = Pilot.on.preDawnBonk
 	local gone = false
 	local function over()
 		return gone
@@ -45,19 +60,30 @@ FX.preDawnBonk = function(character, preview)
 	local function knock(big: boolean)
 		local arm = character:FindFirstChild("Right Arm")
 		if arm and arm:IsA("BasePart") then
-			burst((arm.CFrame * CFrame.new(0, -1.0, -1.6)).Position, {
-				color = WOOD,
-				count = if big then 18 else 8,
-				size = 0.22,
-				speed = NumberRange.new(4, 8),
-				life = NumberRange.new(0.3, 0.6),
-				spread = 80,
-				gravity = 24,
-				light = 0,
-			})
+			local tip = (arm.CFrame * CFrame.new(0, -1.0, -1.6)).Position
+			if fresh then
+				-- (the big blow's own chips come from Fresh.impact; under Reduce motion it is skipped, so the bat's chips stay)
+				if not big or Motion.isReduced() then
+					Common.pieces(tip, Color3.fromRGB(170, 120, 70), if big then 12 else 7, 0.22, 7)
+				end
+				if not big then
+					Fresh.tap(tip, { ramp = DAWN, scale = 0.7, sparks = 5, light = false, lead = 0.04 })
+				end
+			else
+				burst(tip, {
+					color = WOOD,
+					count = if big then 18 else 8,
+					size = 0.22,
+					speed = NumberRange.new(4, 8),
+					life = NumberRange.new(0.3, 0.6),
+					spread = 80,
+					gravity = 24,
+					light = 0,
+				})
+			end
 		end
 		local sole = lowerSole(character)
-		if sole then
+		if sole and not (fresh and big) then
 			EmoteFx.thud(CFrame.new(sole), if big then 5 else 1.4)
 		end
 	end
@@ -66,9 +92,23 @@ FX.preDawnBonk = function(character, preview)
 			knock(false)
 		end)
 	end
+	if fresh and not Motion.isReduced() then
+		-- (the blow lands on 2.55 s: the call comes BONK_LEAD earlier, so its gather draws in before the beat)
+		after(root, over, 2.55 - BONK_LEAD, function()
+			local ground =
+				floorUnder((root :: BasePart).Position + (root :: BasePart).CFrame.LookVector * 1.6, character)
+			Fresh.impact(CFrame.new(ground), {
+				style = "heavy",
+				ramp = DAWN,
+				scale = 0.8,
+				ground = true,
+				lead = BONK_LEAD,
+			})
+		end)
+	end
 	after(root, over, 2.55, function()
 		knock(true)
-		if Motion.isReduced() then
+		if Motion.isReduced() or fresh then
 			return
 		end
 		local ground = floorUnder((root :: BasePart).Position + (root :: BasePart).CFrame.LookVector * 1.6, character)
@@ -256,7 +296,17 @@ end
 -- The towers: a glint off each cube or die as it is set down; when one comes down, a puff of dust off the floor
 -- and a scatter of sparkles.
 local SUGAR = ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(230, 236, 255))
-local function towerFx(at: { number }, base: Vector3, step: number, topple: number?): Fx
+-- On the new kit for the Dice Tower (stage 4b second batch, Pilot.on.diceTower, passed as `useFresh`; false = the old build; the
+-- Sugar Tower keeps its own). One sentence: each die set down clicks with a cold white star on its face and the tower, when it
+-- falls, throws up a puff of dust (motif: dice, pale light). The five moments, by the clip (dice at 0.9 to 4.6 s, the topple 1.6 s
+-- after ADD ONE):
+--   gather    none (the die is already coming down by the clip's own hand)
+--   hit       each die (0.1 s after its time, as before): a four-point star, a ring and a few sparks on its top (Fresh.tap)
+--   body      the topple (ADD ONE, one time in two): a soft pale blow on the floor, dust rolling out (Fresh.impact, soft)
+--   break-up  the dust thins out and the sparks fall
+--   residue   a faint thread of smoke and a few flakes where the tower stood, 2 to 3 s
+local DICE = Palette.pair(Color3.fromRGB(232, 236, 250), Color3.fromRGB(255, 255, 255))
+local function towerFx(at: { number }, base: Vector3, step: number, topple: number?, useFresh: (() -> boolean)?): Fx
 	return function(character, preview)
 		local root = character:FindFirstChild("HumanoidRootPart")
 		if preview or not root or not root:IsA("BasePart") then
@@ -266,13 +316,19 @@ local function towerFx(at: { number }, base: Vector3, step: number, topple: numb
 		local function over()
 			return gone
 		end
+		local fresh = useFresh ~= nil and useFresh()
 		local floor = floorUnder(root.Position, character)
 		local look = root.CFrame.LookVector
 		local yaw = math.atan2(-look.X, -look.Z)
 		local foot = CFrame.new(floor) * CFrame.Angles(0, yaw, 0) * CFrame.new(base)
 		for k, t in ipairs(at) do
-			after(root, over, t + 0.1, function()
-				burst((foot * CFrame.new(0, step * (k - 0.5), 0)).Position, {
+			after(root, over, t + 0.1 - (if fresh then 0.06 else 0), function()
+				local top = (foot * CFrame.new(0, step * (k - 0.5), 0)).Position
+				if fresh then
+					Fresh.tap(top, { ramp = DICE, scale = 0.55, sparks = 4, lead = 0.06 })
+					return
+				end
+				burst(top, {
 					color = SUGAR,
 					count = 4,
 					size = 0.25,
@@ -285,6 +341,16 @@ local function towerFx(at: { number }, base: Vector3, step: number, topple: numb
 		end
 		if topple then
 			after(root, over, topple + 0.3, function()
+				if fresh then
+					Fresh.impact(CFrame.new(floor + Vector3.new(0, 0.05, 0)) * foot.Rotation, {
+						style = "soft",
+						ramp = DICE,
+						scale = 0.55,
+						ground = true,
+						lead = 0.04,
+					})
+					return
+				end
 				EmoteFx.thud(foot, 3)
 				burst((foot * CFrame.new(0, 0.4, 0)).Position, {
 					color = SUGAR,
@@ -306,9 +372,15 @@ end
 FX.sugarTower = towerFx({ 1.0, 1.8, 2.6, 3.4, 4.6 }, Vector3.new(1.45, 0, -0.7), 0.42)
 FX.sugarTowerAdd = towerFx({ 1.3 }, Vector3.new(1.45, 2.1, -0.7), 0.42)
 FX.sugarTowerTopple = towerFx({ 1.3 }, Vector3.new(1.45, 2.1, -0.7), 0.42, 1.6)
-FX.diceTower = towerFx({ 0.9, 1.6, 2.3, 3.0, 3.7, 4.6 }, Vector3.new(-0.05, 0, -1.35), 0.42)
-FX.diceTowerAdd = towerFx({ 1.3 }, Vector3.new(-0.05, 2.52, -1.35), 0.42)
-FX.diceTowerTopple = towerFx({ 1.3 }, Vector3.new(-0.05, 2.52, -1.35), 0.42, 1.6)
+FX.diceTower = towerFx({ 0.9, 1.6, 2.3, 3.0, 3.7, 4.6 }, Vector3.new(-0.05, 0, -1.35), 0.42, nil, function()
+	return Pilot.on.diceTower
+end)
+FX.diceTowerAdd = towerFx({ 1.3 }, Vector3.new(-0.05, 2.52, -1.35), 0.42, nil, function()
+	return Pilot.on.diceTower
+end)
+FX.diceTowerTopple = towerFx({ 1.3 }, Vector3.new(-0.05, 2.52, -1.35), 0.42, 1.6, function()
+	return Pilot.on.diceTower
+end)
 
 -- Strawberry on Top: a soft pink sparkle off the strawberry as it is picked and as it is eaten, a warm light on it.
 local PINK = ColorSequence.new(Color3.fromRGB(255, 190, 210), Color3.fromRGB(255, 120, 150))
