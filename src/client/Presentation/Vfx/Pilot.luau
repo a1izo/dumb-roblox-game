@@ -104,6 +104,21 @@ Pilot.on = {
 	formChains = false, -- (not seen)
 	formCrows = false, -- (not seen)
 	formMoths = false, -- (not seen)
+	-- stage 4d, deaths and gameplay moments (Presentation/Vfx/Fresh/Gameplay), each its own flag; false = the old build
+	deathSparks = false, -- (handcuffs, the Manual landing: DeathFx.sparks; the booth picture showed a soft ring with a small star against the old hard spiked star: not better)
+	deathChalkDust = false, -- (the dust as the chalk outline cuts in: DeathFx.chalk; the FxChalk picture is not in Fx 4 here, so never seen)
+	deathDissolve = false, -- (voted out: the ash off the body, DeathFx.dissolve; report fewer reasons but nothing showed in a booth picture, old or new: the emitters sit inside the black torso)
+	deathDust = false, -- (DeathVfx floor dust for the collapses; report only, no picture)
+	deathPuff = false, -- (DeathVfx sick breath and the last breath of the heart; report only, no picture)
+	deathGlow = false, -- (DeathVfx glow: the heart seizure; report only, no picture)
+	deathAccident = false, -- (DeathVfx collapseAccident: the head meeting the floor; report 4 pop reasons to 2, no picture)
+	eyeGlow = false, -- (a stare red eyes: a glint as each opens, World/EyeGlow; report only, not photographed)
+	hauntMist = false, -- (a Specter Mist haunt, UI/HauntBar; seen once as a thin pale roll along the floor against the old fuller puff, not clearly better; the second try lost to the Governor)
+	diveCrash = true, -- (the dive crash into the roof, Controllers/DiveController; report FAIL to PASS, 14 emitters to 8, 25% dots to 0, picture: a clean flat blow with a lit core against the old spiked slab)
+	eyesDealEyes = false, -- (the Deathsinger eyes lit, Presentation/EyesDealFx; report only, not photographed)
+	eyesDealIgnite = false, -- (your eyes taking fire, Presentation/EyesDealFx; seen: a bright white star in the middle of the face, the deal red is lost, so not shipped)
+	manualFire = false, -- (the Manual's red fire, UI/WorldFx: needs VfxFire from the V1.2 import, not in Fx 4 yet)
+	trialWisp = false, -- (the Trial's wisp flame, Onboarding/TrialWisp: needs VfxFire too)
 	-- stage 4a: Presentation/Materialize (the smoke and specks, and the glint when whole; callers that ask for quiet are unchanged)
 	materialize = true,
 	-- stage 4a: the glint where a soul is gathered (Specter/GhostController) and where the dive's string takes the body

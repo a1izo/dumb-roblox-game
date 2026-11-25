@@ -261,7 +261,9 @@ function DeathFx.chalk(position: Vector3, size: number?, colour: Color3?, second
 		Parent = plate,
 	})
 	-- (a breath of chalk dust off it as it appears)
-	if not Vfx.quiet() then
+	if Pilot.on.deathChalkDust then
+		Fresh.Gameplay.chalkDust(CFrame.fromMatrix(hit.Position + hit.Normal * 0.1, right, hit.Normal), colour, s)
+	elseif not Vfx.quiet() then
 		Vfx.Emit.burst(CFrame.fromMatrix(hit.Position + hit.Normal * 0.1, right, hit.Normal), {
 			tex = "VfxDust",
 			grid = 4,
@@ -304,6 +306,11 @@ end
 function DeathFx.dissolve(character: Model, seconds: number)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	if not root or not root:IsA("BasePart") then
+		return
+	end
+	if Pilot.on.deathDissolve then
+		-- (stage 4d: ash flakes, embers and a thread of soot rising off the body; Pilot.on.deathDissolve = false brings the static back)
+		Fresh.Gameplay.dissolve(root, seconds)
 		return
 	end
 	local noise = emitter("FxStatic", {
@@ -366,6 +373,11 @@ end
 -- A spray of sparks (handcuffs clicking shut, Death's Manual landing): a star at the spot, white-hot streaks that
 -- fly out and fall, specks that hang a moment, a flick of light.
 function DeathFx.sparks(position: Vector3, colour: Color3?)
+	if Pilot.on.deathSparks then
+		-- (stage 4d: a hard glint star and white-hot sparks flung and falling, on the new kit; false = the old build below)
+		Fresh.Gameplay.sparks(position, colour)
+		return
+	end
 	local tint = colour or C.white
 	Vfx.Emit.burst(position, {
 		{

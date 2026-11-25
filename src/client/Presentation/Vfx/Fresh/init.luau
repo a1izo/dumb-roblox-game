@@ -38,6 +38,7 @@
 local Charge = require(script.Charge)
 local Fire = require(script.Fire)
 local Floor = require(script.Floor)
+local Gameplay = require(script.Gameplay)
 local Impact = require(script.Impact)
 local Menace = require(script.Menace)
 local Scatter = require(script.Scatter)
@@ -68,6 +69,7 @@ Fresh.dissolve = Scatter.dissolve
 Fresh.scatter = Scatter.scatter
 Fresh.sigil = Floor.sigil
 Fresh.Small = Small
+Fresh.Gameplay = Gameplay -- (stage 4d: dissolve, sparks, dust, haunt mist, dive crash, the eyes)
 Fresh.Win = Win -- (the win cuts' fx kinds: wave, sparks, bloom, ring, dust and the held ones)
 Fresh.tap = Small.tap
 Fresh.stepDust = Small.stepDust

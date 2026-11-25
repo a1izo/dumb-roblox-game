@@ -9,6 +9,8 @@
 -- In the world only (a 3D view in the shop draws no particles); lighter on Low graphics (Vfx.quiet).
 
 local Vfx = require(script.Parent.Vfx)
+local Fresh = require(script.Parent.Vfx.Fresh)
+local Pilot = require(script.Parent.Vfx.Pilot)
 local Cinema = require(script.Parent.Cinema)
 
 local DeathVfx = {}
@@ -61,6 +63,11 @@ end
 -- Little recipes ----------------------------------------------------------------------------------------------------
 
 local function glow(at: Vector3, color: Color3, size: number, life: number, light: number?)
+	if Pilot.on.deathGlow then
+		-- (stage 4d: a hard glint in the colour on the new kit; Pilot.on.deathGlow = false brings the soft glow back)
+		Fresh.Gameplay.glow(at, color, size, light)
+		return
+	end
 	Vfx.Emit.burst(at, {
 		tex = "VfxGlow",
 		color = color,
@@ -85,6 +92,11 @@ local function puff(
 	dir: Vector3?,
 	life: number?
 )
+	if Pilot.on.deathPuff then
+		-- (stage 4d: a thin breath along `dir`, or a cloud rising, on the new kit; Pilot.on.deathPuff = false brings the old puff back)
+		Fresh.Gameplay.puff(at, color, size, dir)
+		return
+	end
 	local spec = {
 		tex = "VfxSmoke",
 		grid = 8,
@@ -111,6 +123,11 @@ end
 
 local function dust(b: Body, at: Vector3, scale: number)
 	local floor = floorUnder(b, at)
+	if Pilot.on.deathDust then
+		-- (stage 4d: dust thrown along the floor on the new kit; Pilot.on.deathDust = false brings the old puffs back)
+		Fresh.Gameplay.dust(floor, scale)
+		return
+	end
 	Vfx.Emit.burst(floor + Vector3.new(0, 0.2, 0), {
 		tex = "VfxSmoke",
 		grid = 8,
@@ -281,10 +298,15 @@ BEATS.collapseAccident = {
 		at = 0.7,
 		fn = function(b)
 			local at = headAt(b)
-			Vfx.Recipes.impact(
-				CFrame.new(floorUnder(b, at)),
-				{ color = WHITE, scale = 0.55, ground = true, shake = true }
-			)
+			if Pilot.on.deathAccident then
+				-- (stage 4d: the blow on the new kit; Pilot.on.deathAccident = false brings the old impact back)
+				Fresh.Gameplay.knock(floorUnder(b, at))
+			else
+				Vfx.Recipes.impact(
+					CFrame.new(floorUnder(b, at)),
+					{ color = WHITE, scale = 0.55, ground = true, shake = true }
+				)
+			end
 			screenFlash(WHITE, 0.35, 0.12)
 			dust(b, at, 0.8)
 		end,

@@ -563,6 +563,31 @@ local function deaths(into: { Entry }, customDeaths: { string })
 			end,
 		})
 	)
+	-- (the beats of the three collapses at the table, Presentation/DeathVfx: the clip's own times; the booth dummy stands in)
+	for _, collapse in ipairs({
+		{ "collapseHeart", "Heart attack", 0.14, 3 },
+		{ "collapseDisease", "Disease", 0.14, 4 },
+		{ "collapseAccident", "Accident", 0.7, 2 },
+	}) do
+		local clipName = collapse[1] :: string
+		table.insert(
+			into,
+			make({
+				id = "death_" .. clipName,
+				family = "death",
+				source = "DeathVfx.play " .. clipName,
+				label = collapse[2],
+				budget = "showpiece",
+				hit = collapse[3],
+				estimated = true,
+				length = collapse[4],
+				play = function(stage: Stage)
+					need("Presentation", "DeathVfx").play(clipName, stage.body, os.clock())
+					return noop
+				end,
+			})
+		)
+	end
 	-- (a custom death's own effect at the table: none is left, every one is a scene death now)
 	for _, style in ipairs(customDeaths) do
 		local item = Cosmetics.reason(style)
@@ -861,7 +886,7 @@ local function winFx(into: { Entry })
 		table.insert(
 			into,
 			make({
-				id = "winfx_" .. kind,
+				id = "moment_winfx_" .. kind,
 				family = "moment",
 				source = "WinCinema.ACTS.fx, kind " .. kind,
 				label = "Win cut effect: " .. kind,
@@ -958,6 +983,117 @@ local function moments(into: { Entry })
 				return later(LEAD, function()
 					need("Controllers", "EmoteFx").thud(CFrame.new(stage.floor + stage.at.LookVector * 2), 2.6)
 				end)
+			end,
+		})
+	)
+	-- (a Specter's Mist haunt, UI/HauntBar)
+	table.insert(
+		into,
+		make({
+			id = "moment_haunt_mist",
+			family = "moment",
+			source = "HauntBar.mist",
+			label = "Haunt, mist",
+			hit = LEAD,
+			length = 4,
+			play = function(stage: Stage)
+				return later(LEAD, function()
+					need("UI", "HauntBar").mist(chest(stage, 3, 1.5))
+				end)
+			end,
+		})
+	)
+	-- (the dive's crash into the roof, Controllers/DiveController)
+	table.insert(
+		into,
+		make({
+			id = "moment_dive_crash",
+			family = "moment",
+			source = "DiveController.crashFx",
+			label = "Dive, crash",
+			budget = "showpiece",
+			hit = LEAD + 0.06,
+			length = 3,
+			play = function(stage: Stage)
+				return later(LEAD, function()
+					need("Controllers", "DiveController").crashFx(
+						stage.floor + stage.at.LookVector * 2.4,
+						Vector3.yAxis,
+						48
+					)
+				end)
+			end,
+		})
+	)
+	-- (the Oculus deal: the Deathsinger's eyes lit, then your own taking fire, Presentation/EyesDealFx)
+	table.insert(
+		into,
+		make({
+			id = "moment_eyes_deal_ignite",
+			family = "moment",
+			source = "EyesDealFx.ignite",
+			label = "Deal, your eyes take fire",
+			budget = "showpiece",
+			hit = LEAD,
+			length = 3,
+			play = function(stage: Stage)
+				return later(LEAD, function()
+					need("Presentation", "EyesDealFx").ignite(stage.body)
+				end)
+			end,
+		})
+	)
+	table.insert(
+		into,
+		make({
+			id = "moment_eyes_deal_eyes",
+			family = "moment",
+			source = "EyesDealFx.eyesOf",
+			label = "Deal, its eyes lit",
+			hit = LEAD,
+			length = 2,
+			play = function(stage: Stage)
+				return later(LEAD, function()
+					need("Presentation", "EyesDealFx").eyesOf(stage.body)
+				end)
+			end,
+		})
+	)
+	-- (a stare's red eyes: the slivers the server puts on the character, lit by World/EyeGlow)
+	table.insert(
+		into,
+		make({
+			id = "moment_eye_glow",
+			family = "moment",
+			source = "EyeGlow.light",
+			label = "Red eyes",
+			hit = LEAD,
+			length = 4,
+			loop = true,
+			play = function(stage: Stage)
+				local head = stage.body:FindFirstChild("Head")
+				local holder = Instance.new("Model")
+				holder.Name = "LEyesGlow"
+				if head and head:IsA("BasePart") then
+					for _, side in ipairs({ -0.2, 0.2 }) do
+						local eye = Instance.new("Part")
+						eye.Size = Vector3.new(0.2, 0.08, 0.05)
+						eye.Anchored = true
+						eye.CanCollide = false
+						eye.CanQuery = false
+						eye.Transparency = 1
+						eye.CFrame = head.CFrame * CFrame.new(side, 0.12, -0.6)
+						eye.Parent = holder
+					end
+				end
+				local cancel = later(LEAD, function()
+					holder.Parent = stage.props
+					need("World", "EyeGlow").light(holder)
+				end)
+				return function()
+					cancel()
+					holder:Destroy()
+				end
 			end,
 		})
 	)

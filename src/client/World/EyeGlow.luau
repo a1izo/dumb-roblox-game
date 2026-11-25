@@ -5,6 +5,8 @@
 -- spark of red drifting up off them. Gone with the slivers.
 
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Presentation.Vfx.Fresh)
+local Pilot = require(script.Parent.Parent.Presentation.Vfx.Pilot)
 local Characters = require(script.Parent.Parent.Characters)
 
 local EyeGlow = {}
@@ -22,6 +24,10 @@ local function light(holder: Instance)
 		end
 		for _, eye in ipairs(holder:GetChildren()) do
 			if eye:IsA("BasePart") then
+				if Pilot.on.eyeGlow then
+					-- (stage 4d: a hard glint as each eye opens, then the same glow, star and sparks; Pilot.on.eyeGlow = false drops it)
+					Fresh.Gameplay.eyeOpens(eye.Position)
+				end
 				Vfx.Emit.make(eye, {
 					tex = "VfxGlow",
 					color = RED,
@@ -62,6 +68,9 @@ local function light(holder: Instance)
 		end
 	end)
 end
+
+-- (for the booth: light the eyes of a holder named LEyesGlow)
+EyeGlow.light = light
 
 function EyeGlow.init()
 	Characters.each(function(character: Model)

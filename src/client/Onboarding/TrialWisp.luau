@@ -27,6 +27,8 @@ local Kit = require(UI.Kit)
 local Screens = require(UI.Screens)
 local UiSound = require(UI.Core.UiSound)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Presentation.Vfx.Fresh)
+local Pilot = require(script.Parent.Parent.Presentation.Vfx.Pilot)
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -150,44 +152,50 @@ local function build(at: Vector3)
 	}) :: BasePart
 	-- The flame licks up off the core and is left behind as it moves: the kit's fire, white-gold at its heart,
 	-- amber through its body, darkening as it tears away; a soft halo round it and a hard star at its heart.
-	Vfx.Emit.make(ball, {
-		name = "Flame",
-		tex = "VfxFlame",
-		grid = 8,
-		fps = 40,
-		startRandom = true,
-		color = { { 0, CORE }, { 0.45, AMBER }, { 1, EMBER } },
-		size = { { 0, 1.5 }, { 0.6, 1.0 }, { 1, 0.3 } },
-		alpha = { { 0, 0.2 }, { 0.6, 0.45 }, { 1, 1 } },
-		life = { 0.35, 0.6 },
-		speed = { 0.8, 1.8 },
-		accel = Vector3.new(0, 4, 0),
-		spread = 14,
-		face = "up",
-		light = 0.7,
-		bright = 1.3,
-		rate = 45,
-	})
-	-- (and at its heart a smaller white-hot flame, quicker than the body round it)
-	Vfx.Emit.make(ball, {
-		name = "Inner",
-		tex = "VfxFlame",
-		grid = 8,
-		fps = 50,
-		startRandom = true,
-		color = { { 0, Color3.new(1, 1, 1) }, { 0.5, CORE }, { 1, AMBER } },
-		size = { { 0, 0.8 }, { 0.7, 0.55 }, { 1, 0.1 } },
-		alpha = { { 0, 0.1 }, { 0.7, 0.3 }, { 1, 1 } },
-		life = { 0.22, 0.36 },
-		speed = { 0.5, 1.2 },
-		accel = Vector3.new(0, 5, 0),
-		spread = 10,
-		face = "up",
-		light = 1,
-		bright = 1.8,
-		rate = 34,
-		z = 0.3,
-	})
+	if Pilot.on.trialWisp and Vfx.Tex.real("VfxFire") then
+		-- (stage 4d: the kit's fire sheet in amber, standing up off the core; only with VfxFire imported (the V1.2 sheets are not
+		-- in Fx 4 yet), and Pilot.on.trialWisp = false brings the old flame back)
+		Fresh.flame(ball, { kind = "fire", scale = 1.2, ramp = { CORE, AMBER, EMBER }, light = false })
+	else
+		Vfx.Emit.make(ball, {
+			name = "Flame",
+			tex = "VfxFlame",
+			grid = 8,
+			fps = 40,
+			startRandom = true,
+			color = { { 0, CORE }, { 0.45, AMBER }, { 1, EMBER } },
+			size = { { 0, 1.5 }, { 0.6, 1.0 }, { 1, 0.3 } },
+			alpha = { { 0, 0.2 }, { 0.6, 0.45 }, { 1, 1 } },
+			life = { 0.35, 0.6 },
+			speed = { 0.8, 1.8 },
+			accel = Vector3.new(0, 4, 0),
+			spread = 14,
+			face = "up",
+			light = 0.7,
+			bright = 1.3,
+			rate = 45,
+		})
+		-- (and at its heart a smaller white-hot flame, quicker than the body round it)
+		Vfx.Emit.make(ball, {
+			name = "Inner",
+			tex = "VfxFlame",
+			grid = 8,
+			fps = 50,
+			startRandom = true,
+			color = { { 0, Color3.new(1, 1, 1) }, { 0.5, CORE }, { 1, AMBER } },
+			size = { { 0, 0.8 }, { 0.7, 0.55 }, { 1, 0.1 } },
+			alpha = { { 0, 0.1 }, { 0.7, 0.3 }, { 1, 1 } },
+			life = { 0.22, 0.36 },
+			speed = { 0.5, 1.2 },
+			accel = Vector3.new(0, 5, 0),
+			spread = 10,
+			face = "up",
+			light = 1,
+			bright = 1.8,
+			rate = 34,
+			z = 0.3,
+		})
+	end
 	-- (no smoke off its tip any more: in the lobby's grey it read as a haze round a white puff, 2026-11-03)
 	local haloEmitter = Vfx.Emit.make(ball, {
 		name = "Halo",

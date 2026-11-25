@@ -14,6 +14,8 @@ local Net = require(Shared:WaitForChild("Net"))
 local ClientState = require(script.Parent.Parent.ClientState)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Presentation.Vfx.Fresh)
+local Pilot = require(script.Parent.Parent.Presentation.Vfx.Pilot)
 local Kit = require(script.Parent.Kit)
 local LobbyChrome = require(script.Parent.Core.LobbyChrome)
 local Screens = require(script.Parent.Screens)
@@ -114,6 +116,12 @@ end
 
 local function mist(position: Vector3)
 	local part = anchorAt(position, 4)
+	if Pilot.on.hauntMist then
+		-- (stage 4d: a cold pale cloud rolling out low and frost specks, on the new kit; Pilot.on.hauntMist = false brings the old mist back)
+		Fresh.Gameplay.hauntMist(position)
+		Sfx.play("hauntMist", { parent = part, volume = 0.6 })
+		return
+	end
 	-- (a cold mist welling up and rolling out low, pale specks of frost glinting in it)
 	Vfx.Emit.burst(position, {
 		{
@@ -151,6 +159,9 @@ local function mist(position: Vector3)
 	}, nil, Vector3.new(4, 0.5, 4))
 	Sfx.play("hauntMist", { parent = part, volume = 0.6 })
 end
+
+-- (for the booth: the mist haunt at a point)
+HauntBar.mist = mist
 
 local function onHaunt(payload)
 	if type(payload) ~= "table" then

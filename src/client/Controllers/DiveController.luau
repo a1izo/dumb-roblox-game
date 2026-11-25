@@ -424,6 +424,21 @@ local function press()
 	end
 end
 
+-- The crash's picture on the roof at `floor` (`normal` its up) for a body at `speed`.
+function DiveController.crashFx(floor: Vector3, normal: Vector3, speed: number)
+	local scale = 0.7 + 0.6 * math.clamp((speed - 25) / 30, 0, 1)
+	if Pilot.on.diveCrash then
+		-- (stage 4d: a heavy blow laid flat in the roof's own dust on the new kit; Pilot.on.diveCrash = false brings the old slam back)
+		Fresh.Gameplay.crash(floor, normal, scale)
+		return
+	end
+	Vfx.Recipes.slam(CFrame.lookAt(floor, floor + normal) * CFrame.Angles(math.rad(-90), 0, 0), {
+		color = Color3.fromRGB(200, 198, 194),
+		scale = scale,
+		shake = false,
+	})
+end
+
 -- The body slams into the roof: limp (a real ragdoll, this client's own), with what speed it had.
 local function crash(character: Model, root: BasePart, humanoid: Humanoid, speed: number)
 	PoseController.stop(character, TRACK, 0)
@@ -440,11 +455,7 @@ local function crash(character: Model, root: BasePart, humanoid: Humanoid, speed
 	-- (the roof takes it: a slam laid on it, cracked, bits of it thrown up, dust rolling out; the camera's own jolt
 	-- above is the shake)
 	local floor, normal = Vfx.Ground.at(root.Position, { character }, 12)
-	Vfx.Recipes.slam(CFrame.lookAt(floor, floor + normal) * CFrame.Angles(math.rad(-90), 0, 0), {
-		color = Color3.fromRGB(200, 198, 194),
-		scale = 0.7 + 0.6 * math.clamp((speed - 25) / 30, 0, 1),
-		shake = false,
-	})
+	DiveController.crashFx(floor, normal, speed)
 	if not Sfx.play("gameDiveImpact") then
 		Sfx.play("gameDiveCrash")
 	end

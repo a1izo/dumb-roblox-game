@@ -15,6 +15,9 @@ local Terms = require(Shared:WaitForChild("Terms"))
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 local Cinema = require(script.Parent.Parent.Presentation.Cinema)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Presentation.Vfx.Fresh)
+local Palette = require(script.Parent.Parent.Presentation.Vfx.Palette)
+local Pilot = require(script.Parent.Parent.Presentation.Vfx.Pilot)
 local Kit = require(script.Parent.Kit)
 local Glitch = require(script.Parent.Core.Glitch)
 local Motion = require(script.Parent.Core.Motion)
@@ -50,13 +53,20 @@ local function lightManual(character: Model)
 	end
 	local at = Create("Attachment", { Name = "ManualFire", Position = Vector3.new(0, -0.1, -1.2), Parent = torso })
 	at:SetAttribute("DGEmote", true) -- (a copy of the body leaves it out)
-	local flame = Vfx.Recipes.flame(at, {
-		kind = "fire",
-		scale = 1.1,
-		color = Color3.fromRGB(255, 60, 50),
-		light = false,
-		lit = false,
-	})
+	local flame
+	if Pilot.on.manualFire and Vfx.Tex.real("VfxFire") then
+		-- (stage 4d: the kit's fire sheet in danger red; only with VfxFire imported (the V1.2 sheets are not in Fx 4 yet), and
+		-- Pilot.on.manualFire = false brings the old flame back)
+		flame = Fresh.flame(at, { kind = "fire", scale = 1.1, ramp = Palette.DANGER, light = false, lit = false })
+	else
+		flame = Vfx.Recipes.flame(at, {
+			kind = "fire",
+			scale = 1.1,
+			color = Color3.fromRGB(255, 60, 50),
+			light = false,
+			lit = false,
+		})
+	end
 	flame.set(1, 0.3)
 	manualFire[character] = { flame = flame, at = at }
 end
