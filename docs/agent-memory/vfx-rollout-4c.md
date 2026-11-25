@@ -46,3 +46,13 @@ for such a line (a line starting with a parenthesis is a call on the line above 
 **Unseen / weak.** Low graphics, the phone share and Reduce motion were not looked at (the marks and tells are unchanged in rate logic; the writing
 marks are skipped when quiet as before). The real written-in rate of the covers was not photographed. The frost crystals were retinted bluer after the
 picture; the knife stars and the quill smoke are big on the page (a taste call). The forms' loops and the wins' held kinds are untried by eye.
+**Watching the eight win cuts in a play session (2026-11-25): NOT done, and why.** (1) In the Studio MCP play session the place's own client had not
+run `Cinema.init()` (`DeathsGambitWorld` held only `DeviceScale`; the real `WinCinema.preview` returned true and died at once with
+"win cutscene finalPage: Motion:70: table index is nil", from `Cinema.letterbox` using a nil `topBar`); that is the place's client boot in Studio
+(an old-script place, the owner's sync still owed), not a repo bug: `Cinema.init()` is called at `src/client/init.client.luau:210`. (2) A private copy of
+the worktree client (as above) plays the cuts after `CameraDirector.init()` and `Cinema.init()` are called on it by hand (`WC.preview("finalPage")`
+then returns true, `WC.current` is set, the camera moves round ORIGIN 6000,600,-6000), but the private LightingController has no scene look, so every
+picture was black or a dark lobby and says nothing about key/rim light or the actor; the numeric sampler (head projected to the viewport every 0.2 s)
+read `WC.lastRefs` before it was rebuilt for the new cut, so its figures were lagging by a cut and are not reported. No plain bug in the cuts was seen.
+To do it properly: the owner syncs scripts, then plays each cut from the Debug cutscene gallery (Show tab, F2) in a real Studio play session, or a
+harness probe (`docs/handoff/harness/Gallery.server.luau`) steps them with screenshots at fixed times.
