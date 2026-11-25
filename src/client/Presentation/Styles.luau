@@ -39,6 +39,9 @@ local WorldFont = require(Shared:WaitForChild("WorldFont"))
 
 local Motion = require(script.Parent.Parent.UI.Core.Motion)
 local Vfx = require(script.Parent.Vfx)
+local Fresh = require(script.Parent.Vfx.Fresh)
+local Palette = require(script.Parent.Vfx.Palette)
+local Pilot = require(script.Parent.Vfx.Pilot)
 local Sfx = require(script.Parent.Parent.Audio.Sfx)
 
 local Styles = {}
@@ -90,7 +93,18 @@ type Mark = {
 	fps: number?,
 	squash: number?, -- width over height
 	z: number?,
+	once: boolean?, -- a one-shot sheet: its frames run once over the mark's life (the new sheets)
+	variants: boolean?, -- a bag of different pieces: one random cell, held (the new random sheets)
 }
+
+-- A mark of the new kit (stage 4c: the writing's textures are the new sheets) when its Pilot flag is on and the place has the
+-- new texture, else the old mark of the same line.
+local function kit(flag: string, new: Mark, old: Mark): Mark
+	if (Pilot.on :: any)[flag] and Vfx.Tex.real(new.tex) then
+		return new
+	end
+	return old
+end
 
 -- One mark on the page at `at` (px in the line's parent, the page), living out `spec`; taken away after.
 local function mark(page: Instance, at: Vector2, spec: Mark, base: number?): ImageLabel
@@ -114,16 +128,23 @@ local function mark(page: Instance, at: Vector2, spec: Mark, base: number?): Ima
 	local cell = (spec.sheet or 1024) / grid
 	if grid > 1 then
 		image.ImageRectSize = Vector2.new(cell, cell)
-		local start = os.clock()
-		local stepper: RBXScriptConnection
-		stepper = RunService.RenderStepped:Connect(function()
-			if not image.Parent then
-				stepper:Disconnect()
-				return
-			end
-			local frame = math.floor((os.clock() - start) * (spec.fps or 30)) % (grid * grid)
-			image.ImageRectOffset = Vector2.new((frame % grid) * cell, math.floor(frame / grid) * cell)
-		end)
+		if spec.variants then
+			-- (one piece of a bag, held)
+			local pick = math.random(0, grid * grid - 1)
+			image.ImageRectOffset = Vector2.new((pick % grid) * cell, math.floor(pick / grid) * cell)
+		else
+			local start = os.clock()
+			local stepper: RBXScriptConnection
+			stepper = RunService.RenderStepped:Connect(function()
+				if not image.Parent then
+					stepper:Disconnect()
+					return
+				end
+				local running = math.floor((os.clock() - start) * (spec.fps or 30))
+				local frame = if spec.once then math.min(running, grid * grid - 1) else running % (grid * grid)
+				image.ImageRectOffset = Vector2.new((frame % grid) * cell, math.floor(frame / grid) * cell)
+			end)
+		end
 	end
 	local move = spec.drift or Vector2.zero
 	local info = TweenInfo.new(spec.life, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
@@ -184,14 +205,30 @@ function Styles.write(clip: Frame, label: TextLabel, shown: number, pace: number
 			if not quiet then
 				label.Position = rest + UDim2.fromOffset(0, rng:NextInteger(-1, 1))
 				local x = clip.Position.X.Offset + shown * count / letters - 2
-				mark(page, Vector2.new(x, clip.Position.Y.Offset + height * 0.55), {
-					tex = "VfxDust",
-					color = Color3.fromRGB(70, 64, 58),
-					size = { height * 0.25, height * 0.55 },
-					alpha = { 0.65, 1 },
-					life = 0.35,
-					drift = Vector2.new(0, -height * 0.15),
-				}, z)
+				mark(
+					page,
+					Vector2.new(x, clip.Position.Y.Offset + height * 0.55),
+					kit("writeTypewriter", {
+						-- (a small puff of the machine's dust off the strike, drawn growing and thinning in its sheet)
+						tex = "VfxSmokePuff",
+						grid = 8,
+						once = true,
+						fps = 64 / 0.4,
+						color = Color3.fromRGB(96, 88, 80),
+						size = { height * 0.5, height * 0.8 },
+						alpha = { 0.3, 0.9 },
+						life = 0.4,
+						drift = Vector2.new(0, -height * 0.18),
+					}, {
+						tex = "VfxDust",
+						color = Color3.fromRGB(70, 64, 58),
+						size = { height * 0.25, height * 0.55 },
+						alpha = { 0.65, 1 },
+						life = 0.35,
+						drift = Vector2.new(0, -height * 0.15),
+					}),
+					z
+				)
 			end
 			task.wait(pace * 0.9)
 		end
@@ -213,90 +250,201 @@ function Styles.write(clip: Frame, label: TextLabel, shown: number, pace: number
 		Sfx.play("knifeScrape", { volume = 0.6 })
 		if not quiet then
 			atFront(clip, time, 0.05, function(at)
-				mark(page, at, {
-					tex = "VfxStreak",
-					color = Color3.fromRGB(255, 252, 244),
-					size = { height * 1.1, height * 0.6 },
-					squash = 0.08,
-					alpha = { 0.1, 1 },
-					life = 0.12,
-					rot = { 62, 62 },
-					z = 2,
-				}, z)
+				mark(
+					page,
+					at,
+					kit("writeKnife", {
+						-- (the blade's star at the cut: it opens, turns and closes in its sheet, steel white)
+						tex = "VfxGlint",
+						grid = 4,
+						once = true,
+						fps = 16 / 0.3,
+						color = Color3.fromRGB(226, 232, 244),
+						size = { height * 1.2, height * 1.2 },
+						alpha = { 0, 0.6 },
+						life = 0.3,
+						z = 2,
+					}, {
+						tex = "VfxStreak",
+						color = Color3.fromRGB(255, 252, 244),
+						size = { height * 1.1, height * 0.6 },
+						squash = 0.08,
+						alpha = { 0.1, 1 },
+						life = 0.12,
+						rot = { 62, 62 },
+						z = 2,
+					}),
+					z
+				)
 				if rng:NextNumber() < 0.5 then
-					mark(page, at, {
-						tex = "VfxChunk",
-						color = Color3.fromRGB(226, 216, 196),
-						size = { height * 0.14, height * 0.05 },
-						alpha = { 0, 1 },
-						life = 0.5,
-						drift = Vector2.new(rng:NextNumber(-6, 6), -height * rng:NextNumber(0.3, 0.7)),
-						rot = { 0, rng:NextNumber(-200, 200) },
-					}, z)
+					mark(
+						page,
+						at,
+						kit("writeKnife", {
+							-- (splinters of the page: a shaded chip from the bag of pieces)
+							tex = "VfxShards",
+							grid = 4,
+							variants = true,
+							color = Color3.fromRGB(230, 220, 200),
+							size = { height * 0.22, height * 0.1 },
+							alpha = { 0, 1 },
+							life = 0.5,
+							drift = Vector2.new(rng:NextNumber(-6, 6), -height * rng:NextNumber(0.3, 0.7)),
+							rot = { 0, rng:NextNumber(-200, 200) },
+						}, {
+							tex = "VfxChunk",
+							color = Color3.fromRGB(226, 216, 196),
+							size = { height * 0.14, height * 0.05 },
+							alpha = { 0, 1 },
+							life = 0.5,
+							drift = Vector2.new(rng:NextNumber(-6, 6), -height * rng:NextNumber(0.3, 0.7)),
+							rot = { 0, rng:NextNumber(-200, 200) },
+						}),
+						z
+					)
 				end
 			end)
 		end
 	elseif style == "fire" and not quiet then
 		-- A flame runs along the line burning the letters in, embers flying off it.
 		atFront(clip, time, 0.04, function(at)
-			mark(page, at - Vector2.new(0, height * 0.25), {
-				tex = "VfxFlame",
-				grid = 8,
-				fps = 40,
-				color = Color3.fromRGB(255, 190, 110),
-				size = { height * 0.9, height * 0.5 },
-				alpha = { 0.05, 1 },
-				life = 0.22,
-				drift = Vector2.new(0, -height * 0.35),
-				z = 2,
-			}, z)
-			if rng:NextNumber() < 0.6 then
-				mark(page, at, {
-					tex = "VfxEmber",
-					color = Color3.fromRGB(255, 170, 70),
-					size = { height * 0.1, 0 },
-					life = rng:NextNumber(0.5, 0.9),
-					drift = Vector2.new(rng:NextNumber(-8, 8), -height * rng:NextNumber(0.6, 1.3)),
+			mark(
+				page,
+				at - Vector2.new(0, height * 0.25),
+				kit("writeFire", {
+					-- (the new fire: tongues that tear off and climb, in its own orange)
+					tex = "VfxFire",
+					grid = 8,
+					fps = 40,
+					color = Color3.fromRGB(255, 176, 84),
+					size = { height * 1.1, height * 0.7 },
+					alpha = { 0.05, 0.9 },
+					life = 0.24,
+					drift = Vector2.new(0, -height * 0.4),
 					z = 2,
-				}, z)
+				}, {
+					tex = "VfxFlame",
+					grid = 8,
+					fps = 40,
+					color = Color3.fromRGB(255, 190, 110),
+					size = { height * 0.9, height * 0.5 },
+					alpha = { 0.05, 1 },
+					life = 0.22,
+					drift = Vector2.new(0, -height * 0.35),
+					z = 2,
+				}),
+				z
+			)
+			if rng:NextNumber() < 0.6 then
+				mark(
+					page,
+					at,
+					kit("writeFire", {
+						-- (a spark streak thrown up, not a dot)
+						tex = "VfxSparks",
+						grid = 2,
+						variants = true,
+						color = Color3.fromRGB(255, 190, 90),
+						size = { height * 0.28, height * 0.04 },
+						life = rng:NextNumber(0.5, 0.9),
+						drift = Vector2.new(rng:NextNumber(-8, 8), -height * rng:NextNumber(0.6, 1.3)),
+						z = 2,
+					}, {
+						tex = "VfxEmber",
+						color = Color3.fromRGB(255, 170, 70),
+						size = { height * 0.1, 0 },
+						life = rng:NextNumber(0.5, 0.9),
+						drift = Vector2.new(rng:NextNumber(-8, 8), -height * rng:NextNumber(0.6, 1.3)),
+						z = 2,
+					}),
+					z
+				)
 			end
 		end)
 	elseif style == "quill" and not quiet then
 		-- A live ember at the nib, the fresh strokes already smouldering behind it.
 		atFront(clip, time, 0.06, function(at)
-			mark(page, at, {
-				tex = "VfxGlow",
-				color = SMOULDER,
-				size = { height * 0.5, height * 0.3 },
-				alpha = { 0.35, 1 },
-				life = 0.2,
-				z = 2,
-			}, z)
+			mark(
+				page,
+				at,
+				kit("writeQuill", {
+					-- (a live ember at the nib: a small hot star that opens and closes, in the strokes' own smoulder)
+					tex = "VfxGlint",
+					grid = 4,
+					once = true,
+					fps = 16 / 0.22,
+					color = SMOULDER,
+					size = { height * 0.7, height * 0.7 },
+					alpha = { 0.05, 0.7 },
+					life = 0.22,
+					z = 2,
+				}, {
+					tex = "VfxGlow",
+					color = SMOULDER,
+					size = { height * 0.5, height * 0.3 },
+					alpha = { 0.35, 1 },
+					life = 0.2,
+					z = 2,
+				}),
+				z
+			)
 		end)
 	elseif style == "chalk" and not quiet then
 		-- Dust shaken off the chalk as it goes.
 		atFront(clip, time, 0.07, function(at)
-			mark(page, at, {
-				tex = "VfxDust",
-				color = CHALK,
-				size = { height * 0.3, height * 0.6 },
-				alpha = { 0.55, 1 },
-				life = 0.6,
-				drift = Vector2.new(rng:NextNumber(-3, 3), height * 0.5),
-				rot = { 0, 30 },
-			}, z)
+			mark(
+				page,
+				at,
+				kit("writeChalk", {
+					-- (dust shaken off the chalk: a soft puff that rolls and thins in its sheet)
+					tex = "VfxDustRoll",
+					grid = 8,
+					once = true,
+					fps = 64 / 0.6,
+					color = CHALK,
+					size = { height * 0.6, height * 0.9 },
+					alpha = { 0.3, 0.95 },
+					life = 0.6,
+					drift = Vector2.new(rng:NextNumber(-3, 3), height * 0.5),
+				}, {
+					tex = "VfxDust",
+					color = CHALK,
+					size = { height * 0.3, height * 0.6 },
+					alpha = { 0.55, 1 },
+					life = 0.6,
+					drift = Vector2.new(rng:NextNumber(-3, 3), height * 0.5),
+					rot = { 0, 30 },
+				}),
+				z
+			)
 		end)
 	elseif style == "frost" and not quiet then
 		-- A cold breath where the letters form.
 		atFront(clip, time, 0.06, function(at)
-			mark(page, at, {
-				tex = "VfxGlow",
-				color = Color3.fromRGB(210, 236, 255),
-				size = { height * 0.7, height * 1.1 },
-				alpha = { 0.55, 1 },
-				life = 0.4,
-				z = 2,
-			}, z)
+			mark(
+				page,
+				at,
+				kit("writeFrost", {
+					-- (a cold breath where the letters form: a thin bank of mist in the ice's own blue)
+					tex = "VfxMist",
+					grid = 4,
+					fps = 12,
+					color = Color3.fromRGB(150, 205, 245),
+					size = { height * 0.9, height * 1.4 },
+					alpha = { 0.3, 1 },
+					life = 0.5,
+					rot = { 0, 20 },
+					z = 2,
+				}, {
+					tex = "VfxGlow",
+					color = Color3.fromRGB(210, 236, 255),
+					size = { height * 0.7, height * 1.1 },
+					alpha = { 0.55, 1 },
+					life = 0.4,
+					z = 2,
+				}),
+				z
+			)
 		end)
 	end
 	if style == "fire" then
@@ -321,25 +469,56 @@ function Styles.write(clip: Frame, label: TextLabel, shown: number, pace: number
 			for k = 1, 5 do
 				local at = along(clip, rng, shown)
 				task.delay(k * 0.12, function()
-					mark(page, at, {
-						tex = "VfxSmoke",
-						grid = 8,
-						fps = 24,
-						color = Color3.fromRGB(110, 104, 100),
-						size = { height * 0.4, height * 1.3 },
-						alpha = { 0.55, 1 },
-						life = 1.6,
-						drift = Vector2.new(rng:NextNumber(-6, 6), -height * rng:NextNumber(0.9, 1.5)),
-						rot = { 0, rng:NextNumber(-40, 40) },
-					}, z)
-					mark(page, at, {
-						tex = "VfxEmber",
-						color = SMOULDER,
-						size = { height * 0.08, 0 },
-						life = 0.8,
-						drift = Vector2.new(rng:NextNumber(-5, 5), -height * rng:NextNumber(0.5, 1)),
-						z = 2,
-					}, z)
+					mark(
+						page,
+						at,
+						kit("writeQuill", {
+							-- (thin smoke off a dying stroke: a billow that thins to wisps in its own sheet)
+							tex = "VfxSmokePuff",
+							grid = 8,
+							once = true,
+							fps = 64 / 1.6,
+							color = Color3.fromRGB(120, 112, 106),
+							size = { height * 0.7, height * 1.5 },
+							alpha = { 0.35, 0.95 },
+							life = 1.6,
+							drift = Vector2.new(rng:NextNumber(-6, 6), -height * rng:NextNumber(0.9, 1.5)),
+							rot = { 0, rng:NextNumber(-40, 40) },
+						}, {
+							tex = "VfxSmoke",
+							grid = 8,
+							fps = 24,
+							color = Color3.fromRGB(110, 104, 100),
+							size = { height * 0.4, height * 1.3 },
+							alpha = { 0.55, 1 },
+							life = 1.6,
+							drift = Vector2.new(rng:NextNumber(-6, 6), -height * rng:NextNumber(0.9, 1.5)),
+							rot = { 0, rng:NextNumber(-40, 40) },
+						}),
+						z
+					)
+					mark(
+						page,
+						at,
+						kit("writeQuill", {
+							tex = "VfxSparks",
+							grid = 2,
+							variants = true,
+							color = SMOULDER,
+							size = { height * 0.22, height * 0.03 },
+							life = 0.8,
+							drift = Vector2.new(rng:NextNumber(-5, 5), -height * rng:NextNumber(0.5, 1)),
+							z = 2,
+						}, {
+							tex = "VfxEmber",
+							color = SMOULDER,
+							size = { height * 0.08, 0 },
+							life = 0.8,
+							drift = Vector2.new(rng:NextNumber(-5, 5), -height * rng:NextNumber(0.5, 1)),
+							z = 2,
+						}),
+						z
+					)
 				end)
 			end
 		end
@@ -355,14 +534,33 @@ function Styles.write(clip: Frame, label: TextLabel, shown: number, pace: number
 		grain.Parent = clip
 		if not quiet then
 			for _ = 1, 8 do
-				mark(page, along(clip, rng, shown), {
-					tex = "VfxDust",
-					color = CHALK,
-					size = { height * 0.15, height * 0.35 },
-					alpha = { 0.45, 1 },
-					life = rng:NextNumber(1, 1.5),
-					drift = Vector2.new(rng:NextNumber(-3, 3), height * rng:NextNumber(0.6, 1.3)),
-				}, z)
+				local fall = rng:NextNumber(1, 1.5)
+				local sway = rng:NextNumber(-3, 3)
+				local drop = height * rng:NextNumber(0.6, 1.3)
+				mark(
+					page,
+					along(clip, rng, shown),
+					kit("writeChalk", {
+						-- (grains of chalk tumbling off the page: flakes with a lit side)
+						tex = "VfxAshFlakes",
+						grid = 4,
+						fps = 12,
+						color = CHALK,
+						size = { height * 0.3, height * 0.28 },
+						alpha = { 0.2, 1 },
+						life = fall,
+						drift = Vector2.new(sway, drop),
+						rot = { 0, rng:NextNumber(-120, 120) },
+					}, {
+						tex = "VfxDust",
+						color = CHALK,
+						size = { height * 0.15, height * 0.35 },
+						alpha = { 0.45, 1 },
+						life = fall,
+						drift = Vector2.new(sway, drop),
+					}),
+					z
+				)
 			end
 		end
 	elseif style == "frost" then
@@ -374,15 +572,34 @@ function Styles.write(clip: Frame, label: TextLabel, shown: number, pace: number
 			for k = 1, 9 do
 				local at = along(clip, rng, shown)
 				task.delay(k * 0.07, function()
-					mark(page, at, {
-						tex = "VfxFlare",
-						color = Color3.fromRGB(236, 248, 255),
-						size = { 0, height * rng:NextNumber(0.35, 0.6) },
-						alpha = { 0, 0.35 },
-						life = 1.6,
-						rot = { 0, rng:NextNumber(20, 60) },
-						z = 2,
-					}, z)
+					local grow = height * rng:NextNumber(0.35, 0.6)
+					local turn = rng:NextNumber(20, 60)
+					mark(
+						page,
+						at,
+						kit("writeFrost", {
+							-- (a crystal: a star that opens, turns and closes by itself in its sheet, ice blue-white)
+							tex = "VfxGlint",
+							grid = 4,
+							once = true,
+							fps = 16 / 1.6,
+							color = Color3.fromRGB(140, 200, 245),
+							size = { grow * 1.5, grow * 1.5 },
+							alpha = { 0, 0.5 },
+							life = 1.6,
+							rot = { 0, turn },
+							z = 2,
+						}, {
+							tex = "VfxFlare",
+							color = Color3.fromRGB(236, 248, 255),
+							size = { 0, grow },
+							alpha = { 0, 0.35 },
+							life = 1.6,
+							rot = { 0, turn },
+							z = 2,
+						}),
+						z
+					)
 				end)
 			end
 		end
@@ -392,16 +609,33 @@ function Styles.write(clip: Frame, label: TextLabel, shown: number, pace: number
 		TweenService:Create(label, TweenInfo.new(3, Enum.EasingStyle.Quad), { TextStrokeTransparency = 0.7 }):Play()
 		if not quiet then
 			for _ = 1, 4 do
-				mark(page, along(clip, rng, shown), {
-					tex = "VfxSmoke",
-					grid = 8,
-					fps = 24,
-					color = Color3.fromRGB(70, 60, 54),
-					size = { height * 0.5, height * 1.4 },
-					alpha = { 0.6, 1 },
-					life = 1.4,
-					drift = Vector2.new(rng:NextNumber(-6, 6), -height * 1.2),
-				}, z)
+				local drift = Vector2.new(rng:NextNumber(-6, 6), -height * 1.2)
+				mark(
+					page,
+					along(clip, rng, shown),
+					kit("writeFire", {
+						-- (the last breath of smoke off the burnt letters, in its own sheet, charred brown not grey)
+						tex = "VfxSmokePuff",
+						grid = 8,
+						once = true,
+						fps = 64 / 1.4,
+						color = Color3.fromRGB(86, 66, 54),
+						size = { height * 0.8, height * 1.7 },
+						alpha = { 0.3, 0.95 },
+						life = 1.4,
+						drift = drift,
+					}, {
+						tex = "VfxSmoke",
+						grid = 8,
+						fps = 24,
+						color = Color3.fromRGB(70, 60, 54),
+						size = { height * 0.5, height * 1.4 },
+						alpha = { 0.6, 1 },
+						life = 1.4,
+						drift = drift,
+					}),
+					z
+				)
 			end
 		end
 	end
@@ -673,7 +907,13 @@ end
 
 -- Veils trailing from points on a body (`starts`: attachments on it): each a soft beam out to a free end that
 -- follows behind and below the body with a lag, so they stream back as it moves and settle as it stops.
-local function trailingVeils(folder: Instance, character: Model, starts: { Attachment }, color: Color3)
+local function trailingVeils(
+	folder: Instance,
+	character: Model,
+	starts: { Attachment },
+	color: Color3,
+	deeper: boolean?
+)
 	if character:FindFirstAncestorWhichIsA("ViewportFrame") then
 		return
 	end
@@ -694,7 +934,10 @@ local function trailingVeils(folder: Instance, character: Model, starts: { Attac
 			TextureSpeed = 0.15,
 			Width0 = 1.5 - k * 0.2,
 			Width1 = 0.5,
-			Color = ColorSequence.new(color, color:Lerp(Color3.fromRGB(30, 30, 36), 0.5)),
+			Color = ColorSequence.new(
+				color,
+				if deeper == true then Palette.deeper(color) else color:Lerp(Color3.fromRGB(30, 30, 36), 0.5)
+			),
 			Transparency = NumberSequence.new({
 				NumberSequenceKeypoint.new(0, 0.45),
 				NumberSequenceKeypoint.new(0.7, 0.7),
@@ -727,6 +970,259 @@ local function trailingVeils(folder: Instance, character: Model, starts: { Attac
 	end)
 end
 
+-- The forms' particles on the new kit (stage 4c; each behind its own Pilot flag, the old build kept in Styles.form). Each form
+-- keeps its own idea and colour (`tint`, full colour: white-hot at the core, a darker shade of itself at the edge), and now
+-- draws it from a shaped sheet instead of the soft dots: a mist for a glow, sparks for embers, a plume for smoke, fire for a
+-- flame, a feather sheet for feathers. The glows are dark-backed where they sit on a body (a dark layer under, laid over).
+local CROW_RAMP = { Color3.fromRGB(120, 124, 144), Color3.fromRGB(34, 36, 46), Color3.fromRGB(8, 8, 12) }
+
+-- A dark layer's ramp for a tint (its edge pushed toward black), laid over, never added.
+local function darkOf(tint: Color3): Palette.Ramp
+	local deep = Palette.deeper(tint)
+	return { deep, deep:Lerp(Color3.new(0, 0, 0), 0.45), deep:Lerp(Color3.new(0, 0, 0), 0.8) }
+end
+
+-- The ignition of a form: one glint at the body as it is put on (a loop begins on purpose). Not in the shop's 3D view.
+local function ignite(on: BasePart, tint: Color3)
+	if on:FindFirstAncestorWhichIsA("ViewportFrame") then
+		return
+	end
+	Fresh.glint(on.Position, { ramp = Palette.shop(tint), scale = 0.9 })
+end
+
+-- The glow in the chest: a breathing mist, one particle at a time, a long life (the old glow dot's place).
+local function chestGlow(on: Instance, tint: Color3, size: number, z: number)
+	Vfx.Emit
+		.make(on, {
+			tex = "VfxMist",
+			ramp = { tint, tint, Palette.deeper(tint) }, -- (a glow keeps its colour from birth, no white-hot start)
+			size = size,
+			alpha = { { 0, 1 }, { 0.1, 0.3 }, { 0.9, 0.35 }, { 1, 1 } },
+			life = 4,
+			rate = 1 / 3.8,
+			rot = { 0, 360 },
+			locked = true,
+			light = 0.7,
+			lit = 0.1,
+			bright = 1.1,
+			z = z,
+		})
+		:Emit(1)
+end
+
+local function freshEmbers(character: Model, carrier: BasePart, tint: Color3)
+	ignite(carrier, tint)
+	local ramp = Palette.shop(tint)
+	local at = Create("Attachment", { Parent = carrier }) :: Attachment
+	chestGlow(at, tint, 2.4, 1.6)
+	-- (embers rising off the heart: sparks, not dots, that climb, slow and wander)
+	Vfx.Emit.make(at, {
+		tex = "VfxSparks",
+		ramp = ramp,
+		size = { { 0, 0.3 }, { 0.5, 0.22 }, { 1, 0 } },
+		alpha = { { 0, 1 }, { 0.1, 0.1 }, { 0.8, 0.3 }, { 1, 1 } },
+		life = { 0.9, 1.7 },
+		speed = { 1, 3 },
+		spread = 35,
+		accel = Vector3.new(0, 4, 0),
+		drag = 0.8,
+		face = "along",
+		bright = 1.5,
+		rate = 14,
+		shape = Enum.ParticleEmitterShape.Sphere,
+		z = 1.2,
+	})
+	-- (the smoke over it, laid over the scene so it reads in a lit room: a thin plume off a dark layer)
+	Vfx.Emit.make(at, {
+		tex = "VfxSmokePlume",
+		ramp = darkOf(tint),
+		light = 0,
+		lit = 0.4,
+		size = { { 0, 1 }, { 1, 2.4 } },
+		alpha = { { 0, 1 }, { 0.3, 0.5 }, { 0.8, 0.65 }, { 1, 1 } },
+		life = { 1.4, 2 },
+		speed = { 1.5, 3 },
+		spread = 15,
+		face = "up",
+		rate = 1.5,
+	})
+	for _, side in ipairs({ -1, 1 }) do
+		local shoulder =
+			Create("Attachment", { Position = Vector3.new(side * 0.9, 0.9, 0), Parent = carrier }) :: Attachment
+		-- (the fire sheet of the new library, or the old flame while the place has not imported it)
+		local fire = Vfx.Tex.real("VfxFire")
+		Vfx.Emit.make(shoulder, {
+			tex = if fire then "VfxFire" else "VfxFlame",
+			grid = if fire then nil else 8,
+			fps = if fire then nil else 36,
+			startRandom = if fire then nil else true,
+			ramp = ramp,
+			size = { { 0, 0.8 }, { 0.6, 0.55 }, { 1, 0.12 } },
+			alpha = { { 0, 0.3 }, { 0.7, 0.5 }, { 1, 1 } },
+			life = { 0.3, 0.5 },
+			speed = { 0.6, 1.4 },
+			accel = Vector3.new(0, 3, 0),
+			face = "up",
+			light = 0.8,
+			bright = 1.2,
+			rate = 8,
+			z = 0.6,
+		})
+	end
+	for _, name in ipairs({ "Left Arm", "Right Arm" }) do
+		local arm = character:FindFirstChild(name)
+		if arm and arm:IsA("BasePart") then
+			local hand = Create("Attachment", { Position = Vector3.new(0, -1, 0), Parent = arm }) :: Attachment
+			hand:SetAttribute("DGForm", true)
+			Vfx.Emit.make(hand, {
+				tex = "VfxSparks",
+				ramp = ramp,
+				size = { { 0, 0.22 }, { 1, 0 } },
+				alpha = { { 0, 1 }, { 0.1, 0.1 }, { 0.8, 0.3 }, { 1, 1 } },
+				life = { 0.5, 0.9 },
+				speed = { 0.2, 0.6 },
+				spread = 60,
+				accel = Vector3.new(0, 1.5, 0),
+				face = "along",
+				bright = 1.4,
+				rate = 6,
+			})
+			local worn = carrier.Parent :: Instance
+			worn.Destroying:Once(function()
+				hand:Destroy()
+			end)
+		end
+	end
+end
+
+-- The veil: thin wisps curling up off the shoulders and a dark mist at the hem, beside the beams (which now fade to the
+-- tint's own deeper shade, never grey).
+local function freshVeil(carrier: BasePart, tint: Color3)
+	ignite(carrier, tint)
+	Vfx.Emit.make(carrier, {
+		tex = "VfxEnergyWisp",
+		ramp = Palette.shop(tint),
+		size = { { 0, 0.8 }, { 1, 1.8 } },
+		alpha = { { 0, 1 }, { 0.15, 0.25 }, { 0.7, 0.4 }, { 1, 1 } },
+		life = { 1.4, 2.2 },
+		speed = { 0.4, 1 },
+		spread = 40,
+		accel = Vector3.new(0, 0.8, 0),
+		rot = { 0, 360 },
+		light = 0.7,
+		lit = 0.2,
+		bright = 1.2,
+		rate = 3,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+	Vfx.Emit.make(carrier, {
+		tex = "VfxMist",
+		ramp = darkOf(tint),
+		size = { { 0, 1.2 }, { 1, 2.6 } },
+		alpha = { { 0, 1 }, { 0.3, 0.45 }, { 0.8, 0.6 }, { 1, 1 } },
+		life = { 1.6, 2.4 },
+		speed = { 0.2, 0.5 },
+		spread = 80,
+		rot = { 0, 360 },
+		light = 0,
+		lit = 0.3,
+		z = -0.4,
+		rate = 2,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+end
+
+-- The chains: a red glow that beats, a dark plume about the feet, and sparks shaken off the links.
+local function freshChains(heart: BasePart, feet: BasePart, tint: Color3)
+	ignite(heart, tint)
+	chestGlow(heart, tint, 2.2, 1.4)
+	Vfx.Emit.make(feet, {
+		tex = "VfxSmokePlume",
+		ramp = darkOf(tint),
+		light = 0,
+		lit = 0.2,
+		size = { { 0, 1.2 }, { 1, 2.6 } },
+		alpha = { { 0, 1 }, { 0.3, 0.55 }, { 0.8, 0.7 }, { 1, 1 } },
+		life = { 1.6, 2.4 },
+		speed = { 0.2, 0.5 },
+		spread = 80,
+		rot = { 0, 360 },
+		rate = 2.5,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+	Vfx.Emit.make(heart, {
+		tex = "VfxSparks",
+		ramp = Palette.shop(tint),
+		size = { { 0, 0.22 }, { 1, 0.04 } },
+		alpha = { { 0, 1 }, { 0.12, 0.1 }, { 0.8, 0.3 }, { 1, 1 } },
+		life = { 0.7, 1.3 },
+		speed = { 0.3, 1 },
+		spread = 120,
+		accel = Vector3.new(0, -2.5, 0),
+		face = "along",
+		bright = 1.5,
+		rate = 3,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+end
+
+-- The crows: feathers tumbling off the cloak (a black feather turning, lit by the room) and a dark mist at its hem.
+local function freshCrows(carrier: BasePart)
+	ignite(carrier, FEATHER:Lerp(Color3.fromRGB(150, 156, 190), 0.6))
+	Vfx.Emit.make(carrier, {
+		tex = "VfxFeatherTumble",
+		ramp = CROW_RAMP,
+		light = 0,
+		lit = 0.8,
+		size = { { 0, 0.42 }, { 1, 0.36 } },
+		alpha = { { 0, 0.05 }, { 0.8, 0.2 }, { 1, 1 } },
+		life = { 1.8, 2.8 },
+		speed = { 0.2, 0.6 },
+		spread = 60,
+		accel = Vector3.new(0, -1.4, 0),
+		drag = 1.5,
+		rot = { 0, 360 },
+		spin = { -90, 90 },
+		rate = 3,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+	Vfx.Emit.make(carrier, {
+		tex = "VfxMist",
+		ramp = { Color3.fromRGB(44, 44, 56), Color3.fromRGB(14, 14, 18), Color3.fromRGB(4, 4, 6) },
+		light = 0,
+		lit = 0.3,
+		size = { { 0, 1 }, { 1, 2.4 } },
+		alpha = { { 0, 1 }, { 0.3, 0.45 }, { 0.8, 0.65 }, { 1, 1 } },
+		life = { 1.4, 2 },
+		speed = { 0.2, 0.6 },
+		spread = 70,
+		accel = Vector3.new(0, -0.3, 0),
+		rot = { 0, 360 },
+		rate = 3,
+		shape = Enum.ParticleEmitterShape.Box,
+	})
+end
+
+-- The moth lantern: a cold glow in the chest as a mist and motes of light as sparks; the moths keep their own wingbeat sheet.
+local function freshMoths(light: BasePart, tint: Color3)
+	ignite(light, tint)
+	chestGlow(light, tint, 3.2, 1.2)
+	Vfx.Emit.make(light, {
+		tex = "VfxSparks",
+		ramp = Palette.shop(tint),
+		size = { { 0, 0.2 }, { 1, 0 } },
+		alpha = { { 0, 1 }, { 0.12, 0.1 }, { 0.8, 0.3 }, { 1, 1 } },
+		life = { 1.2, 2 },
+		speed = { 0.3, 0.8 },
+		spread = 180,
+		drag = 0.5,
+		face = "along",
+		bright = 1.5,
+		rate = 6,
+		z = 0.8,
+	})
+end
+
 -- Dresses a Deathsinger's body in its form (`color`: the form's own). Returns the folder of what it wears
 -- (destroy it to take the form off), or nil for no form.
 function Styles.form(character: Model, form: string?, color: Color3?): Folder?
@@ -750,96 +1246,104 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 		carrier.Transparency = 1
 		weldTo(carrier, torso)
 		-- (a warm heart glowing in the chest, embers rising off it, now and then a breath of smoke)
-		local at = Create("Attachment", { Parent = carrier }) :: Attachment
-		Vfx.Emit
-			.make(at, {
-				tex = "VfxGlow",
-				color = tint,
-				size = 2.4,
-				alpha = { { 0, 1 }, { 0.05, 0.3 }, { 0.95, 0.3 }, { 1, 1 } },
-				life = 4,
-				rate = 1 / 3.8,
-				locked = true,
-				light = 0.7,
-				bright = 1.1,
-				z = 1.6, -- (drawn forward of the body, which would hide it inside it)
-			})
-			:Emit(1)
-		Vfx.Emit.make(at, {
-			tex = "VfxEmber",
-			color = { { 0, Color3.fromRGB(255, 236, 190) }, { 0.3, tint }, { 1, tint:Lerp(Color3.new(0, 0, 0), 0.6) } },
-			size = { { 0, 0.22 }, { 0.5, 0.16 }, { 1, 0 } },
-			life = { 0.9, 1.7 },
-			speed = { 1, 3 },
-			spread = 35,
-			accel = Vector3.new(0, 4, 0),
-			drag = 0.8,
-			bright = 1.4,
-			rate = 22,
-			shape = Enum.ParticleEmitterShape.Sphere,
-			z = 1.2,
-		})
-		Vfx.Emit.make(at, {
-			tex = "VfxWisp",
-			grid = 4,
-			mode = "OneShot",
-			color = tint:Lerp(Color3.fromRGB(60, 56, 58), 0.6),
-			light = 0,
-			lit = 0.4,
-			size = { { 0, 1 }, { 1, 2.4 } },
-			alpha = { { 0, 0.5 }, { 0.6, 0.65 }, { 1, 1 } },
-			life = { 1.2, 1.8 },
-			speed = { 1.5, 3 },
-			spread = 15,
-			face = "up",
-			rate = 2,
-		})
-		-- (the shoulders smouldering, embers trailing off the hands as they move, a warm light flickering on it)
-		for _, side in ipairs({ -1, 1 }) do
-			local shoulder =
-				Create("Attachment", { Position = Vector3.new(side * 0.9, 0.9, 0), Parent = carrier }) :: Attachment
-			Vfx.Emit.make(shoulder, {
-				tex = "VfxFlame",
-				grid = 8,
-				fps = 36,
-				startRandom = true,
-				color = {
-					{ 0, Color3.fromRGB(255, 220, 160) },
-					{ 0.5, tint },
-					{ 1, tint:Lerp(Color3.new(0, 0, 0), 0.7) },
-				},
-				size = { { 0, 0.7 }, { 0.6, 0.45 }, { 1, 0.1 } },
-				alpha = { { 0, 0.3 }, { 0.7, 0.5 }, { 1, 1 } },
-				life = { 0.3, 0.5 },
-				speed = { 0.6, 1.4 },
-				accel = Vector3.new(0, 3, 0),
-				face = "up",
-				light = 0.8,
-				bright = 1.2,
-				rate = 9,
-				z = 0.6,
-			})
-		end
-		for _, name in ipairs({ "Left Arm", "Right Arm" }) do
-			local arm = character:FindFirstChild(name)
-			if arm and arm:IsA("BasePart") then
-				local hand = Create("Attachment", { Position = Vector3.new(0, -1, 0), Parent = arm }) :: Attachment
-				hand:SetAttribute("DGForm", true)
-				Vfx.Emit.make(hand, {
-					tex = "VfxEmber",
-					color = { { 0, Color3.fromRGB(255, 220, 160) }, { 1, tint } },
-					size = { { 0, 0.14 }, { 1, 0 } },
-					life = { 0.5, 0.9 },
-					speed = { 0.2, 0.6 },
-					spread = 60,
-					accel = Vector3.new(0, 1.5, 0),
-					bright = 1.4,
-					rate = 7,
+		if Pilot.on.formEmbers then
+			freshEmbers(character, carrier, tint)
+		else
+			local at = Create("Attachment", { Parent = carrier }) :: Attachment
+			Vfx.Emit
+				.make(at, {
+					tex = "VfxGlow",
+					color = tint,
+					size = 2.4,
+					alpha = { { 0, 1 }, { 0.05, 0.3 }, { 0.95, 0.3 }, { 1, 1 } },
+					life = 4,
+					rate = 1 / 3.8,
+					locked = true,
+					light = 0.7,
+					bright = 1.1,
+					z = 1.6, -- (drawn forward of the body, which would hide it inside it)
 				})
-				-- (taken off with the form: the hand's attachment lives on the arm, not in the folder)
-				folder.Destroying:Once(function()
-					hand:Destroy()
-				end)
+				:Emit(1)
+			Vfx.Emit.make(at, {
+				tex = "VfxEmber",
+				color = {
+					{ 0, Color3.fromRGB(255, 236, 190) },
+					{ 0.3, tint },
+					{ 1, tint:Lerp(Color3.new(0, 0, 0), 0.6) },
+				},
+				size = { { 0, 0.22 }, { 0.5, 0.16 }, { 1, 0 } },
+				life = { 0.9, 1.7 },
+				speed = { 1, 3 },
+				spread = 35,
+				accel = Vector3.new(0, 4, 0),
+				drag = 0.8,
+				bright = 1.4,
+				rate = 22,
+				shape = Enum.ParticleEmitterShape.Sphere,
+				z = 1.2,
+			})
+			Vfx.Emit.make(at, {
+				tex = "VfxWisp",
+				grid = 4,
+				mode = "OneShot",
+				color = tint:Lerp(Color3.fromRGB(60, 56, 58), 0.6),
+				light = 0,
+				lit = 0.4,
+				size = { { 0, 1 }, { 1, 2.4 } },
+				alpha = { { 0, 0.5 }, { 0.6, 0.65 }, { 1, 1 } },
+				life = { 1.2, 1.8 },
+				speed = { 1.5, 3 },
+				spread = 15,
+				face = "up",
+				rate = 2,
+			})
+			-- (the shoulders smouldering, embers trailing off the hands as they move, a warm light flickering on it)
+			for _, side in ipairs({ -1, 1 }) do
+				local shoulder =
+					Create("Attachment", { Position = Vector3.new(side * 0.9, 0.9, 0), Parent = carrier }) :: Attachment
+				Vfx.Emit.make(shoulder, {
+					tex = "VfxFlame",
+					grid = 8,
+					fps = 36,
+					startRandom = true,
+					color = {
+						{ 0, Color3.fromRGB(255, 220, 160) },
+						{ 0.5, tint },
+						{ 1, tint:Lerp(Color3.new(0, 0, 0), 0.7) },
+					},
+					size = { { 0, 0.7 }, { 0.6, 0.45 }, { 1, 0.1 } },
+					alpha = { { 0, 0.3 }, { 0.7, 0.5 }, { 1, 1 } },
+					life = { 0.3, 0.5 },
+					speed = { 0.6, 1.4 },
+					accel = Vector3.new(0, 3, 0),
+					face = "up",
+					light = 0.8,
+					bright = 1.2,
+					rate = 9,
+					z = 0.6,
+				})
+			end
+			for _, name in ipairs({ "Left Arm", "Right Arm" }) do
+				local arm = character:FindFirstChild(name)
+				if arm and arm:IsA("BasePart") then
+					local hand = Create("Attachment", { Position = Vector3.new(0, -1, 0), Parent = arm }) :: Attachment
+					hand:SetAttribute("DGForm", true)
+					Vfx.Emit.make(hand, {
+						tex = "VfxEmber",
+						color = { { 0, Color3.fromRGB(255, 220, 160) }, { 1, tint } },
+						size = { { 0, 0.14 }, { 1, 0 } },
+						life = { 0.5, 0.9 },
+						speed = { 0.2, 0.6 },
+						spread = 60,
+						accel = Vector3.new(0, 1.5, 0),
+						bright = 1.4,
+						rate = 7,
+					})
+					-- (taken off with the form: the hand's attachment lives on the arm, not in the folder)
+					folder.Destroying:Once(function()
+						hand:Destroy()
+					end)
+				end
 			end
 		end
 		local warm = Create(
@@ -877,7 +1381,10 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 			weldTo(anchor, on)
 			table.insert(starts, Create("Attachment", { Parent = anchor }) :: Attachment)
 		end
-		trailingVeils(folder, character, starts, tint)
+		trailingVeils(folder, character, starts, tint, Pilot.on.formVeil)
+		if Pilot.on.formVeil and starts[2] and starts[2].Parent then
+			freshVeil(starts[2].Parent :: BasePart, tint)
+		end
 	elseif form == "chains" then
 		for _, name in ipairs({ "Left Arm", "Right Arm" }) do
 			local arm = character:FindFirstChild(name)
@@ -906,20 +1413,22 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 		local heart = part(folder, Vector3.new(0.2, 0.2, 0.2), torso.CFrame * CFrame.new(0, 0.1, -0.2), tint)
 		heart.Transparency = 1
 		weldTo(heart, torso)
-		Vfx.Emit
-			.make(heart, {
-				tex = "VfxGlow",
-				color = tint,
-				size = 2.2,
-				alpha = { { 0, 1 }, { 0.05, 0.35 }, { 0.95, 0.35 }, { 1, 1 } },
-				life = 4,
-				rate = 1 / 3.8,
-				locked = true,
-				light = 0.8,
-				bright = 1.2,
-				z = 1.4,
-			})
-			:Emit(1)
+		if not Pilot.on.formChains then
+			Vfx.Emit
+				.make(heart, {
+					tex = "VfxGlow",
+					color = tint,
+					size = 2.2,
+					alpha = { { 0, 1 }, { 0.05, 0.35 }, { 0.95, 0.35 }, { 1, 1 } },
+					life = 4,
+					rate = 1 / 3.8,
+					locked = true,
+					light = 0.8,
+					bright = 1.2,
+					z = 1.4,
+				})
+				:Emit(1)
+		end
 		local beat = Create(
 			"PointLight",
 			{ Color = tint, Range = 9, Brightness = 1.2, Shadows = false, Parent = heart }
@@ -928,22 +1437,26 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 		local feet = part(folder, Vector3.new(2, 0.2, 1.4), torso.CFrame * CFrame.new(0, -3, 0), tint)
 		feet.Transparency = 1
 		weldTo(feet, torso)
-		Vfx.Emit.make(feet, {
-			tex = "VfxSmoke",
-			grid = 8,
-			color = tint:Lerp(Color3.new(0, 0, 0), 0.65),
-			light = 0.1,
-			lit = 0.2,
-			size = { { 0, 1.2 }, { 1, 2.6 } },
-			alpha = { { 0, 1 }, { 0.3, 0.75 }, { 1, 1 } },
-			life = { 1.6, 2.4 },
-			speed = { 0.2, 0.5 },
-			spread = 80,
-			rot = { 0, 360 },
-			spin = { -20, 20 },
-			rate = 3,
-			shape = Enum.ParticleEmitterShape.Box,
-		})
+		if Pilot.on.formChains then
+			freshChains(heart, feet, tint)
+		else
+			Vfx.Emit.make(feet, {
+				tex = "VfxSmoke",
+				grid = 8,
+				color = tint:Lerp(Color3.new(0, 0, 0), 0.65),
+				light = 0.1,
+				lit = 0.2,
+				size = { { 0, 1.2 }, { 1, 2.6 } },
+				alpha = { { 0, 1 }, { 0.3, 0.75 }, { 1, 1 } },
+				life = { 1.6, 2.4 },
+				speed = { 0.2, 0.5 },
+				spread = 80,
+				rot = { 0, 360 },
+				spin = { -20, 20 },
+				rate = 3,
+				shape = Enum.ParticleEmitterShape.Box,
+			})
+		end
 		for _, turn in ipairs({ 35, -35 }) do
 			local across = CFrame.new(0, 0, -0.55) * CFrame.Angles(0, 0, math.rad(turn))
 			local wrap = prop("Chain", torso.CFrame * across, folder, 2.6)
@@ -984,40 +1497,44 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 		local carrier = part(folder, Vector3.new(1.6, 0.4, 1), torso.CFrame * CFrame.new(0, -0.6, 0.4), FEATHER)
 		carrier.Transparency = 1
 		weldTo(carrier, torso)
-		Vfx.Emit.make(carrier, {
-			tex = "VfxFeather",
-			color = FEATHER,
-			light = 0,
-			lit = 0.8,
-			size = { { 0, 0.32 }, { 1, 0.26 } },
-			alpha = { { 0, 0.05 }, { 0.8, 0.2 }, { 1, 1 } },
-			life = { 1.8, 2.8 },
-			speed = { 0.2, 0.6 },
-			spread = 60,
-			accel = Vector3.new(0, -1.4, 0),
-			drag = 1.5,
-			rot = { 0, 360 },
-			spin = { -90, 90 },
-			rate = 3,
-			shape = Enum.ParticleEmitterShape.Box,
-		})
-		-- (a low dark mist trailing at its hem)
-		Vfx.Emit.make(carrier, {
-			tex = "VfxSmoke",
-			grid = 8,
-			color = Color3.fromRGB(14, 14, 18),
-			light = 0,
-			lit = 0.3,
-			size = { { 0, 1 }, { 1, 2.4 } },
-			alpha = { { 0, 1 }, { 0.3, 0.7 }, { 1, 1 } },
-			life = { 1.4, 2 },
-			speed = { 0.2, 0.6 },
-			spread = 70,
-			accel = Vector3.new(0, -0.3, 0),
-			rot = { 0, 360 },
-			rate = 3,
-			shape = Enum.ParticleEmitterShape.Box,
-		})
+		if Pilot.on.formCrows then
+			freshCrows(carrier)
+		else
+			Vfx.Emit.make(carrier, {
+				tex = "VfxFeather",
+				color = FEATHER,
+				light = 0,
+				lit = 0.8,
+				size = { { 0, 0.32 }, { 1, 0.26 } },
+				alpha = { { 0, 0.05 }, { 0.8, 0.2 }, { 1, 1 } },
+				life = { 1.8, 2.8 },
+				speed = { 0.2, 0.6 },
+				spread = 60,
+				accel = Vector3.new(0, -1.4, 0),
+				drag = 1.5,
+				rot = { 0, 360 },
+				spin = { -90, 90 },
+				rate = 3,
+				shape = Enum.ParticleEmitterShape.Box,
+			})
+			-- (a low dark mist trailing at its hem)
+			Vfx.Emit.make(carrier, {
+				tex = "VfxSmoke",
+				grid = 8,
+				color = Color3.fromRGB(14, 14, 18),
+				light = 0,
+				lit = 0.3,
+				size = { { 0, 1 }, { 1, 2.4 } },
+				alpha = { { 0, 1 }, { 0.3, 0.7 }, { 1, 1 } },
+				life = { 1.4, 2 },
+				speed = { 0.2, 0.6 },
+				spread = 70,
+				accel = Vector3.new(0, -0.3, 0),
+				rot = { 0, 360 },
+				rate = 3,
+				shape = Enum.ParticleEmitterShape.Box,
+			})
+		end
 	elseif form == "moths" then
 		-- A cold light in the chest, and pale moths drifting about it.
 		local light = part(
@@ -1032,20 +1549,24 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 		weldTo(light, torso)
 		Create("PointLight", { Color = tint, Range = 8, Brightness = 1.2, Shadows = false, Parent = light })
 		-- (the light's glow, and moths that flutter round it: a wingbeat flipbook, drifting and turning)
-		Vfx.Emit
-			.make(light, {
-				tex = "VfxGlow",
-				color = tint,
-				size = 3.2,
-				alpha = { { 0, 1 }, { 0.05, 0.3 }, { 0.95, 0.3 }, { 1, 1 } },
-				life = 4,
-				rate = 1 / 3.8,
-				locked = true,
-				light = 0.8,
-				bright = 1.1,
-				z = 1.2, -- (drawn forward of the chest it sits in)
-			})
-			:Emit(1)
+		if Pilot.on.formMoths then
+			freshMoths(light, tint)
+		else
+			Vfx.Emit
+				.make(light, {
+					tex = "VfxGlow",
+					color = tint,
+					size = 3.2,
+					alpha = { { 0, 1 }, { 0.05, 0.3 }, { 0.95, 0.3 }, { 1, 1 } },
+					life = 4,
+					rate = 1 / 3.8,
+					locked = true,
+					light = 0.8,
+					bright = 1.1,
+					z = 1.2, -- (drawn forward of the chest it sits in)
+				})
+				:Emit(1)
+		end
 		Vfx.Emit.make(light, {
 			tex = "VfxMoth",
 			grid = 2,
@@ -1068,18 +1589,20 @@ function Styles.form(character: Model, form: string?, color: Color3?): Folder?
 			shape = Enum.ParticleEmitterShape.Sphere,
 			z = 0.6,
 		})
-		Vfx.Emit.make(light, {
-			tex = "VfxEmber",
-			color = tint:Lerp(Color3.new(1, 1, 1), 0.4),
-			size = { { 0, 0.1 }, { 1, 0 } },
-			life = { 1.2, 2 },
-			speed = { 0.3, 0.8 },
-			spread = 180,
-			drag = 0.5,
-			bright = 1.5,
-			rate = 8,
-			z = 0.8,
-		})
+		if not Pilot.on.formMoths then
+			Vfx.Emit.make(light, {
+				tex = "VfxEmber",
+				color = tint:Lerp(Color3.new(1, 1, 1), 0.4),
+				size = { { 0, 0.1 }, { 1, 0 } },
+				life = { 1.2, 2 },
+				speed = { 0.3, 0.8 },
+				spread = 180,
+				drag = 0.5,
+				bright = 1.5,
+				rate = 8,
+				z = 0.8,
+			})
+		end
 		flicker(folder, light:FindFirstChildWhichIsA("PointLight") :: PointLight, 1.2, true)
 	elseif form == "marionette" then
 		-- A control bar over the head, its strings down to the head and the hands.

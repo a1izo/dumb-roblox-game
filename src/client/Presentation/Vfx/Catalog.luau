@@ -832,6 +832,62 @@ local function covers(into: { Entry })
 	end
 end
 
+-- The win cuts' "fx" act kinds, one entry each (stage 4c): the act of WinCinema.ACTS.fx played alone on a floor frame in front of
+-- the dummy, with the data a cut gives it (`light` is a plain lamp flash and has no entry). The cut's own `refs` are stood in by
+-- the few the act reads: the frame, empty part and prop lists, and the cleanups.
+local WIN_FX: { { any } } = {
+	{ "impact", { place = { 0, 0, -3 }, ground = true } },
+	{ "glint", { place = { 0, 4, -3 } } },
+	{ "pillar", { place = { 0, 0, -3 }, height = 12, seconds = 1.2 } },
+	{ "wave", { place = { 0, 0.1, -3 }, face = { 0, 1, 0 } } },
+	{ "bolt", { place = { 0, 9, -3 }, to = { 0, 0, -3 } } },
+	{ "sparks", { place = { 0, 3, -3 } } },
+	{ "bloom", { place = { 0, 3, -3 } } },
+	{ "ring", { place = { 0, 3, -3 } } },
+	{ "dust", { place = { 0, 0.2, -3 } } },
+	{ "embers", { place = { 0, 0.5, -3 }, box = { 1, 0.2, 1 }, seconds = 2 } },
+	{ "motes", { place = { 0, 3, -3 }, box = { 3, 3, 3 }, seconds = 2 } },
+	{ "ash", { place = { 0, 5, -3 }, box = { 3, 0.2, 3 }, seconds = 2 } },
+	{ "drizzle", { place = { 0, 4, -3 }, box = { 2, 0.2, 0.2 }, seconds = 2 } },
+}
+
+-- (the recipes hit a moment after they are called: the act fires on the beat and the recipe lands this much later)
+local WIN_FX_LATE: { [string]: number } = { impact = 0.06, glint = 0.06, pillar = 0.06, bolt = 0.04, dust = 0.06 }
+
+local function winFx(into: { Entry })
+	for _, row in ipairs(WIN_FX) do
+		local kind: string = row[1]
+		local event = row[2] :: { [string]: any }
+		table.insert(
+			into,
+			make({
+				id = "winfx_" .. kind,
+				family = "moment",
+				source = "WinCinema.ACTS.fx, kind " .. kind,
+				label = "Win cut effect: " .. kind,
+				budget = "showpiece",
+				hit = LEAD + (WIN_FX_LATE[kind] or 0),
+				length = (event.seconds or 1) + 2,
+				play = function(stage: Stage)
+					local refs = { origin = stage.at, parts = {}, props = {}, cleanups = {}, rows = {} }
+					local stop = later(LEAD, function()
+						local act = table.clone(event)
+						act.act = "fx"
+						act.kind = kind
+						need("Presentation", "WinCinema").ACTS.fx(refs, act)
+					end)
+					return function()
+						stop()
+						for _, clean in ipairs(refs.cleanups :: { () -> () }) do
+							pcall(clean)
+						end
+					end
+				end,
+			})
+		)
+	end
+end
+
 -- The Deathsinger forms (Styles.form dresses the body; the folder it returns is what it wears).
 local function forms(into: { Entry })
 	for _, raw in ipairs(Cosmetics.ofKind("specter")) do
@@ -952,6 +1008,7 @@ function Catalog.build(sources: Sources?): { Entry }
 	emotes(list, given.emotes or {})
 	deaths(list, given.customDeaths or {})
 	scenes(list)
+	winFx(list)
 	writing(list)
 	covers(list)
 	forms(list)

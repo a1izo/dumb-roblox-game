@@ -38,6 +38,9 @@ local DeathVfx = require(script.Parent.DeathVfx)
 local Stage = require(script.Parent.Stage)
 local FxKit = require(script.Parent.FxKit)
 local Vfx = require(script.Parent.Vfx)
+local Fresh = require(script.Parent.Vfx.Fresh)
+local Palette = require(script.Parent.Vfx.Palette)
+local Pilot = require(script.Parent.Vfx.Pilot)
 
 local WinCinema = {}
 
@@ -1118,6 +1121,19 @@ local WHITE = Color3.new(1, 1, 1)
 
 -- a hit: a white star, a burst of its colour, spikes and sparks flung off (Recipes.impact)
 FX.impact = function(_, at, event, color, s)
+	if Pilot.on.winFxImpact then
+		-- (stage 4c: the new impact in the cut's own colour, hitting at once; the event can name a style)
+		Fresh.impact(at, {
+			style = event.style,
+			ramp = Palette.shop(color),
+			scale = s,
+			ground = event.ground == true,
+			shake = false,
+			flash = false,
+			lead = 0.06,
+		})
+		return
+	end
 	Vfx.Recipes.impact(at, {
 		color = color,
 		scale = s,
@@ -1130,11 +1146,25 @@ end
 
 -- a glint: a star that blooms and closes
 FX.glint = function(_, at, _, color, s)
+	if Pilot.on.winFxGlint then
+		Fresh.glint(at.Position, { ramp = Palette.shop(color), scale = s, lead = 0.06 })
+		return
+	end
 	Vfx.Recipes.twinkle(at.Position, { color = color, scale = s })
 end
 
 -- a column of light out of the floor
 FX.pillar = function(_, at, event, color, s)
+	if Pilot.on.winFxPillar then
+		Fresh.pillar(at, {
+			ramp = Palette.shop(color),
+			height = (event.height or 12) * s,
+			radius = (event.radius or 1.2) * s,
+			seconds = event.seconds or 1.2,
+			lead = 0.06,
+		})
+		return
+	end
 	Vfx.Recipes.pillar(at, {
 		color = color,
 		height = (event.height or 12) * s,
@@ -1145,6 +1175,10 @@ end
 
 -- a shockwave: a ring of light growing flat round `at`'s up, thinning as it goes
 FX.wave = function(_, at, event, color, s)
+	if Pilot.on.winFxWave then
+		Fresh.Win.wave(at, event, color, s)
+		return
+	end
 	Vfx.Beams.wave(at, (event.from or 0.4) * s, (event.to or 9) * s, event.seconds or 0.7, {
 		tex = "VfxRingBand",
 		color = color,
@@ -1158,14 +1192,25 @@ end
 FX.bolt = function(refs, at, event, color, s)
 	local to = (refs.origin * CFrame.new(vec(event.to))).Position
 	local seconds = event.seconds or 0.22
-	Vfx.Beams.bolt(at.Position, to, seconds, {
-		color = color,
-		width = (event.width or 0.9) * s,
-		bright = event.bright or 3,
-		jag = event.jag,
-		pieces = event.pieces or 10,
-		rate = 22,
-	})
+	if Pilot.on.winFxBolt then
+		-- (the new arc: forked strokes that jump about for the act's seconds; the light below is unchanged)
+		Fresh.arc(at.Position, to, {
+			ramp = Palette.shop(color),
+			seconds = math.max(seconds, 0.25),
+			jag = event.jag,
+			shake = false,
+			lead = 0.04,
+		})
+	else
+		Vfx.Beams.bolt(at.Position, to, seconds, {
+			color = color,
+			width = (event.width or 0.9) * s,
+			bright = event.bright or 3,
+			jag = event.jag,
+			pieces = event.pieces or 10,
+			rate = 22,
+		})
+	end
 	Vfx.Light.flash(at.Position:Lerp(to, 0.5), color, event.range or 60 * s, event.brightness or 3, seconds + 0.2)
 end
 
@@ -1176,6 +1221,11 @@ end
 
 -- hot sparks flung out of a point, falling, a glow where they left
 FX.sparks = function(_, at, event, color, s)
+	if Pilot.on.winFxSparks then
+		Fresh.Win.sparks(at, event, color, s)
+		Vfx.Light.flash(at.Position, color, 10 * s, 2.5, 0.25)
+		return
+	end
 	local hot = color:Lerp(WHITE, 0.65)
 	Vfx.Emit.burst(at, {
 		{
@@ -1214,6 +1264,10 @@ end
 
 -- a soft bloom of light that swells and fades over `seconds` (a fire flaring, a page catching)
 FX.bloom = function(_, at, event, color, s)
+	if Pilot.on.winFxBloom then
+		Fresh.Win.bloom(at, event, color, s)
+		return
+	end
 	Vfx.Emit.burst(at, {
 		tex = "VfxGlow",
 		color = color,
@@ -1227,6 +1281,10 @@ end
 
 -- a ring of light facing the camera, opening (a power landing, a vow)
 FX.ring = function(_, at, event, color, s)
+	if Pilot.on.winFxRing then
+		Fresh.Win.ring(at, event, color, s)
+		return
+	end
 	Vfx.Emit.burst(at, {
 		tex = "VfxRing",
 		color = { { 0, WHITE }, { 0.3, color }, { 1, color } },
@@ -1240,6 +1298,10 @@ end
 
 -- puffs of dust or smoke kicked out along the floor
 FX.dust = function(_, at, event, color, s)
+	if Pilot.on.winFxDust then
+		Fresh.Win.dust(at, event, color, s)
+		return
+	end
 	Vfx.Emit.burst(at, {
 		tex = "VfxDust",
 		color = color,
@@ -1326,7 +1388,8 @@ for kind, make in pairs(HELD) do
 	FX[kind] = function(refs, at, event, color, s)
 		local box = vec(event.box or { 1, 0.2, 1 })
 		local holder = Vfx.Emit.point(at, box)
-		local spec = make(color, s)
+		local flag = ("winFx" .. string.upper(string.sub(kind, 1, 1)) .. string.sub(kind, 2)) :: string
+		local spec = if (Pilot.on :: any)[flag] then (Fresh.Win.HELD :: any)[kind](color, s) else make(color, s)
 		spec.rate = (event.rate or spec.rate) :: number
 		spec.shape = Enum.ParticleEmitterShape.Box
 		local _, stop = Vfx.Emit.hold(holder, spec)

@@ -331,11 +331,339 @@ local MIRROR_FRESH: Tell = {
 	light = { color = COLD, held = 0.25, writing = 0.7 },
 }
 
--- The tells by cover style. The Black Mirror's is read when asked for, so Pilot.on.cover can be flipped while the game runs.
+-- The other six covers on the new kit (stage 4c; each behind its own Pilot flag, the old tell kept above). Every one is full
+-- colour (a shop effect): the cover's own colour, white-hot at the core and a darker shade of itself at the edge, each from a
+-- shaped sheet (a glint, a mist, sparks, a paper, ash flakes, a plume), never the old glow dot. Five moments, a loop's:
+--   gather   the cover coming out of the pocket draws specks in (its appear)
+--   hit      the first flash of the cover's own thing (a heartbeat, a gleam, a spark, a page, a padlock, the eye)
+--   body     its steady tell at the held rate; at the written-in rate while a name goes in
+--   break-up each piece erodes with its sheet (glints, mist and plume are drawn eaten away)
+--   residue  a few specks, flakes or pages still drifting a second or two after the pen lifts
+local OX_RAMP = Palette.shop(BLOOD)
+local OX_DARK =
+	{ Palette.deeper(BLOOD), Palette.deeper(BLOOD):Lerp(Color3.new(0, 0, 0), 0.4), Color3.fromRGB(10, 2, 3) }
+local GOLD_RAMP = Palette.shop(GOLD)
+local EMBER_RAMP = Palette.shop(EMBER)
+local CHAR_RAMP = { Color3.fromRGB(120, 100, 88), Color3.fromRGB(46, 38, 34), Color3.fromRGB(12, 10, 9) }
+local PAPER_RAMP = Palette.shop(Color3.fromRGB(222, 196, 136))
+local IRON_BODY = Color3.fromRGB(214, 78, 34)
+local IRON_RAMP = Palette.shop(IRON_BODY)
+local OX_GLOW = { BLOOD, BLOOD, Palette.deeper(BLOOD) } -- (a glow keeps its colour from birth: a white-hot start would make it a grey haze)
+local IRON_GLOW = { IRON_BODY, IRON_BODY, Palette.deeper(IRON_BODY) }
+
+local FRESH_TELLS: { [string]: Tell } = {
+	-- the hide still has a pulse: a dark red heart that beats in the leather, a dark layer under it, hot specks
+	oxblood = {
+		emitters = {
+			{
+				spec = {
+					tex = "VfxMist",
+					ramp = OX_GLOW,
+					size = { { 0, 1.6 }, { 0.15, 2.6 }, { 1, 1.8 } },
+					alpha = { { 0, 1 }, { 0.15, 0.14 }, { 0.7, 0.32 }, { 1, 1 } },
+					life = 0.9,
+					rot = { 0, 360 },
+					locked = true,
+					light = 0.7,
+					lit = 0.1,
+					bright = 1.3,
+					z = 0.6,
+				},
+				held = 1.1,
+				writing = 2.2,
+			},
+			{
+				spec = {
+					tex = "VfxMist",
+					ramp = OX_DARK,
+					size = { { 0, 1.6 }, { 1, 2.4 } },
+					alpha = { { 0, 1 }, { 0.25, 0.3 }, { 0.8, 0.5 }, { 1, 1 } },
+					life = 1.2,
+					rot = { 0, 360 },
+					locked = true,
+					light = 0,
+					lit = 0.3,
+					z = 0.3,
+				},
+				held = 1.1,
+				writing = 2.2,
+			},
+			{
+				spec = {
+					tex = "VfxSparks",
+					ramp = OX_RAMP,
+					size = { { 0, 0.22 }, { 1, 0.05 } },
+					alpha = { { 0, 1 }, { 0.15, 0.1 }, { 0.8, 0.2 }, { 1, 1 } },
+					life = { 0.8, 1.4 },
+					speed = { 0.3, 0.8 },
+					spread = 40,
+					accel = Vector3.new(0, 0.6, 0),
+					face = "along",
+					bright = 1.5,
+					shape = Enum.ParticleEmitterShape.Box,
+				},
+				held = 0.8,
+				writing = 5,
+			},
+		},
+		appear = function(carrier: BasePart)
+			Fresh.tap(carrier.Position, { ramp = OX_RAMP, scale = 0.45, sparks = 5, lite = true, light = false })
+		end,
+		light = { color = BLOOD, held = 0.6, writing = 1.2, beat = 1.1 },
+	},
+	-- gilt glinting slowly over the board, gold flecks rising off the page as a name goes in
+	gilded = {
+		emitters = {
+			{
+				spec = {
+					tex = "VfxGlint",
+					ramp = GOLD_RAMP,
+					size = 1.3,
+					alpha = { { 0, 0 }, { 0.5, 0.1 }, { 1, 1 } },
+					life = 0.6,
+					rot = { -14, 14 },
+					locked = true,
+					light = 1,
+					bright = 2.3,
+					shape = Enum.ParticleEmitterShape.Box,
+					z = 0.6,
+				},
+				held = 1.6,
+				writing = 3,
+			},
+			{
+				spec = {
+					tex = "VfxSparks",
+					ramp = GOLD_RAMP,
+					size = { { 0, 0.24 }, { 1, 0.05 } },
+					alpha = { { 0, 1 }, { 0.15, 0.1 }, { 0.8, 0.2 }, { 1, 1 } },
+					life = { 0.8, 1.5 },
+					speed = { 0.4, 1 },
+					spread = 30,
+					accel = Vector3.new(0, 1.2, 0),
+					face = "along",
+					bright = 1.6,
+					shape = Enum.ParticleEmitterShape.Box,
+				},
+				held = 0,
+				writing = 12,
+			},
+		},
+		appear = function(carrier: BasePart)
+			Fresh.tap(carrier.Position, { ramp = GOLD_RAMP, scale = 0.45, sparks = 5, lite = true, light = false })
+		end,
+		light = { color = GOLD, held = 0.2, writing = 0.6 },
+	},
+	-- embers falling off its charred edges, a thread of smoke, ash flakes; a shower of them while written in
+	burnt = {
+		emitters = {
+			{
+				spec = {
+					tex = "VfxSparks",
+					ramp = EMBER_RAMP,
+					size = { { 0, 0.4 }, { 1, 0.08 } },
+					alpha = { { 0, 1 }, { 0.12, 0.05 }, { 0.8, 0.2 }, { 1, 1 } },
+					life = { 0.6, 1.1 },
+					speed = { 0.2, 0.6 },
+					spread = 50,
+					accel = Vector3.new(0, -1.5, 0),
+					face = "along",
+					bright = 2.1,
+					shape = Enum.ParticleEmitterShape.Box,
+					shapeStyle = Enum.ParticleEmitterShapeStyle.Volume,
+				},
+				held = 4,
+				writing = 16,
+			},
+			{
+				spec = {
+					tex = "VfxSmokePlume",
+					ramp = CHAR_RAMP,
+					size = { { 0, 0.5 }, { 1, 1.5 } },
+					alpha = { { 0, 1 }, { 0.2, 0.35 }, { 0.8, 0.5 }, { 1, 1 } },
+					life = { 1.2, 1.8 },
+					speed = { 0.4, 0.9 },
+					spread = 15,
+					light = 0,
+					lit = 0.4,
+					z = -0.4,
+				},
+				held = 1,
+				writing = 3,
+			},
+			{
+				spec = {
+					tex = "VfxAshFlakes",
+					ramp = CHAR_RAMP,
+					size = { { 0, 0.22 }, { 1, 0.16 } },
+					alpha = { { 0, 1 }, { 0.12, 0.1 }, { 0.8, 0.25 }, { 1, 1 } },
+					life = { 1.4, 2.2 },
+					speed = { 0.2, 0.5 },
+					spread = 70,
+					accel = Vector3.new(0, -1, 0),
+					drag = 1,
+					rot = { 0, 360 },
+					spin = { -80, 80 },
+					light = 0,
+					lit = 0.6,
+					shape = Enum.ParticleEmitterShape.Box,
+				},
+				held = 0.6,
+				writing = 3,
+			},
+		},
+		appear = function(carrier: BasePart)
+			Fresh.tap(carrier.Position, { ramp = EMBER_RAMP, scale = 0.4, sparks = 5, lite = true, light = false })
+		end,
+		light = { color = EMBER, held = 0.3, writing = 0.8 },
+	},
+	-- loose pages slipping out of the folder as it opens, one now and then after, more while written in
+	casefile = {
+		emitters = {
+			{
+				spec = {
+					tex = "VfxPaper",
+					ramp = PAPER_RAMP,
+					size = { { 0, 0.55 }, { 1, 0.48 } },
+					alpha = { { 0, 1 }, { 0.1, 0 }, { 0.8, 0.1 }, { 1, 1 } },
+					life = { 1.6, 2.4 },
+					speed = { 0.4, 1.2 },
+					spread = 70,
+					accel = Vector3.new(0, -1.6, 0),
+					drag = 1.5,
+					rot = { 0, 360 },
+					spin = { -90, 90 },
+					light = 0,
+					lit = 0.8,
+					shape = Enum.ParticleEmitterShape.Box,
+				},
+				held = 0.25,
+				writing = 1.2,
+			},
+		},
+		appear = function(carrier: BasePart, size: Vector3)
+			Sfx.play("pageTurn", { parent = carrier, volume = 0.8 })
+			-- (three pages slipping out and turning as they fall: the sheet of tumbling pages, slow like the old ones)
+			Vfx.Emit.burst(carrier.Position, {
+				tex = "VfxPaper",
+				ramp = PAPER_RAMP,
+				size = { { 0, 0.55 }, { 1, 0.48 } },
+				alpha = { { 0, 1 }, { 0.1, 0 }, { 0.8, 0.1 }, { 1, 1 } },
+				life = { 1.6, 2.4 },
+				speed = { 1, 3 },
+				spread = 70,
+				accel = Vector3.new(0, -2.5, 0),
+				drag = 2,
+				rot = { 0, 360 },
+				spin = { -120, 120 },
+				light = 0,
+				lit = 0.8,
+			}, 3, size)
+		end,
+	},
+	-- the padlock clanking open with a spark as it comes out; the iron glowing dull red as it is written in
+	iron = {
+		emitters = {
+			{
+				spec = {
+					tex = "VfxMist",
+					ramp = IRON_GLOW,
+					size = { { 0, 1.2 }, { 0.2, 1.8 }, { 1, 1.4 } },
+					alpha = { { 0, 1 }, { 0.2, 0.3 }, { 0.8, 0.4 }, { 1, 1 } },
+					life = 1.2,
+					rot = { 0, 360 },
+					locked = true,
+					light = 0.8,
+					lit = 0.1,
+					bright = 1,
+					z = 0.6,
+				},
+				held = 0,
+				writing = 2,
+			},
+			{
+				spec = {
+					tex = "VfxSparks",
+					ramp = IRON_RAMP,
+					size = { { 0, 0.2 }, { 1, 0.04 } },
+					alpha = { { 0, 1 }, { 0.12, 0.1 }, { 0.8, 0.2 }, { 1, 1 } },
+					life = { 0.5, 1 },
+					speed = { 0.4, 1.2 },
+					spread = 60,
+					accel = Vector3.new(0, -3, 0),
+					face = "along",
+					bright = 1.6,
+					shape = Enum.ParticleEmitterShape.Box,
+				},
+				held = 0,
+				writing = 4,
+			},
+		},
+		appear = function(carrier: BasePart)
+			Sfx.play("handcuffs", { parent = carrier, volume = 0.9, pitch = 0.8 })
+			Fresh.tap(carrier.Position, { ramp = IRON_RAMP, scale = 0.45, sparks = 8, lite = true })
+		end,
+		light = { color = Color3.fromRGB(214, 78, 34), held = 0.1, writing = 0.7 },
+	},
+	-- the eye on the cover, open and red, blinking; a red breath off it while written in
+	scale = {
+		emitters = {
+			{
+				spec = {
+					tex = "VfxGlint",
+					ramp = OX_RAMP,
+					size = 0.9,
+					alpha = { { 0, 1 }, { 0.15, 0.1 }, { 0.8, 0.2 }, { 1, 1 } },
+					life = 2.4,
+					locked = true,
+					light = 1,
+					bright = 2,
+					z = 0.7,
+				},
+				held = 0.42,
+				writing = 0.42,
+			},
+			{
+				spec = {
+					tex = "VfxMist",
+					ramp = OX_DARK,
+					size = { { 0, 0.5 }, { 1, 1.6 } },
+					alpha = { { 0, 1 }, { 0.25, 0.4 }, { 1, 1 } },
+					life = { 1, 1.6 },
+					speed = { 0.4, 0.9 },
+					spread = 20,
+					rot = { 0, 360 },
+					light = 0.2,
+					lit = 0.3,
+				},
+				held = 0,
+				writing = 3,
+			},
+		},
+		appear = function(carrier: BasePart)
+			Fresh.tap(carrier.Position, { ramp = OX_RAMP, scale = 0.4, sparks = 4, lite = true, light = false })
+		end,
+		light = { color = BLOOD, held = 0.4, writing = 0.9 },
+	},
+}
+
+-- Which Pilot flag turns each cover's tell on (the Black Mirror's is `cover`, the first of them, from the pilot).
+local COVER_FLAG: { [string]: string } = {
+	mirror = "cover",
+	oxblood = "coverOxblood",
+	gilded = "coverGilded",
+	burnt = "coverBurnt",
+	casefile = "coverCasefile",
+	iron = "coverIron",
+	scale = "coverScale",
+}
+
+-- The tells by cover style. A new tell is read when asked for, so the Pilot flags can be flipped while the game runs.
 CoverTells.STYLES = setmetatable({} :: { [string]: Tell }, {
 	__index = function(_, style: string): Tell?
-		if style == "mirror" and Pilot.on.cover then
-			return MIRROR_FRESH
+		local flag = COVER_FLAG[style]
+		if flag and (Pilot.on :: any)[flag] then
+			return if style == "mirror" then MIRROR_FRESH else FRESH_TELLS[style]
 		end
 		return TELLS[style]
 	end,

@@ -45,6 +45,7 @@ local Shine = require(script.Shine)
 local Slash = require(script.Slash)
 local Small = require(script.Small)
 local Smoke = require(script.Smoke)
+local Win = require(script.Win)
 
 local Fresh = {}
 
@@ -67,6 +68,7 @@ Fresh.dissolve = Scatter.dissolve
 Fresh.scatter = Scatter.scatter
 Fresh.sigil = Floor.sigil
 Fresh.Small = Small
+Fresh.Win = Win -- (the win cuts' fx kinds: wave, sparks, bloom, ring, dust and the held ones)
 Fresh.tap = Small.tap
 Fresh.stepDust = Small.stepDust
 Fresh.spores = Small.spores
