@@ -63,6 +63,11 @@ local NEW = {
 	"VfxCrackB",
 	"VfxScorch",
 	"VfxSigil",
+	-- (ModelsFx 5: V1.2's light fire sheets)
+	"VfxFire",
+	"VfxFireBurst",
+	"VfxCandle",
+	"VfxAuraFlame",
 }
 
 return function(t)

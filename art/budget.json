@@ -117,6 +117,12 @@
       "approved": "2026-11-17",
       "megapixels": 23.1,
       "megabytes": 11.4
+    },
+    {
+      "what": "The VFX rework's four light fire sheets in the Fx file (ModelsFx 5: VfxFire, VfxFireBurst, VfxCandle, VfxAuraFlame, 1024 px each, V1.2), loaded in every scene beside Core, so the Manual's red fire, the Trial's wisp, the fire writing style and the V4e candles can stop wearing the old flame. The Fx file goes from 13.27 MB to 15.02 MB (+1.75 MB, the four PNGs) and +4.19 megapixels in every scene. Authorised by the owner's 'do everything as best as possible' (2026-11-25), but they were never shown this figure: it is still the owner's call to veto, and Stage 5's deletion of unused old sheets gives some back. Lobby, Agency and Campus go over their megapixels without this line; Campus was already 0.08 over before it (not from this export) and stays 0.07 over",
+      "approved": "2026-11-25",
+      "megapixels": 4.2,
+      "megabytes": 1.8
     }
   ]
 }

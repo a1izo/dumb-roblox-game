@@ -48,6 +48,11 @@ Tex.FALLBACK = {
 	VfxCrackB = "VfxCrack",
 	VfxScorch = "VfxSmoke",
 	VfxSigil = "VfxCircle",
+	-- ModelsFx 5 (V1.2's light fire sheets): the old flames, until the place has the Fx file at 5
+	VfxFire = "VfxFlame",
+	VfxFireBurst = "VfxBurst",
+	VfxCandle = "VfxCandleFlame",
+	VfxAuraFlame = "VfxFlame",
 } :: { [string]: string }
 
 local found: { [string]: string } = {}

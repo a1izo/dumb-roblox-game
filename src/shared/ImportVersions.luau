@@ -12,7 +12,7 @@ return {
 	ModelsAgency = 18,
 	ModelsCampus = 16,
 	ModelsCore = 42,
-	ModelsFx = 4,
+	ModelsFx = 5,
 	ModelsLobby = 24,
 	ModelsMeeting = 6,
 	ModelsTokyo = 24,

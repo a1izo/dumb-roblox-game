@@ -44,6 +44,8 @@ TEXTURES = [
     "VfxSmokePuff", "VfxSmokePlume", "VfxDustRoll", "VfxMist", "VfxImpactA", "VfxImpactB", "VfxImpactC", "VfxShock",
     "VfxGlint", "VfxSparks", "VfxSlashA", "VfxSlashB", "VfxArc", "VfxEnergyWisp", "VfxAshFlakes", "VfxShards",
     "VfxPaper", "VfxFeatherTumble", "VfxCrackA", "VfxCrackB", "VfxScorch", "VfxSigil",
+    # V1.2's light fire sheets (the Fx file from ModelsFx 5); each wears a flame in Vfx/Tex.luau until imported
+    "VfxFire", "VfxFireBurst", "VfxCandle", "VfxAuraFlame",
 ]
 
 
