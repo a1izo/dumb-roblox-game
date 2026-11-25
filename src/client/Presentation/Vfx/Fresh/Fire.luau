@@ -33,6 +33,10 @@ export type FlameOptions = {
 	ramp: Palette.Ramp?, -- the flame's colours (the candle's cream or the world's pale by default)
 	light: boolean?, -- a flickering light (true)
 	lit: boolean?, -- burning from the start (true), else out until set(1)
+	plain: boolean?, -- the cheap world flame: only the body and the white-hot heart (no wandering sparks, no soot thread)
+	lightRange: number?, -- the light's reach (the flame's own by default)
+	lightBrightness: number?, -- the light's brightness at rest (the flame's own by default)
+	lightColor: Color3?, -- the light's colour (the ramp's body by default)
 }
 
 local CANDLE = { Color3.new(1, 1, 1), Color3.fromRGB(238, 232, 214), Color3.fromRGB(120, 110, 92) } :: Palette.Ramp
@@ -110,43 +114,46 @@ function Fire.flame(parent: Instance, options: FlameOptions?): Flame
 		}),
 		true
 	)
-	-- sparks that wander up and out
-	local bit = math.clamp(height * 0.18, 0.1, 0.6)
-	add(holder, {
-		tex = "VfxSparks",
-		ramp = C.hotter(ramp),
-		size = { { 0, bit }, { 1, bit * 0.25 } },
-		alpha = { { 0, 1 }, { 0.08, 0 }, { 0.7, 0.2 }, { 1, 1 } },
-		life = { 1, 2 },
-		speed = { height * 0.4, height * 1.1 },
-		spread = 25,
-		accel = Vector3.new(0, height * 0.5, 0),
-		drag = 1,
-		face = "along",
-		rate = 1.6,
-		bright = 1.6,
-	}, false)
-	-- the dark layer: a thread of soot standing up from the tip (laid over, so the flame still reads in a lit room)
-	add(attachmentAt(Vector3.new(0, size * 0.5, 0)), {
-		tex = "VfxSmokePlume",
-		ramp = C.shadow(ramp),
-		size = { { 0, height * 0.35 }, { 1, height * 1.2 } },
-		alpha = { { 0, 1 }, { 0.25, 0.78 }, { 0.75, 0.85 }, { 1, 1 } },
-		life = 3.6,
-		speed = { height * 0.15, height * 0.3 },
-		accel = Vector3.new(0, height * 0.3, 0),
-		rate = 1.1,
-		light = 0,
-		lit = 0.2,
-		z = -1,
-	}, false)
+	-- A world flame (`plain`) is seen all the time and keeps to the two layers above: its cost is the first thing it must meet.
+	if not o.plain then
+		-- sparks that wander up and out
+		local bit = math.clamp(height * 0.18, 0.1, 0.6)
+		add(holder, {
+			tex = "VfxSparks",
+			ramp = C.hotter(ramp),
+			size = { { 0, bit }, { 1, bit * 0.25 } },
+			alpha = { { 0, 1 }, { 0.08, 0 }, { 0.7, 0.2 }, { 1, 1 } },
+			life = { 1, 2 },
+			speed = { height * 0.4, height * 1.1 },
+			spread = 25,
+			accel = Vector3.new(0, height * 0.5, 0),
+			drag = 1,
+			face = "along",
+			rate = 1.6,
+			bright = 1.6,
+		}, false)
+		-- the dark layer: a thread of soot standing up from the tip (laid over, so the flame still reads in a lit room)
+		add(attachmentAt(Vector3.new(0, size * 0.5, 0)), {
+			tex = "VfxSmokePlume",
+			ramp = C.shadow(ramp),
+			size = { { 0, height * 0.35 }, { 1, height * 1.2 } },
+			alpha = { { 0, 1 }, { 0.25, 0.78 }, { 0.75, 0.85 }, { 1, 1 } },
+			life = 3.6,
+			speed = { height * 0.15, height * 0.3 },
+			accel = Vector3.new(0, height * 0.3, 0),
+			rate = 1.1,
+			light = 0,
+			lit = 0.2,
+			z = -1,
+		}, false)
+	end
 
 	local light: PointLight? = nil
 	local stopFlicker: (() -> ())? = nil
-	local brightness = if candle then 1.1 else 1.8
-	local range = math.clamp(height * 9, 5, 30)
+	local brightness = o.lightBrightness or (if candle then 1.1 else 1.8)
+	local range = o.lightRange or math.clamp(height * 9, 5, 30)
 	if o.light ~= false then
-		local l = Light.hold(holder, ramp[2], range, 0, 0.3)
+		local l = Light.hold(holder, o.lightColor or ramp[2], range, 0, 0.3)
 		light = l
 	end
 	local function wick(): Vector3

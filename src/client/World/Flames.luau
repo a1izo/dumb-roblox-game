@@ -9,6 +9,8 @@
 local CollectionService = game:GetService("CollectionService")
 
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Presentation.Vfx.Fresh)
+local Pilot = require(script.Parent.Parent.Presentation.Vfx.Pilot)
 
 local Flames = {}
 
@@ -25,12 +27,23 @@ local function add(mark: Instance)
 	end
 	local height = mark:GetAttribute("Height")
 	local kind = mark:GetAttribute("Kind")
-	burning[mark] = Vfx.Recipes.flame(mark, {
-		kind = if kind == "fire" then "fire" else "candle",
-		scale = if type(height) == "number" then height else nil,
-		color = if kind == "fire" then PALE_FIRE else nil,
-		light = false,
-	})
+	local scale = if type(height) == "number" then height else nil
+	if kind ~= "fire" and Pilot.on.worldCandle then
+		-- (stage 4e: the kit's candle flame, the plain two-layer build that costs no more than the old one; the prop carries
+		-- the lamp; Pilot.on.worldCandle = false brings the old flame back)
+		burning[mark] = Fresh.flame(mark, { kind = "candle", scale = scale, plain = true, light = false })
+	elseif kind == "fire" and Pilot.on.worldBrazier then
+		-- (stage 4e: the kit's fire in the brazier's pale colour)
+		local ramp = { Color3.new(1, 1, 1), PALE_FIRE, PALE_FIRE:Lerp(Color3.new(0, 0, 0), 0.5) }
+		burning[mark] = Fresh.flame(mark, { kind = "fire", scale = scale, ramp = ramp, plain = true, light = false })
+	else
+		burning[mark] = Vfx.Recipes.flame(mark, {
+			kind = if kind == "fire" then "fire" else "candle",
+			scale = scale,
+			color = if kind == "fire" then PALE_FIRE else nil,
+			light = false,
+		})
+	end
 end
 
 local function remove(mark: Instance)

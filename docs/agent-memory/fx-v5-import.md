@@ -40,7 +40,7 @@ Never publish.
 `Pilot.on.trialWisp` (both still FALSE, see below) would draw `Fresh.flame`; the fire writing style (`writeFire`, already ON) cuts `VfxFire` instead of
 `VfxFlame` (Styles.luau line ~1053); `Aura.luau` and `Fresh/Fire` draw the real `VfxAuraFlame` / `VfxCandle` / `VfxFireBurst`.
 
-**Flags: left OFF.** The booth could not be photographed: Studio was minimised and the owner's League of Legends match window was open, so it was not
+**Update 2026-11-25 (see [[vfx-rollout-4e]]): the flags were photographed with the real sheets and stay OFF.** **Flags: left OFF.** The booth could not be photographed: Studio was minimised and the owner's League of Legends match window was open, so it was not
 restored (a minimised Studio draws no 3D; the capture is black; AppActivate returns False). What WAS measured, in a Play client with a private copy of the
 worktree client (`dgx_client_1.rbxm` in Studio's content folder) and `workspace:SetAttribute("DGVfxLocal", true)` plus all 49 PNGs in
 `content/textures/dg_vfx_harness/` (so the real sheets drew, with nothing uploaded; both removed again after): effect report, old to new: `recipe_flame_fire`

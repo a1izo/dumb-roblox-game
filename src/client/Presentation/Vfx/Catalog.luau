@@ -258,6 +258,8 @@ local function flameEntry(into: { Entry }, spec: { [string]: any })
 						kind = spec.kind,
 						scale = spec.scale,
 						color = spec.color,
+						ramp = spec.ramp,
+						plain = spec.plain,
 						light = spec.light,
 					}
 				)
@@ -1166,6 +1168,29 @@ function Catalog.build(sources: Sources?): { Entry }
 		kind = "fire",
 		scale = 3,
 		color = Color3.fromRGB(205, 222, 245),
+		light = false,
+	})
+	-- (stage 4e: the same two as the kit's flame builds them, the plain world build World/Flames stands behind Pilot.on.worldCandle
+	-- and worldBrazier; the report puts each beside the old one's row)
+	flameEntry(list, {
+		id = "world_candle_fresh",
+		family = "world",
+		source = "Fresh.flame as World/Flames makes it (plain), a candle",
+		label = "Candle, new",
+		kind = "candle",
+		plain = true,
+		fresh = true,
+		light = false,
+	})
+	flameEntry(list, {
+		id = "world_brazier_fresh",
+		family = "world",
+		source = "Fresh.flame as World/Flames makes it (plain), a fire",
+		label = "Brazier, new",
+		kind = "fire",
+		scale = 3,
+		plain = true,
+		fresh = true,
 		light = false,
 	})
 	-- (the families in their order, each family's entries in the order built)

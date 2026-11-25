@@ -10,6 +10,8 @@ local CollectionService = game:GetService("CollectionService")
 
 local ClientState = require(script.Parent.Parent.ClientState)
 local Vfx = require(script.Parent.Parent.Presentation.Vfx)
+local Fresh = require(script.Parent.Parent.Presentation.Vfx.Fresh)
+local Pilot = require(script.Parent.Parent.Presentation.Vfx.Pilot)
 
 local ReadyCircle = {}
 
@@ -66,15 +68,32 @@ local function register(item: Instance)
 		return
 	end
 	local height = wick:GetAttribute("Height")
-	candles[item] = {
-		index = index,
+	local scale = if type(height) == "number" then height else 0.55
+	local flame
+	if Pilot.on.readyCandles then
+		-- (stage 4e: the kit's candle flame, plain, with the same lamp as before: same reach, brightness and colour;
+		-- Pilot.on.readyCandles = false brings the old flame back)
+		flame = Fresh.flame(wick, {
+			kind = "candle",
+			scale = scale,
+			lit = false,
+			plain = true,
+			lightRange = 10,
+			lightBrightness = 0.75,
+			lightColor = Color3.new(1, 1, 1),
+		})
+	else
 		flame = Vfx.Recipes.flame(wick, {
 			kind = "candle",
-			scale = if type(height) == "number" then height else 0.55,
+			scale = scale,
 			lit = false,
 			lightRange = 10,
 			lightBrightness = 0.75,
-		}),
+		})
+	end
+	candles[item] = {
+		index = index,
+		flame = flame,
 		lit = false,
 		flaring = false,
 	}

@@ -153,7 +153,17 @@ Defs.RECIPES = {
 		moments = { "gather", "hit", "body", "residue" },
 		loop = true,
 		handle = true,
-		params = { kind = "string", scale = "number", ramp = "ramp", light = "boolean", lit = "boolean" },
+		params = {
+			kind = "string",
+			scale = "number",
+			ramp = "ramp",
+			light = "boolean",
+			lit = "boolean",
+			plain = "boolean",
+			lightRange = "number",
+			lightBrightness = "number",
+			lightColor = "instance",
+		},
 	},
 	fireBurst = {
 		module = "Fire",
