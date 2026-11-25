@@ -1,9 +1,19 @@
 ---
 name: fx-v5-import
-description: "Fx props file ModelsFx 5 (2026-11-25): V1.2's four fire sheets exported and checked, the budget line, and why the import into the place was NOT done (upload folder), with the exact steps and what the sheets will switch on"
+description: "Fx props file ModelsFx 5 (2026-11-25): V1.2's four fire sheets exported and checked, the budget line, and IMPORTED into the place by Open Cloud the same day (asset 73990994305583, place v650 saved), what the sheets switch on"
 metadata:
   type: project
 ---
+
+**IMPORTED 2026-11-25 (place saved v650, not published).** Uploaded `art/export/DeathsGambitModels_Fx.fbx` (15,751,836 bytes) from the main
+checkout by `open_cloud_invoke` (display name `DeathsGambitModels_Fx_v5`, creator userId 1503130900): asset **73990994305583**, operation
+39a5e73c-9ce7-4acc-b7de-235011441fd4, moderation Approved. Inserted into ServerStorage, PackageLink removed, `PivotTo` the old Fx model's pivot (the cubes
+now read O (75.19, -54.00, 88.40), X +64 in x, Y +64 in y, as v4's did; the raw import came in turned about -1.5 degrees), named `DeathsGambitModels_Fx`,
+parented to Workspace, the v4 model destroyed. Shared with universe 10767766818 (Use, grantToDependencies): `successAssetIds [73990994305583]`, no errors.
+Checked in the place by execute_luau after the save: marker `DeathsGambitModelsFx_Version_5`, 49 `Tex_` quads, `Tex_VfxFire`, `Tex_VfxFireBurst`,
+`Tex_VfxCandle`, `Tex_VfxAuraFlame` all present, no PackageLink, one Fx model in Workspace, nothing left in ServerStorage. Not run: a play test (the
+import check line, specs). The scripts still need syncing (Rojo) for `Tex.real` to read the new sheets. The flags `manualFire` / `trialWisp` stay OFF
+until seen (see Flags below). The "NOT done" paragraph below is the history of the first, refused attempt (from a worktree).
 
 **Done (commit 5203ee1b).** `art/scripts/vfx/meshes.py` `TEXTURES` got `VfxFire, VfxFireBurst, VfxCandle, VfxAuraFlame` (1024 px each);
 `ModelsFx` is 5 in `src/shared/ImportVersions.luau` and `art/scripts/maps/export.py`. Exported by
