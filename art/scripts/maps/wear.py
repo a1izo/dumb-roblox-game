@@ -86,7 +86,7 @@ def _stain(r):
     fringe = np.minimum(base * 4.0, 1.0) * (1.0 - base)
     alpha = np.clip(base + 1.1 * hf * fringe, 0.0, 0.85)
     alpha = grime._blur(alpha, 0.6)
-    return alpha * _edge(), (94, 91, 88)
+    return alpha * _edge(), (118, 110, 100)
 
 
 def _switch(r):
