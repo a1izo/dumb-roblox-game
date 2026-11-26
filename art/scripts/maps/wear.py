@@ -58,6 +58,12 @@ def _scuff(r):
     return alpha, (34, 32, 33)
 
 
+def _grit(r, shape):
+    """Fine noise, -1..1 (about 2 px grain)."""
+    n = grime._periodic(r, shape, 0.15)
+    return np.clip(n / (3.0 * n.std() + 1e-6), -1.0, 1.0)
+
+
 def _stain(r):
     """Cell 1: damp under a pipe joint: a wide patch, darkest just under the collar, fading down and out, no hard line.
     Two lessons from Roblox (2026-11-26): thin run streaks read as a black crack, and the engine's alpha acts close to a
@@ -68,14 +74,19 @@ def _stain(r):
     yy, xx = np.mgrid[0:CELL, 0:CELL].astype(np.float32)
     depth = (CELL - yy) / CELL  # 0 at the top (the joint), 1 at the foot
     sway = 6.0 * np.sin(depth * 3.0 + r.uniform(0, 6))
-    half = 50.0 + 40.0 * np.sqrt(depth)  # a fan that widens as it falls (px; the cell is 256 wide)
+    half = 52.0 + 44.0 * np.sqrt(depth)  # a fan that widens as it falls (px; the cell is 256 wide)
     d = np.abs(xx - CELL / 2 - sway) / half
     fan = 1.0 - grime._smooth(d)
-    fall = (1.0 - grime._smooth((depth - 0.2) / 0.75)) * grime._smooth(depth / 0.1)
+    fall = (1.0 - grime._smooth((depth - 0.3) / 0.65)) * grime._smooth(depth / 0.1)
     rag = 0.5 + 0.5 * np.tanh(2.2 * grime._periodic(r, shape, 1.1))  # 0..1, uneven at about a quarter stud
-    field = (fan * fall) * (0.55 + 0.9 * rag)
-    alpha = grime._blur(np.clip(0.95 * field, 0, 0.85), 1.5)
-    return alpha * _edge(), (88, 80, 70)
+    base = np.clip(1.25 * fan * fall * (0.6 + 0.8 * rag), 0.0, 1.0)
+    # A stippled fringe: where the patch is thinning, fine noise pushes single dots across the engine's cut-off, so the
+    # edge breaks up into grit and reads soft from a few studs away instead of as a clean outline.
+    hf = _grit(r, shape)
+    fringe = np.minimum(base * 4.0, 1.0) * (1.0 - base)
+    alpha = np.clip(base + 1.1 * hf * fringe, 0.0, 0.85)
+    alpha = grime._blur(alpha, 0.6)
+    return alpha * _edge(), (94, 91, 88)
 
 
 def _switch(r):
