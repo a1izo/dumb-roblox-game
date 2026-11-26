@@ -35,4 +35,4 @@ three-effect pilot and a hard stop for the owner's verdict. Do not "add more lay
 was watched in the game for the plan; its ticket V0.2 does that. Related: [[win-cutscene-fx]],
 [[cutscene-lag-2026-11-15]], [[mobile-and-perf-2026-11]], [[animation-plan-2026-11]].
 
-**Status 2026-11-26:** the rework is done as far as booth and lobby pictures go (101 flags in `Vfx/Pilot.luau`: 54 ON, 47 OFF) and Stage 5 closed safely with nothing deleted: see [[vfx-close-2026-11-26]] and the Status block of the plan.
+**Status 2026-11-26:** the rework is done as far as booth and lobby pictures go (101 flags in `Vfx/Pilot.luau`: 57 ON, 44 OFF) and Stage 5 closed safely with nothing deleted: see [[vfx-close-2026-11-26]] and the Status block of the plan.

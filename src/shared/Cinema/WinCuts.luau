@@ -880,12 +880,15 @@ return {
 				fov = 46,
 				to = { eye = { -1.8, 4.8, -5.8 }, fov = 42 },
 			},
+			-- (2026-11-26: the stamp's slam from the side cut his head off at the top of the frame, only the forearm and
+			-- the stamp showing; lifted 0.9 stud and a little wider so the face is in it with the arm: watched in the
+			-- place's own client)
 			{
 				at = 4.3,
-				eye = { 6.4, 4.1, -2.0 },
-				look = { 0.4, 3.4, -1.6 },
-				fov = 48,
-				to = { eye = { 5.6, 4.0, -2.4 }, fov = 44 },
+				eye = { 6.4, 5.0, -2.0 },
+				look = { 0.2, 4.1, -1.4 },
+				fov = 54,
+				to = { eye = { 5.6, 4.9, -2.4 }, fov = 50 },
 			},
 			{
 				at = 5.5,
@@ -1917,12 +1920,15 @@ return {
 				fov = 46,
 				to = { eye = { 0.5, 1.6, -5.2 } },
 			},
+			-- (2026-11-26: the throw shot looked at the wall between the fire and the board and held the star in its
+			-- far-left corner, a sliver of armchair; the look is level with the room's width now, so he sits at the left
+			-- of the frame and the fire's side of the room is the right: watched in the place's own client)
 			{
 				at = 3.15,
-				eye = { 6.5, 3.0, -3.0 },
-				look = { -1.0, 2.0, -4.0 },
-				fov = 44,
-				to = { eye = { 6.1, 3.1, -3.3 }, fov = 42 },
+				eye = { 7.4, 3.2, -3.0 },
+				look = { -1.0, 3.0, -3.0 },
+				fov = 50,
+				to = { eye = { 7.0, 3.3, -3.2 }, fov = 48 },
 			},
 			{
 				at = 3.9,

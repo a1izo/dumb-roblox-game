@@ -9,7 +9,7 @@ the per-batch numbers and the traps.
 **In one paragraph.** There is a kit (`src/client/Presentation/Vfx/`), a texture and mesh library that comes into the
 place in the Fx props file (ModelsFx, now version 6), a debug booth that plays any one effect alone and an effect report
 that scores it against a bar written as numbers. The new recipes (`Vfx/Fresh/`) sit beside the old ones (`Vfx/Recipes`,
-`Presentation/FxKit`), and one switch per effect (`Vfx/Pilot.luau`, 101 flags: 54 ON, 47 OFF) says which build plays. An
+`Presentation/FxKit`), and one switch per effect (`Vfx/Pilot.luau`, 101 flags: 57 ON, 44 OFF) says which build plays. An
 effect went ON only when its report passed (or got better) and a booth or lobby picture was clearly better than the old;
 everything else stayed OFF and still plays the old way. Nothing was watched in a real match.
 
@@ -113,7 +113,7 @@ texture costs memory on every phone, so textures are reused.
 
 `Pilot.on.<name>`: true plays the new build (Fresh), false plays the old build that is still in the code. The call sites read the
 table, so a before and an after come from the same code with one flag flipped; a script sync (Rojo) picks a change up. There
-are **101 flags: 54 ON, 47 OFF.** ON means: the effect report passed or had fewer reasons AND a booth or lobby picture read
+are **101 flags: 57 ON, 44 OFF.** ON means: the effect report passed or had fewer reasons AND a booth or lobby picture read
 clearly better than the old (the plan's rule: a thing that is not better does not ship). ON does not mean seen in a real
 match, on a phone, on Low graphics or under Reduce motion: none of that was looked at. OFF means built and either not
 seen in any picture or not better; the reason is on the row. The OFF reasons come from the comments in `Pilot.luau` and the
@@ -214,16 +214,16 @@ rollout notes (`vfx-rollout-4a-first-batch` to `4f`, `fx-v6-fire-redo`); a few "
 | `winFxImpact` | ON |  |
 | `winFxGlint` | ON |  |
 | `winFxPillar` | ON |  |
-| `winFxWave` | OFF | rings of the two dummies overlapped in the picture and the report was no better: not shipped |
-| `winFxBolt` | OFF | not seen: the arc is gone inside a frame of the booth picture |
-| `winFxSparks` | OFF | only the star showed in the picture, the sparks had left it: not seen |
-| `winFxBloom` | OFF | not seen |
-| `winFxRing` | OFF | not seen |
-| `winFxDust` | OFF | not seen |
-| `winFxEmbers` | OFF | held kinds are rate emitters, which do not show in booth pictures: not seen |
-| `winFxMotes` | OFF | not seen, same reason |
-| `winFxAsh` | OFF | not seen, same reason |
-| `winFxDrizzle` | OFF | not seen, same reason |
+| `winFxWave` | OFF | 2026-11-26 side by side in the lobby: the new ring is a thin pale line, the old a wide band: not clearly better |
+| `winFxBolt` | ON | 2026-11-26, fired beside a real cut and in the lobby: forked branching strokes, the old bolt is a stack of pasted white quads |
+| `winFxSparks` | ON | 2026-11-26: thin hot streaks and a star, the old sparks are short white dashes |
+| `winFxBloom` | OFF | 2026-11-26: floods the floor white in the lobby light: too much |
+| `winFxRing` | OFF | 2026-11-26: a dark smoky rim round the white ring reads heavy |
+| `winFxDust` | ON | 2026-11-26: a soft shaped puff on the floor, the old dust is nearly invisible |
+| `winFxEmbers` | OFF | 2026-11-26: the orange never showed among the kinds fired side by side: not seen |
+| `winFxMotes` | OFF | 2026-11-26: reads as glitter stars, not dust drifting in a light |
+| `winFxAsh` | OFF | 2026-11-26: big black clumps against the old fine flakes |
+| `winFxDrizzle` | OFF | 2026-11-26: no different from the old thin streaks |
 
 **Writing styles (Presentation/Styles.write)**
 
@@ -436,7 +436,7 @@ branch of each can go. The ones that take a shared piece with them:
 | `worldCandle` and `readyCandles` | the candle branches in `World/Flames.luau` and `World/ReadyCircle.luau` (`Recipes.flame` kind candle) | part of `Recipes.flame`'s candle kind |
 | `impact` | the old burst in `Presentation/DeathFx.burst` | |
 | `materialize` | the old haze in `Presentation/Materialize.luau` | |
-| each other ON flag (`menacing`, `cover`, `coverOxblood`, `coverGilded`, `coverBurnt`, `coverIron`, `writeQuill`, `writeTypewriter`, `writeFire`, `writeKnife`, `writeChalk`, `writeFrost`, `winFxImpact`, `winFxGlint`, `winFxPillar`, `diveCrash`, and the 27 other emote flags marked ON) | its old build, inside the same file (the emote ones are wrapped by `flag(name, fresh, old)` in `EmoteFx/<family>.luau`) | |
+| each other ON flag (`menacing`, `cover`, `coverOxblood`, `coverGilded`, `coverBurnt`, `coverIron`, `writeQuill`, `writeTypewriter`, `writeFire`, `writeKnife`, `writeChalk`, `writeFrost`, `winFxImpact`, `winFxGlint`, `winFxPillar`, `winFxBolt`, `winFxSparks`, `winFxDust`, `diveCrash`, and the 27 other emote flags marked ON) | its old build, inside the same file (the emote ones are wrapped by `flag(name, fresh, old)` in `EmoteFx/<family>.luau`) | |
 
 **2. Old modules.**
 

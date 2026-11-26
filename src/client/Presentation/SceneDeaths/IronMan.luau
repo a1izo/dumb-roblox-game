@@ -358,9 +358,10 @@ local function build(ctx)
 	end, function()
 		return head(killer)
 	end, 34)
-	-- 5.0 the look up, the line
+	-- 5.0 the look up, the line (2026-11-26: from the victim's left: the gauntlet's red back on the right side hid the
+	-- whole face in the real client)
 	ctx:shot(5.0, function()
-		return head(victim) + Vector3.new(0.9, -1.0, -2.8)
+		return head(victim) + Vector3.new(-0.9, -1.0, -2.8)
 	end, function()
 		return head(victim) + Vector3.new(0, 0.2, 0)
 	end, 38)
