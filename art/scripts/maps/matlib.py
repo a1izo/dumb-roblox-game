@@ -21,6 +21,9 @@ TEX_DIR = os.path.join(common.EXPORT, "textures", "maps")
 # name -> (Roblox material, sRGB colour, transparency, reflectance)
 FLAT = {
     "PaintSteel": ("Metal", (74, 88, 98), 0, 0),  # the blue-grey enamel of staff lockers (the cutscene sets)
+    # Painted service pipes (kit.pipe_run): flat, no texture. The Steel scan tiled over a thin pipe read as lumpy white-grey
+    # marble up close in Roblox (2026-11-26), and a flat colour costs no megapixels.
+    "PipeSteel": ("Metal", (128, 132, 140), 0, 0.08),
     # Tokyo's metro line colours, painted: the band round the station hall and the route map's lines.
     "LinePurple": ("SmoothPlastic", (98, 64, 150), 0, 0.05),
     "LineGreen": ("SmoothPlastic", (54, 140, 84), 0, 0.05),

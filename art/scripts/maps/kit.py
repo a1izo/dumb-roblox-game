@@ -135,7 +135,6 @@ WEAR_CELLS = {"scuff": 0, "stain": 1, "switch": 2, "tape": 3}
 # instead: kicks for scuffs, spots and runs for a stain, the soft rub round a switch; no tape marks.
 GRIME_WEAR_CELLS = {"scuff": 0, "stain": 3, "switch": 1}
 WEAR_OFFSET = 0.07  # off a bare face (the grime is 0.03: two alpha layers within 0.02 of each other flicker); notices hang at 0.10
-WEAR_OFFSET_DADO = 0.13
 PLATE = (0.34, 0.55, 0.12)  # a light switch's plate: across, up, deep
 
 
@@ -168,13 +167,16 @@ def wear(s, a, t, outward, length, spans, doors, ops, base, seed, dado=False, sh
     (never on glass, a door or a casing), each of a different kind from the one before it and 2 studs clear of it."""
     r = random.Random(seed)
     out = (outward[0], outward[2])
-    off = WEAR_OFFSET_DADO if dado else WEAR_OFFSET  # (scuffs only: tape and switches sit above the dado)
     rot = math.degrees(math.atan2(-t[2], t[0]))
 
     def ground(u, d=WEAR_OFFSET):
         return (a[0] + t[0] * u + out[0] * d, a[1] + t[2] * u + out[1] * d)
 
     kinds = ["scuff", "tape", "switch"] if sheet != "grime" else ["scuff", "switch"]
+    if dado:
+        # A dado is dark and 2.8 high, so every scuff (0.65..2.65 up) would be dark on dark and unseen in the game
+        # (seen in Roblox 2026-11-26): that face takes only the marks that sit above it (tape, a switch).
+        kinds.remove("scuff")
     r.shuffle(kinds)
     placed = []  # (u0, u1)
     for kind in kinds[: r.choice((0, 1, 1, 2, 2, 3))]:  # (3 means all the kinds there are)
@@ -207,13 +209,12 @@ def wear(s, a, t, outward, length, spans, doors, ops, base, seed, dado=False, sh
             u1 = u0 + size
             if _clash(ops, u0, u1, y0, y0 + size, base) or any(u1 > p0 - 2.0 and u0 < p1 + 2.0 for p0, p1 in placed):
                 continue
-            d = off if kind == "scuff" else WEAR_OFFSET
-            wear_quad(s, kind, ground(u0, d), ground(u1, d), y0, y0 + size, out, flip=r.random() < 0.5, sheet=sheet)
+            wear_quad(s, kind, ground(u0), ground(u1), y0, y0 + size, out, flip=r.random() < 0.5, sheet=sheet)
             placed.append((u0, u1))
             break
 
 
-def pipe_run(s, a, b, y, out, radius=0.2, off=0.38, mat="Steel", clamp="DarkMetal", step=6.0, joint=9.0, seed=0,
+def pipe_run(s, a, b, y, out, radius=0.2, off=0.38, mat="PipeSteel", clamp="DarkMetal", step=6.0, joint=9.0, seed=0,
              sheet=None):
     """A run of pipe along a wall face from ground point a to b (x, z) at height y, standing `off` out from the face
     (out: the unit vector away from the wall): clamps every `step` studs, a collar at every joint, and a damp stain on

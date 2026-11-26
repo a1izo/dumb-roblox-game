@@ -59,25 +59,19 @@ def _scuff(r):
 
 
 def _stain(r):
-    """Cell 1: a stain that starts at the top centre (under the joint) and runs down: a damp fan, a darker run, a tide line."""
+    """Cell 1: damp under a pipe joint: a wide, soft patch, darkest just under the collar, fading down and out, no hard line
+    (an earlier version with thin run streaks read as a black crack in the game, 2026-11-26)."""
     shape = (CELL, CELL)
     yy, xx = np.mgrid[0:CELL, 0:CELL].astype(np.float32)
     depth = (CELL - yy) / CELL  # 0 at the top (the joint), 1 at the foot
-    sway = 5.0 * np.sin(depth * 5.0 + r.uniform(0, 6))
-    half = 5.0 + 38.0 * np.sqrt(depth) * (1.0 - 0.4 * depth)  # the damp widens, then narrows to a tongue
-    d = np.abs(xx - CELL / 2 - sway)
-    damp = (1.0 - grime._smooth(d / np.maximum(half, 1.0))) * (1.0 - grime._smooth((depth - 0.35) / 0.6)) * 0.42
-    run = np.zeros(shape, dtype=np.float32)
-    for off, w, strength, reach in ((0.0, 3.0, 0.62, 0.92), (-10.0, 2.0, 0.4, 0.6), (11.0, 2.2, 0.36, 0.5)):
-        x = CELL / 2 + off + sway * (1.0 if off == 0 else 0.7)
-        line = 1.0 - grime._smooth(np.abs(xx - x) / w)
-        run = np.maximum(run, strength * line * (1.0 - grime._smooth((depth - reach * 0.5) / (reach * 0.5 + 1e-3))))
-    tide = 0.2 * np.exp(-(((d - half * 0.9) / 3.0) ** 2)) * (1.0 - grime._smooth(depth / 0.55))  # the fan's dark edge
-    grain = 0.55 + 0.45 * grime._smooth(0.5 + 1.2 * grime._periodic(r, shape, 0.8))
-    alpha = np.clip((damp + tide) * grain + run * grain, 0, 0.85)
-    alpha = grime._blur(alpha, 0.8) * _edge()
-    alpha[CELL - 6:, :] = 0.0  # (the quad's top edge stays clean; the joint's collar hides the start)
-    return alpha, (50, 44, 36)
+    sway = 6.0 * np.sin(depth * 3.0 + r.uniform(0, 6))
+    half = 52.0 + 44.0 * np.sqrt(depth)  # a fan that widens as it falls (px; the cell is 256 wide)
+    d = np.abs(xx - CELL / 2 - sway) / half
+    fan = (1.0 - grime._smooth(d)) ** 1.5
+    fall = (1.0 - grime._smooth((depth - 0.1) / 0.8)) * grime._smooth(depth / 0.16)  # soft in at the top, long soft out
+    cloud = 0.6 + 0.4 * grime._smooth(0.5 + 1.0 * grime._periodic(r, shape, 1.4))
+    alpha = grime._blur(0.38 * fan * fall * cloud, 6.0)
+    return np.clip(alpha, 0, 0.4) * _edge(), (70, 62, 54)
 
 
 def _switch(r):
