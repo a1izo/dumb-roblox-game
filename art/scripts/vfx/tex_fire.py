@@ -1,7 +1,8 @@
 """Ticket V1.2 of docs/handoff/vfx-rework-plan-2026-11-16.md: fire and flame sheets (light textures: added, black is
 nothing; white and grey so the game tints them).
 
-    VfxFire        8x8 loop      fire whose tongues tear off and climb (hand-built volume: Route S's fallback, no sim)
+    VfxFire        8x8 loop      one cohesive fire: a body with a few tongues that grow out of it, nothing detaches (redone
+                                 2026-11-26 as ModelsFx 6: the first one, free tongues shedding teardrops, read as white spikes)
     VfxFireBurst   8x8 one-shot  a hot ball that opens into tongues; its outer shell goes grey like smoke, then breaks
     VfxCandle      8x8 loop      the realm's pale candle flame: a teardrop with a dark heart at the wick, a bright body,
                                  a lick at the tip, a soft halo (Route E)
@@ -94,73 +95,100 @@ def pnoise(a, b, c, f_a, f_b, py, pz, octaves, seed, shift_b=0.0):
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# VfxFire: a bed of seven tongues of different heights, each bending its own way, each shedding a piece from its tip
-# that climbs, shrinks and goes out. Tongue edges are bitten by streak noise that scrolls up a whole period per loop.
-# All motion is whole harmonics of the loop, so frame 64 runs into frame 1. (Route S's fallback: a hand-built volume,
-# no gas simulation was run for this sheet.)
+# The flame engine (V1.2 redo, 2026-11-26). The first VfxFire (seven free standing tongues, each shedding a teardrop) and
+# VfxCandle (a fat leaning wedge) read badly in the real lobby: a fan of separate white spikes, torn-off teardrops, a flame
+# twice as tall as the old one. A flame is ONE body: a broad round foot, a few tongues that grow out of it and share it
+# (they are blended by a smooth maximum, so the valleys between them stay high up the body), a soft taper to every tip,
+# and nothing that ever lets go. Motion is waves that travel UP each tongue (so the tips lick and the base stays put), the
+# tongues' heights breathing out of step, and an edge bitten by noise that scrolls up; all of it whole harmonics of the loop.
+# The sheet carries three values the game tints: a dim rim, a body, and a small hot core LOW in the flame (the game draws a
+# smaller copy of the same sheet on top at a high brightness, so the sheet's own core must stay small and its body must
+# keep the ramp's colour).
 # ---------------------------------------------------------------------------------------------------------------------
 
-FIRE_TONGUES = [  # base x, height, half width, lean, phase
-    (-0.66, 1.05, 0.20, 0.10, 0.3), (-0.40, 1.55, 0.27, 0.05, 1.7), (-0.12, 1.85, 0.30, -0.04, 2.9),
-    (0.17, 1.40, 0.27, 0.06, 4.1), (0.44, 1.70, 0.27, -0.08, 5.2), (0.68, 1.05, 0.20, -0.12, 0.9),
-    (0.0, 1.05, 0.34, 0.0, 3.6),
-]
+
+def _depth(x, y, t, yb, sp):
+    """How deep inside one tongue (1 on its centre line, 0 at its edge, negative outside) each pixel lies at time t."""
+    pu = sum(a * pulse(t, c, w) for a, c, w in sp.get("pu", ()))
+    H = sp["H"] * (1 + harm(t, sp["hv"]) + pu)
+    h = (yb - y) / H
+    hc = np.clip(h, 0.0, 1.0)
+    amp, cyc, mov, ph = sp["wave"]
+    curl, ck, ph2 = sp["curl"]
+    xc = (sp["bx"] + sp["lean"] * hc ** 1.4 + amp * hc ** 1.5 * np.sin(TAU * (cyc * hc - mov * t) + ph)
+          + curl * hc ** 3 * math.sin(TAU * ck * t + ph2))
+    p, q = sp["p"], sp["q"]
+    peak = (p / (p + q)) ** p * (q / (p + q)) ** q
+    w = sp["W"] * hc ** p * (1 - hc) ** q / peak
+    s = 1 - np.abs(x - xc) / np.maximum(w, 1e-3)
+    return np.where((h > 0) & (h < 1), s, -1.0)
+
+
+def _smax(fields, k=12.0):
+    """A smooth maximum: the union of the tongues, with no crease where two meet."""
+    m = np.maximum.reduce(fields)
+    return m + np.log(sum(np.exp(k * (f - m)) for f in fields)) / k
+
+
+def _halo(x, y, cx, cy, rx, ry, peak):
+    """The faint glow round a flame. Its alpha stays just over the texture check's 0.1 out to (rx, ry): that is what gives
+    the box the check wants, and the soft light the flame throws on the air."""
+    r = np.hypot((x - cx) / rx, (y - cy) / ry)
+    return peak * np.exp(-(r ** 2.6) * 1.05)
+
+
+# the fire: a body mass, a main tongue, two side tongues, two small ones. (bx, lean, H, W are cell units: x runs -1..1)
+def _fire_tongues():
+    def T(bx, lean, H, W, wave, curl, hv, pu=(), p=0.42, q=0.95):
+        return dict(bx=bx, lean=lean, H=H, W=W, wave=wave, curl=curl, hv=hv, pu=pu, p=p, q=q)
+
+    return [
+        # body mass
+        T(0.00, 0.00, 0.85, 0.39, (0.03, 1.0, 2, 0.4), (0.0, 1, 0.0), [(0.05, 3, 0.5), (0.03, 5, 2.0)], p=0.25),
+        # main tongue: the tallest, leans and licks
+        T(0.0, 0.02, 1.50, 0.33, (0.14, 1.25, 4, 1.9), (0.16, 3, 0.7), [(0.08, 3, 2.0), (0.07, 5, 4.0)],
+          [(0.10, 0.30, 0.06)], p=0.6),
+        # left and right tongues lean in toward it at the tips
+        T(-0.24, 0.13, 1.18, 0.23, (0.10, 1.3, 5, 3.3), (0.11, 4, 2.1), [(0.10, 5, 0.9), (0.07, 3, 5.2)],
+          [(0.14, 0.72, 0.07), (-0.12, 0.28, 0.06)], p=0.7),
+        T(0.25, -0.14, 1.04, 0.22, (0.10, 1.15, 6, 5.1), (-0.12, 3, 4.4), [(0.10, 3, 3.1), (0.07, 7, 1.4)],
+          [(0.14, 0.45, 0.07), (-0.10, 0.88, 0.05)], p=0.7),
+    ]
 
 
 @texture
 def VfxFire(cell=128, grid=8, seed=311):
+    """A cohesive fire (a brazier's, a cold fire, the Manual's red one): a broad body with a few tongues that grow out of
+    it and breathe. No piece ever detaches. A hot core, small, low; a dim rim; the tips fade out."""
     n_frames = grid * grid
-    BASE = 0.86
-    px_soft = 0.05
+    yb = 0.83
+    tongues = _fire_tongues()
 
     def frame(k, y, x):
         t = k / n_frames
-        px = 2.0 / x.shape[0]
-        alpha = np.zeros_like(x)
-        val = np.zeros_like(x)
-        islands = np.zeros_like(x)
-        dmax = np.zeros_like(x)
-        island_v = np.zeros_like(x)
-        for j, (bx, hgt, hw, lean, ph) in enumerate(FIRE_TONGUES):
-            sway = 0.16 * math.sin(TAU * t + ph) + 0.09 * math.sin(TAU * 2 * t + 2 * ph + 1.0)
-            flick = 0.55 * math.sin(TAU * 2 * t + ph * 1.3) + 0.3 * math.sin(TAU * 3 * t + ph)
-            hj = hgt * 0.72 * (1 + 0.08 * math.sin(TAU * 3 * t + ph * 2.0))
-            spine = _spine(lean + 0.5 * sway, -0.3 * sway - lean, 0.7 * sway + 0.6 * lean + 0.2, flick * 1.0, hj,
-                           bx + 0.05 * math.sin(TAU * t + ph), BASE, n=90)
-            a, depth = _tongue(x, y, spine, hw * 0.8, 0.6, 0.8, px_soft)
-            alpha = np.maximum(alpha, a)
-            dmax = np.maximum(dmax, depth * (a > 0.02))
-            # the piece that tears off the tip: it climbs one tongue-length per loop, shrinks as it goes
-            for m in range(2):
-                u = (t + m * 0.5 + ph / TAU * 0.37) % 1.0
-                tx, ty = spine[0][-1], spine[1][-1]
-                dx = 0.06 * math.sin(TAU * (u * 1.5 + ph)) + 0.25 * sway * u
-                cy = ty - 0.02 - 0.38 * u
-                cx = tx + dx
-                size = hw * 0.6 * math.sin(math.pi * u) ** 0.8
-                dyn = (y - cy) / (size * 1.6 + 1e-3)
-                wfac = np.clip(0.55 + 0.5 * dyn, 0.06, 1.0)  # a teardrop: pointed above, round below
-                rr = np.hypot((x - cx) / (size * 0.75 * wfac + 1e-3), dyn)
-                isl = np.clip((1 - rr) / 0.35, 0, 1) * (size > 0.02)
-                islands = np.maximum(islands, isl)
-                island_v = np.where(isl > 0.3, 0.55 + 0.4 * (1 - u), island_v)
-        # bite the edges with streaks that run up and climb
-        n_t = pnoise(x, -y, 3 * t, 5.5, 1.2, 2, 3, 3, seed, shift_b=2 * t)
-        hgt_f = np.clip((BASE - y) / 1.6, 0, 1)
-        bite = (0.5 - 0.5 * n_t) * (0.25 + 0.75 * hgt_f)
-        n_u = pnoise(x, -y, 3 * t + 4, 9.0, 2.2, 3, 3, 2, seed + 4, shift_b=4 * t)
-        bite = bite * (0.75 + 0.5 * (0.5 - 0.5 * n_u))
-        gdep = dmax - 1.5 * bite - 0.04
-        a2 = np.clip(gdep / 0.12, 0, 1) * (alpha > 0)
-        # white-hot where it is deepest and low, dark toward the torn edge and the tips
-        val = (0.3 + 0.7 * np.clip(gdep * 1.6, 0, 1) ** 0.8) * (1 - 0.3 * hgt_f)
-        alpha_t = np.maximum(a2, islands * 0.9)
-        val = np.where(a2 >= islands * 0.9, val, island_v)
-        # a faint glow under the bed so the base reads as a bed of embers, not a cut
-        base_glow = np.exp(-(((y - BASE) / 0.12) ** 2 + (x / 0.75) ** 2) ** 1.5) * 0.9
-        val = np.where(base_glow > alpha_t, 0.75, val)
-        alpha_t = np.maximum(alpha_t, base_glow)
-        return np.clip(val, 0, 1), alpha_t
+        f = _smax([_depth(x, y, t, yb, sp) for sp in tongues])
+        hg = np.clip((yb - y) / 1.45, 0.0, 1.0)
+        # the edge is bitten by noise that scrolls up the flame (stronger toward the tips)
+        n1 = pnoise(x, -y, 6 * t, 2.4, 1.7, 2, 6, 3, seed, shift_b=6 * t)
+        n2 = pnoise(x, -y, 6 * t + 5, 4.6, 3.4, 3, 6, 2, seed + 9, shift_b=6 * t)
+        f = f + (0.24 * n1 + 0.08 * n2) * (0.25 + 0.75 * hg)
+        alpha = sstep(0.0, 0.26, f)
+        alpha = alpha * (1 - 0.3 * sstep(0.55, 1.0, hg))          # the tips thin out
+        # the foot is round (a bowl of flame, not a cut): the half width allowed falls to a point over the last 0.2
+        u = np.clip((yb - y) / 0.2, 0.0, 1.0)
+        lim = 0.12 + 0.6 * np.sqrt(1 - (1 - u) ** 2)
+        alpha = alpha * sstep(lim + 0.03, lim - 0.03, np.abs(x))
+        # three values: a dim rim, the body, a small hot core low in it
+        d = np.clip(f, 0.0, 1.0)
+        body = 0.34 + 0.52 * sstep(0.0, 0.8, d)
+        sway = 0.03 * math.sin(TAU * t + 1.0)
+        core = np.exp(-(((x - sway) / 0.15) ** 2 + ((y - (yb - 0.2)) / 0.23) ** 2))
+        flick = 1 + 0.09 * harm(t, [(1.0, 7, 0.3), (0.7, 11, 1.1)])  # the fire's brightness shivers a few times a second
+        val = (body * (1 - 0.2 * hg) + 0.30 * core) * flick
+        halo_a = _halo(x, y, 0.0, 0.08, 0.83, 0.86, 0.32)
+        a_tot = alpha + halo_a * (1 - alpha)
+        val_tot = (val * alpha + 0.13 * halo_a * (1 - alpha)) / np.maximum(a_tot, 1e-6)
+        return np.clip(val_tot, 0, 1), a_tot
 
     return finish_cells(frame, n_frames, cell, grid)
 
@@ -225,60 +253,56 @@ def VfxFireBurst(cell=128, grid=8, seed=523):
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# VfxCandle: one small teardrop flame that fills its cell at its largest. Round at the wick (a dark heart in its
-# foot), pointed above, swaying, stretching, the tip licking over. A soft pale halo round it (that is what fills the box).
+# VfxCandle (redo): the old candle flame's slim shape (it stands about 1.35 of the cell's 2 high, half its width 0.27) with
+# what the old one never had: a round foot with a dark heart at the wick, a pale body, a soft taper into a thin tip that
+# leans and licks, a small hot core low in the body, and a gentle gust once a loop. One tongue, drawn with the same engine as
+# the fire. A faint halo carries the box the texture check measures; it is dim enough not to show.
 # ---------------------------------------------------------------------------------------------------------------------
 
 
 @texture
-def VfxCandle(cell=128, grid=8, seed=131):
+def VfxCandle(cell=128, grid=8, seed=139):
     n_frames = grid * grid
     rng = np.random.default_rng(seed)
     ph = rng.uniform(0, TAU, 12)
+    yb = 0.80  # the wick
+    main = dict(bx=0.0, lean=0.0, H=1.34, W=0.32, p=0.55, q=1.0, wave=(0.0, 1.0, 1, 0.0), curl=(0.0, 1, 0.0), hv=[], pu=())
 
     def frame(k, y, x):
         t = k / n_frames
-        yb = 0.80  # the wick
-        # irregular but periodic: sums of whole harmonics plus a few once-per-loop events
-        lean = harm(t, [(0.17, 1, ph[0]), (0.10, 2, ph[1]), (0.07, 3, ph[2]), (0.04, 5, ph[3])])
-        lean += 0.26 * pulse(t, 0.31, 0.06) - 0.3 * pulse(t, 0.72, 0.05)
-        lick = harm(t, [(0.12, 2, ph[4]), (0.08, 3, ph[5]), (0.05, 7, ph[6])]) + 0.22 * pulse(t, 0.58, 0.05)
-        sz = 1.0 + harm(t, [(0.045, 2, ph[7]), (0.03, 5, ph[8]), (0.02, 3, ph[9])]) + 0.07 * pulse(t, 0.31, 0.05)
-        sz *= 1 - 0.1 * pulse(t, 0.72, 0.06)
-        H = 1.62 * sz
-        h = (yb - y) / H  # 0 at the wick, 1 at the tip
-        hc = np.clip(h, 0.0, 1.0)
-        # centre line: leans toward the top, the tip licks over, a slow wave runs up it
-        xc = (lean * hc ** 1.7 + lick * hc ** 3.2 + 0.035 * np.sin(TAU * (1.4 * hc - 2 * t) + ph[10]) * hc)
-        # teardrop width: round at the foot, widest low, a sharp tip
-        p, q = 0.5, 0.95
-        peak = (p / (p + q)) ** p * (q / (p + q)) ** q
-        wmax = 0.37 * (1 + 0.12 * harm(t, [(1.0, 3, ph[11])]))
-        w = wmax * (hc ** p) * ((1 - hc) ** q) / peak
-        # a periodic wobble of the edge
-        edge = N.fbm3(np.full_like(x, 0.0) + hc * 2.6, np.full_like(x, 1.5) + np.sign(x - xc) * 3.0,
-                      np.full_like(x, 0.0) + t * 4.0, octaves=2, seed=seed, period=(None, None, 4), time_scales=False)
-        w = w * (1 + 0.16 * np.clip(edge, -1, 1))
-        dx = x - xc
-        inside_h = (h > 0) & (h < 1)
-        cover = np.clip((w - np.abs(dx)) / 0.05, 0, 1) * inside_h
-        # flame colour: bright body, white-hot middle, darker toward the edge
-        u = np.abs(dx) / np.maximum(w, 1e-4)
-        val = 0.5 + 0.5 * (1 - np.clip(u, 0, 1) ** 1.4)
-        val = val * (1 - 0.25 * sstep(0.55, 1.0, hc))  # the tip is dimmer
-        # the dark heart: a small teardrop of dark in the foot, hugging the wick
-        hh = np.clip((h - 0.0) / 0.34, 0, 1.5)
-        heart_w = 0.42 * w * np.sin(np.clip(hh * math.pi * 0.95, 0, math.pi)) + 1e-4
-        heart = np.clip((heart_w - np.abs(dx - 0.2 * lean * hc)) / 0.045, 0, 1) * (hh > 0) * (hh < 1)
-        val = val * (1 - 0.8 * heart)
-        alpha = cover * (1 - 0.1 * heart)
-        # the halo: a wide soft glow round the flame's middle (that is most of the box the check measures)
-        cx_h = lean * 0.45 ** 1.7
-        cy_h = yb - 0.46 * H
-        rr = np.hypot((x - cx_h) / 0.72, (y - cy_h) / (0.92 * sz))
-        halo = 0.36 * np.exp(-rr ** 3.0 * 1.4)
-        a_tot = alpha + halo * (1 - alpha)
-        val_tot = (val * alpha + 0.42 * halo * (1 - alpha)) / np.maximum(a_tot, 1e-6)
+        lean = harm(t, [(0.15, 3, ph[0]), (0.115, 5, ph[1]), (0.08, 9, ph[2])])
+        lean += 0.15 * pulse(t, 0.31, 0.06) - 0.17 * pulse(t, 0.72, 0.05)  # the gusts: once each way a loop
+        lean = 0.26 * math.tanh(lean / 0.26)  # (a flame never lies down: the lean is soft-limited)
+        lick = harm(t, [(0.15, 4, ph[4]), (0.11, 7, ph[5]), (0.08, 11, ph[6])]) + 0.12 * pulse(t, 0.58, 0.05)
+        lick = 0.2 * math.tanh(lick / 0.2)
+        sp = dict(main)
+        sp["lean"] = lean
+        sp["curl"] = (lick, 1, 0.0)
+        sp["wave"] = (0.05, 1.2, 5, ph[10])
+        sp["hv"] = [(0.045, 4, ph[7]), (0.03, 7, ph[8]), (0.025, 6, ph[9])]
+        sp["pu"] = [(0.03, 0.31, 0.05), (-0.04, 0.72, 0.06)]
+        sp["W"] = 0.32 * (1 + 0.12 * harm(t, [(1.0, 3, ph[11])]))
+        f = _depth(x, y, t, yb, sp)
+        hg = np.clip((yb - y) / 1.34, 0.0, 1.0)
+        edge = pnoise(x, -y, 6 * t, 2.0, 1.5, 2, 6, 2, seed, shift_b=6 * t)
+        f = f + 0.26 * edge * (0.2 + 0.8 * hg)
+        alpha = sstep(0.0, 0.2, f) * (1 - 0.55 * sstep(0.5, 1.0, hg))   # a long soft taper into the tip
+        alpha = alpha * sstep(0.0, 0.05, yb - y)
+        d = np.clip(f, 0.0, 1.0)
+        body = 0.56 + 0.38 * sstep(0.0, 0.9, d)
+        # the bright body is low and slim; the tip is dimmer
+        core = np.exp(-(((x - 0.3 * lean * 0.1) / 0.075) ** 2 + ((y - (yb - 0.34)) / 0.2) ** 2))
+        flick = 1 + 0.15 * harm(t, [(1.0, 6, ph[3]), (0.7, 10, ph[11])])
+        val = (body * (1 - 0.35 * sstep(0.35, 1.0, hg)) + 0.30 * core) * flick
+        # the dark heart: a small teardrop hugging the wick, pointed up
+        hh = np.clip((yb - y) / 0.36, 0.0, 1.0)
+        heart_w = 0.075 * np.sin(np.clip(hh * math.pi, 0, math.pi)) ** 0.8 + 1e-4
+        heart = np.clip((heart_w - np.abs(x - 0.25 * lean * hh)) / 0.03, 0, 1) * (hh > 0.02) * (hh < 0.98)
+        val = val * (1 - 0.7 * heart)
+        alpha = alpha * (1 - 0.3 * heart)
+        halo_a = _halo(x, y, 0.0, 0.09, 0.80, 0.84, 0.28)
+        a_tot = alpha + halo_a * (1 - alpha)
+        val_tot = (val * alpha + 0.13 * halo_a * (1 - alpha)) / np.maximum(a_tot, 1e-6)
         return np.clip(val_tot, 0, 1), a_tot
 
     return finish_cells(frame, n_frames, cell, grid)

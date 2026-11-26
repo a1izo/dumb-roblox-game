@@ -14,3 +14,5 @@ No gas sim was run: VfxFire/VfxFireBurst are hand-built volumes (the V1.1 dust p
 - **Candle fill is the halo's:** a narrow teardrop alone fills ~25% of its cell; a soft alpha 0.36 halo (wide gaussian) is what puts the box at 65%. Said plainly in the Log; no vertical stretch.
 - **Aura tongue:** tangent angle = theta0 + bend*sin(2 pi 0.85 s) + curl*smoothstep^1.4 gives an S and a hook; `sin(pi*1.15*s)` alone leans the whole thing into a leaf.
 - Not on the Fx file: a second bump (ModelsFx 5) is the owner's call; see [[fx-file-v4-export]], [[slash-arc-wisp-textures]].
+
+**Superseded 2026-11-26 by [[fx-v6-fire-redo]]:** VfxFire and VfxCandle were redrawn (one cohesive flame) and the file exported as ModelsFx 6; the spine-tongue approach above is gone from those two sheets (VfxFireBurst and VfxAuraFlame still use it / the old drawing).

@@ -55,3 +55,5 @@ side by side on two stands (left `Recipes.flame` red, right `Fresh.flame` with `
 `{"name":"dgx","tree":{"$className":"Folder","Client":{"$path":"src/client"}}}`. (2) `git ... > outside-path` and compound git lines are refused by the
 worktree guard; use PowerShell `cmd /c` for `git show rev:file > file`, and `-F file` for commit messages. (3) `FxBooth.report` returns
 `{ verdict, rows }`, not flat fields: print with `FxBooth.reportTable({ r, ... })`.
+
+**Update 2026-11-26:** the v5 fire and candle sheets were redone as ModelsFx 6 (not imported yet): see [[fx-v6-fire-redo]].
