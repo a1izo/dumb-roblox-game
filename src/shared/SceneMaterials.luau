@@ -204,7 +204,7 @@ return {
 	WarRubble = { textured = true, fallback = { material = "SmoothPlastic", color = { 93, 89, 85 } } },
 	Water = { material = "Glass", color = { 40, 90, 120 }, transparency = 0.35, reflectance = 0.3 },
 	WaterFall = { material = "Glass", color = { 196, 200, 206 }, transparency = 0.35, reflectance = 0.1 },
-	WearOffice = { textured = true, alpha = true, fallback = { material = "SmoothPlastic", color = { 79, 73, 61 } } },
+	WearOffice = { textured = true, alpha = true, fallback = { material = "SmoothPlastic", color = { 77, 71, 60 } } },
 	WhiteTrim = { textured = true, fallback = { material = "SmoothPlastic", color = { 217, 214, 208 } } },
 	WindowCool = { material = "Neon", color = { 150, 180, 230 }, transparency = 0, reflectance = 0 },
 	WindowDark = { material = "Glass", color = { 22, 26, 34 }, transparency = 0, reflectance = 0.35 },

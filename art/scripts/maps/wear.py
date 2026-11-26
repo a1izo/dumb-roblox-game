@@ -70,8 +70,8 @@ def _stain(r):
     fan = (1.0 - grime._smooth(d)) ** 1.5
     fall = (1.0 - grime._smooth((depth - 0.1) / 0.8)) * grime._smooth(depth / 0.16)  # soft in at the top, long soft out
     cloud = 0.6 + 0.4 * grime._smooth(0.5 + 1.0 * grime._periodic(r, shape, 1.4))
-    alpha = grime._blur(0.38 * fan * fall * cloud, 6.0)
-    return np.clip(alpha, 0, 0.4) * _edge(), (70, 62, 54)
+    alpha = grime._blur(0.7 * fan * fall * cloud, 6.0)
+    return np.clip(alpha, 0, 0.62) * _edge(), (62, 55, 48)
 
 
 def _switch(r):
