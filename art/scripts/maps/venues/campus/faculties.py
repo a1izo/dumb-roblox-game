@@ -229,6 +229,9 @@ def science_rooms(s, g):
     for z in (48.0, 66.0, 84.0, 100.0):
         fit.panel(s, 58.0, z, C, color=fit.COOL, brightness=0.75, range_=18, rot=90, shadows=z in (48.0, 84.0))
     fit.plaque(s, 67.7, 10.2, 46.0, 90, 5.8, 0.9, "法医学教室  FORENSIC MEDICINE", (240, 236, 226), (26, 40, 60))
+    # The way out at the hall's far end: a green exit sign on the blank wall beside the door (2026-11-26, the owner's
+    # corridor picture: the hall is dark and its end is coloured by one small sign; graphics plan phase 11 step 3).
+    fit.exit_sign(s, 53.0, 10.4, SZ0, 180)
 
 
 def forensic(s):

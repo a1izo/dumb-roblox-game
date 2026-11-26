@@ -3,7 +3,7 @@
 -- file (VERSION) and each venue's scene. ModelLibrary.install() warns in Studio when an import is older.
 return {
 	MapsAgency = 37,
-	MapsCampus = 35,
+	MapsCampus = 36,
 	MapsLobby = 56,
 	MapsMeeting = 9,
 	MapsScenes = 14,

@@ -307,7 +307,9 @@ def wall_lamp(s, x, y, z, rot, color=COOL, range_=16, brightness=0.8):
 def exit_sign(s, x, y, z, rot):
     kit.exit_sign(s, x, y, z, rot)
     p = turn(rot, 0, -0.3)
-    lightbook.wall(s, (x + p[0], y, z + p[1]), rot, lightbook.EXIT, 8, 0.4)
+    # (range 8 and 0.4 until 2026-11-26: the sign tints the wall round it, but the corridor picture has it colour the whole
+    # end of the hall, the ceiling and the floor near it, so 13 and 0.8, graphics plan phase 11 step 3)
+    lightbook.wall(s, (x + p[0], y, z + p[1]), rot, lightbook.EXIT, 13, 0.8)
 
 
 # Stairs and rails ----------------------------------------------------------------------------------------
