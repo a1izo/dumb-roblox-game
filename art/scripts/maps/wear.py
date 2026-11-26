@@ -59,19 +59,23 @@ def _scuff(r):
 
 
 def _stain(r):
-    """Cell 1: damp under a pipe joint: a wide, soft patch, darkest just under the collar, fading down and out, no hard line
-    (an earlier version with thin run streaks read as a black crack in the game, 2026-11-26)."""
+    """Cell 1: damp under a pipe joint: a wide patch, darkest just under the collar, fading down and out, no hard line.
+    Two lessons from Roblox (2026-11-26): thin run streaks read as a black crack, and the engine's alpha acts close to a
+    cut-off near 0.5 (a soft 0.3 to 0.6 fan showed as a small hard dot, the rest invisible). So the patch is drawn above that
+    line over a wide ragged area in a colour only a little darker than a wall, with an uneven edge from noise, and it still
+    fades smoothly where the engine does blend."""
     shape = (CELL, CELL)
     yy, xx = np.mgrid[0:CELL, 0:CELL].astype(np.float32)
     depth = (CELL - yy) / CELL  # 0 at the top (the joint), 1 at the foot
     sway = 6.0 * np.sin(depth * 3.0 + r.uniform(0, 6))
-    half = 52.0 + 44.0 * np.sqrt(depth)  # a fan that widens as it falls (px; the cell is 256 wide)
+    half = 50.0 + 40.0 * np.sqrt(depth)  # a fan that widens as it falls (px; the cell is 256 wide)
     d = np.abs(xx - CELL / 2 - sway) / half
-    fan = (1.0 - grime._smooth(d)) ** 1.5
-    fall = (1.0 - grime._smooth((depth - 0.1) / 0.8)) * grime._smooth(depth / 0.16)  # soft in at the top, long soft out
-    cloud = 0.6 + 0.4 * grime._smooth(0.5 + 1.0 * grime._periodic(r, shape, 1.4))
-    alpha = grime._blur(0.7 * fan * fall * cloud, 6.0)
-    return np.clip(alpha, 0, 0.62) * _edge(), (62, 55, 48)
+    fan = 1.0 - grime._smooth(d)
+    fall = (1.0 - grime._smooth((depth - 0.2) / 0.75)) * grime._smooth(depth / 0.1)
+    rag = 0.5 + 0.5 * np.tanh(2.2 * grime._periodic(r, shape, 1.1))  # 0..1, uneven at about a quarter stud
+    field = (fan * fall) * (0.55 + 0.9 * rag)
+    alpha = grime._blur(np.clip(0.95 * field, 0, 0.85), 1.5)
+    return alpha * _edge(), (88, 80, 70)
 
 
 def _switch(r):
