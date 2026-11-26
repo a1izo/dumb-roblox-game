@@ -146,8 +146,9 @@ Only the player's own emote, only in the lobby, never under Reduce motion.
 - **Effects** (`src/client/Controllers/EmoteFx/`, split by family: `init.luau` is the public API, `Shared.luau` the
   helpers, then `Godhood`, `Poses`, `Dances`, `Props`, `Older`, `Strolls`, `Duos`, `Everyone`): one function per clip,
   given the body, returning its clean-up; the rung (0 to 4) comes from the rarity or `fx`, at most 1 in a case or on low graphics. Under Reduce
-  motion there are no flashes and no shake. Textures come from the Core set; an older import falls back to
-  Roblox's own particles.
+  motion there are no flashes and no shake. Textures come from the Fx set (ModelsFx, version 6; the old ones from
+  Core); an older import falls back to older textures and then to Roblox's own particles (`Vfx/Tex`). Each emote's
+  effect is the new build or the old one by its flag in `Vfx/Pilot.luau`; `docs/vfx.md` has the table.
 - **Faces** (`EmoteMedia.FACES`): six decals (deadpan, smirk, smug, raisedBrow, wideGrin, stare) a shop item can
   name with `face`; the ids are the owner's to upload and fill in.
 - **Sound** (`EmoteMedia.SOUNDS`, `EmoteMedia.CUES`): a slot for every emote (the specs require it) and cues fired

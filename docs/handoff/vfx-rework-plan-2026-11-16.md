@@ -13,9 +13,42 @@ write what you found in the Log and ask the owner; do not guess a third time.
 **You must be able to look at pictures.** Every ticket from Stage 1 on ends with you opening the image you made and
 judging it against a reference. A model that cannot read images must not take those tickets.
 
-## Status (2026-11-16, the day the plan was written)
+## Status (2026-11-26: Stages 0 to 4 done as far as they can be without the owner's eyes, Stage 5 closed in its safe form)
 
-Nothing is built that changes a look. V0.3 (the texture check) is done and V0.1's code is on main but not yet played in Studio (the owner's Studio was in a play session on 2026-11-16): see the Log. The order is fixed:
+The plan was written 2026-11-16. As of 2026-11-26 (scripts on main; Fx v6, Core 43 and Campus 36 imported in the place, place
+v654 saved, not published) the order below has been carried out, and "done" means this, no more:
+
+| Stage | What | State | What "done" means here |
+|---|---|---|---|
+| 0 | Tools and the "before" record | Done | Catalogue, booth, effect report, texture check, reference boards (`art/refs/vfx`) and the audit file exist; the booth plays every entry (`fx.verify` 0 problems) |
+| 1 | The texture and mesh library | Done | 26 new sheets and 3 new meshes, Fx file v6 (15.36 MB) imported; every new sheet passes `check_textures` and was looked at in previews; 16 OLD sheets still fail it |
+| 2 | The kit | Done | `Moment`, `Palette`, `Sheets`, `Fresh/*` (15 recipes and more), the Pilot table; the nine Vfx and Emote specs pass 103/0 |
+| 3 | The pilot | Done | Impact ON (smaller, crisper), cover ON, Menacing OFF at the time and ON after the level-2 aura rebuild; the Log records no explicit owner verdict on it |
+| 4 | Roll out by family | Done, partly OFF | 101 flags in `Vfx/Pilot.luau`: **54 ON, 47 OFF**. ON = report passed or improved AND a booth or lobby picture was clearly better. OFF = built but not seen in any picture or not better, and the old build still plays. 4f (scenes) was only partial |
+| 5 | Close (V5.1) | Closed safely | `docs/vfx.md` rewritten to what was built (kit, library, booth, report, flag table with a reason for every OFF flag, rules, how to test, what is open). **Nothing was deleted** (V5.1 said to): every old texture, `FxKit` and `Recipes` is still called, so the file adds a Removal plan instead |
+
+**Truthful limits.** Everything ON was verified in the booth (reports and stills) and, for the fire, candle and a few others,
+in lobby pictures. **Nothing was seen in a real match**, nor on a phone, on Low graphics or under Reduce motion, and frame time in
+a full lobby was not measured. Twelve scene deaths and the `ShotPlayer` fx events were never played for this work.
+
+**What the owner still has to do:**
+
+1. Sync scripts (Rojo picks them up) in the place: the flags and `Fire.luau` changes are in scripts.
+2. Look at the effects in the real lobby and in a case (the emotes, the Manual covers, the dive crash, the writing styles, the
+   candles) and say which of the 54 ON flags they do not like; flipping `Pilot.on.<name>` to false goes back at once.
+3. Imports: Fx v6 is done (asset 123679627680169), Core v43 and Campus v36 are done (2026-11-26); nothing to import for
+   this close. Any later Fx redraw (the fire) is one more bump.
+
+**Decisions that are the owner's:**
+
+- Fire for the Manual, the Trial and the braziers: redraw the sheets and re-import (and try again in the lobby), try the cheap
+  Luau route, or keep the old flame for good (then the three flags stay OFF and the unused new fire paths can go).
+- Deleting the old code (`FxKit`, `Recipes`, the old branches of the ON flags, `startOld` of the aura, the old sheets): the
+  Removal plan in `docs/vfx.md` says what and in what order; it needs the scene deaths and `WinCinema` moved first.
+- The two budget exceptions in `art/budget.json` (Fx 4 and Fx 5, written as the owner's call to veto): the owner was not shown
+  the figures, and the 8.3 megapixels the old sheets cost cannot come back until those sheets are deleted.
+
+The order that was fixed:
 
 | Stage | What | Tickets | Gate before the next stage |
 |---|---|---|---|
@@ -512,6 +545,11 @@ Rewrite `docs/vfx.md` to describe what was built (the tools table, the texture l
 budgets), delete the old textures and their builders that no caller uses, and delete `FxKit`. Update the "Effects"
 section of `docs/emotes.md`.
 
+**Closed 2026-11-26 in its safe form:** the page was rewritten and the emotes.md paragraph updated, but nothing was deleted,
+because grep shows every old texture still has a live caller and `FxKit` (4 callers) and `Recipes` (38 call sites, 15 in the
+nine scene deaths that read no flag) are still used; `docs/vfx.md` has a "Removal plan" with what could go once which flag is ON
+for good. Deleting is the owner's call (see the Status block).
+
 # Log
 
 (Each finished ticket: date, ticket, what was done, numbers before and after, what was not seen, the owner's
@@ -669,3 +707,4 @@ verdict where there was a gate.)
 - 2026-11-26, V1.2 redo, Fx v6 (ModelsFx 5 to 6; scripts, textures and the Fx FBX; the owner must sync scripts, Rojo picks it up, and import ModelsFx v6). The v5 sheets read badly in the real lobby (a fan of white spikes with pink fringes, torn-off teardrops, about twice the old flame's height; the game draws every flame sheet twice, a body layer and a half-size white-hot copy at Brightness 2.3). VfxFire and VfxCandle redrawn in tex_fire.py as ONE cohesive flame each: tapered tongues that grow out of a shared body (smooth-max union), waves that run up them, noise-bitten edges, a soft taper to every tip, a small hot core low, nothing detaches; tips no taller than the old flame's. VfxFireBurst and VfxAuraFlame unchanged. Names, grids and fps unchanged. check_textures: VfxFire fill 80% tone 0.185 motion 0.012 wrap 0.016, VfxCandle fill 67% tone 0.177 motion 0.012 wrap 0.012, both PASS (motion needed a lively candle: seed 139, see agent-memory fx-v6-fire-redo); 33 pass / 16 fail overall as before. Export 15,357,676 bytes (v5 15,751,836), check_fx_export with --old-fbx v5 OK (49 sheets, 14 shapes, marker Version_6), budget unchanged (Campus 0.07 MP over as before, the v5 exception line left as it is). Judged by a simulation of the game's two-layer draw over dark and grey backdrops in red, amber and candle tints at 128 and 40 px, old / v5 / v6 side by side (main checkout art/export/previews/vfx/fire_v6/): v6 reads as one flame in the ramp colour with a small white heart, v5 as spikes. NOT seen in Roblox. Flags manualFire, trialWisp, worldCandle, worldBrazier, readyCandles stay OFF until the import and a real picture.
 - 2026-11-26, V4f (scenes), PARTIAL, no Pilot flag or code changed. Watched the eight win cuts in the place's own client from the Debug gallery (framed, key and rim light read, endings held; two near-empty mid-shots in caseClosedCoven and checkmateCoven to re-check without a capture before them) and three scene deaths (lightning, frost, heart); the 4c win kinds stay OFF (a private client copy renders a cut black, so new code needs the owner's script sync first); twelve scene deaths and the ShotPlayer fx events were not played. Route and traps in docs/agent-memory/vfx-rollout-4f.md. Not started: Stage 5.
 - 2026-11-26, V4g (fire v6 in the place), ModelsFx 6 IMPORTED by Open Cloud (asset 123679627680169, shared with universe 10767766818, place v654 saved, not published) and the five guarded fire flags photographed in the real lobby with the real v6 sheets (private client copy, stands near the player, old left / new right). worldCandle and readyCandles are now ON: the new candle is a teardrop with a dark wick, flickers, and costs less (booth report world_candle FAIL, 3 particles, 3 emitters, 2 lights, to world_candle_fresh PASS, 2 particles, 3 emitters, 0 lights). manualFire, trialWisp, worldBrazier stay OFF: the v6 fire is one cohesive flame now, but a flat pale silhouette on the lobby's grey (additive tint over grey turns the red pink, a dimmer or alpha-blended body goes brown), against the old's lit red glow with a white core. Fire.luau got a smaller (0.38), dimmer (1.5) and tinted heart layer for kind "fire" only (the old 0.5 / 2.3 whited out the middle). The aura's flame tongues were not photographed. Pictures art/export/previews/vfx/rollout/*_v6_compare.png (main checkout, untracked). Details in agent-memory fx-v6-fire-redo.
+- 2026-11-26, V5.1 close (docs only; nothing to sync or import). `docs/vfx.md` rewritten to what was built: the kit and the Fresh recipes, the texture library and Fx v6, the booth and the effect report with its budgets, the Pilot flag table (101 flags: 54 ON, 47 OFF, a reason on every OFF row), the house rules, how to test (private-copy Play client, readable booth pictures, the traps), what is still open, and a Removal plan. Nothing deleted: by grep every old texture still has a live caller, `FxKit` has 4 requirers (3 only in old branches of ON flags, WinCinema unflagged) and `Recipes` has 38 call sites (15 in the nine scene deaths, which read no flag). `docs/emotes.md`'s Effects paragraph updated. Status block rewritten (Stages 0 to 4 done as far as the booth and lobby pictures go, 4f partial, nothing seen in a real match). Open and the owner's: sync scripts, a look in a real lobby and case, fire redraw or keep the old flame, deleting the old code. Note docs/agent-memory/vfx-close-2026-11-26.md.
