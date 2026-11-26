@@ -431,6 +431,9 @@ SCANS = {
     "leather": ("brown_leather", 0.4, 0.02, 0.2, 0.9, 0.8),
     "cloth": ("rough_linen", 0.27, 0.012, 0.0, 0.8, 0.6),
     "wool": ("poly_wool_herringbone", 0.27, 0.01, 0.0, 0.7, 0.5),
+    # the match suit: a slightly finer weave (about 20 px a repeat on the 256 map: the map stays 256 so no budget is spent), deeper relief, and a sheen that
+    # follows the weave so the key catches the cloth (graphics plan phase 14, 2026-11-26)
+    "suitwool": ("poly_wool_herringbone", 0.22, 0.03, 0.0, 1.0, 0.8),
     "paper": ("Paper001", 0.3, 0.003, 0.0, 0.5, 0.4),
     "card": ("Paper005", 0.4, 0.004, 0.0, 0.7, 0.5),
     "stone": ("concrete_wall_008", 2.71, 0.03, 0.3, 1.0, 0.9),

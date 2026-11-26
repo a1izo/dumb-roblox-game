@@ -196,7 +196,9 @@ def _hood_shell(name, mat):
 
 def _suit_wool():
     # (a deep charcoal, not black: in a dark room the old near-black wool read as a black box, 2026-10-27)
-    return mk.noisy("Suit_Wool", srgb(42, 42, 47), srgb(58, 58, 64), roughness=0.85, kind="wool")
+    # (2026-11-26: roughness 0.85 left no sheen at all, so a jacket under a key read as flat colour; 0.62 lets the weave
+    # catch it while the shirt (0.7) and the trousers stay quieter)
+    return mk.noisy("Suit_Wool", srgb(40, 40, 45), srgb(62, 62, 69), roughness=0.62, kind="suitwool")
 
 
 def _suit_satin():
