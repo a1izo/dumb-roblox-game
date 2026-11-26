@@ -209,9 +209,12 @@ def science_rooms(s, g):
         fit.floor_faces(s, P.rect_of(r), 0.0, mat)
     ceiling(s, (SX0, SZ0, SX1, SZ1), holes=[stair_well(52.2, 90.0, 104.0)])
     fit.partition(s, (68.0, SZ0), (68.0, SZ1), 0.0, C, "TileWhite", "PlasterLight",
-                  doors=[(55.0 - SZ0, 5.0), (90.0 - SZ0, 4.4)], glass="clear", spans=[(2.0, 14.3), (20.9, 33.8)])
-    fit.partition(s, (68.0, 72.0), (SX1, 72.0), 0.0, C, "TileWhite", "PlasterLight", doors=[(88.0 - 68.0, 4.4)])
-    fit.partition(s, (108.0, SZ0), (108.0, 71.7), 0.0, C, "TileWhite", "TileWhite", doors=[(55.0 - SZ0, 4.4)])
+                  doors=[(55.0 - SZ0, 5.0), (90.0 - SZ0, 4.4)], glass="clear", spans=[(2.0, 14.3), (20.9, 33.8)],
+                  wear=True)
+    fit.partition(s, (68.0, 72.0), (SX1, 72.0), 0.0, C, "TileWhite", "PlasterLight", doors=[(88.0 - 68.0, 4.4)],
+                  wear=True)
+    fit.partition(s, (108.0, SZ0), (108.0, 71.7), 0.0, C, "TileWhite", "TileWhite", doors=[(55.0 - SZ0, 4.4)],
+                  wear=True)
     fit.partition(s, (108.0, 72.3), (108.0, SZ1), 0.0, C, "PlasterLight", "PlasterLight")
     fit.closed_door(s, 107.7, 90.0, 90, 0.0, 4.0, "WoodPanel", sign="講義室 LECTURE ROOM")
     for r, name in ((P.SCI_HALL, "the Faculty of Science"), (P.FORENSIC, "the forensic medicine lab"),
@@ -257,6 +260,15 @@ def forensic(s):
     for x, z in ((80.0, 46.0), (96.0, 46.0), (88.0, 66.0)):
         fit.panel(s, x, z, C, color=fit.COOL, brightness=1.1, range_=20, shadows=(x, z) == (88.0, 66.0))
     fit.plaque(s, 107.7, 10.2, 62.0, 90, 5.0, 0.9, "化学実験室  CHEMISTRY", (240, 236, 226), (26, 40, 60))
+    # Surface detail (graphics plan phase 12, 2026-11-26): one run of pipe along the labs' south wall over the monitor and the
+    # periodic table (the supply to the chemistry bench and the shower), the fire notice at each door, the cork board
+    # and a clock on the wall between the two labs. Nothing here uses a texture the campus did not already carry.
+    kit.pipe_run(s, (68.6, 71.7), (148.0, 71.7), C - 1.1, (0.0, -1.0), seed=11, sheet="grime")
+    kit.pipe_run(s, (67.7, 38.2), (67.7, 107.4), C - 1.1, (-1.0, 0.0), seed=12, sheet="grime")
+    fit.notice(s, 107.7, 51.6, (-1.0, 0.0), 6.0, 1.0)
+    fit.notice(s, 91.8, 71.7, (0.0, -1.0), 6.0, 1.0)
+    s.prop("PinBoard", 107.6, 63.5, 90, 1.0, 6.2)
+    kit.wall_clock(s, 107.7, 7.4, 68.8, 90, 0.6)
 
 
 def chemistry(s):
@@ -284,9 +296,12 @@ def chemistry(s):
     s.tube("PaintYellow", (110.0, 7.0, 70.4), (110.0, 5.6, 70.0), 0.04, 5)
     for x, z in ((118.0, 45.0), (132.0, 45.0), (125.0, 66.0), (141.0, 56.0)):
         fit.panel(s, x, z, C, color=fit.COOL, brightness=0.8, range_=20, shadows=(x, z) == (125.0, 66.0))
+    fit.notice(s, 108.3, 58.4, (1.0, 0.0), 6.0, 1.0)
+    fit.notice(s, 108.3, 51.6, (1.0, 0.0), 6.0, 1.0)
 
 
 def specimens(s):
+    fit.notice(s, 84.6, 72.3, (0.0, 1.0), 6.0, 1.0)
     for x in (74.0, 80.0, 86.0, 94.0, 100.0):
         s.prop("SpecimenShelf", x, 107.4, 0)
     s.prop("DisplayCase", 88.0, 90.0, 0)

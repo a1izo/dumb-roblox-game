@@ -29,6 +29,8 @@ from maps import scanlib  # noqa: E402
 
 FONTS = common.source("fonts")
 SIZE = 1024
+# A sheet that is not the usual 1024: small notices at 512 (every pixel counts against the scene's megapixel budget).
+SIZES = {"AgencyNotes": 512}
 COLS, ROWS = 3, 2
 TALL = 1.414  # a poster is 1 wide and this high
 
@@ -263,9 +265,83 @@ SHEETS["Agency"] = [
     ]),
 ]
 
+# The Bureau's small notices (graphics plan phase 12, 2026-11-26): what is taped, pinned and screwed to the walls of HQ's
+# offices, kept on their own 512 px sheet (SIZES) so the framed prints' sheet stays as it was. Hung with fit.notice.
+# Nothing here says what happens in a match; "lines" are bars standing for typed text too small to read.
+GREEN = (40, 120, 70)
+YELLOW = (236, 196, 40)
+GREY = (150, 150, 146)
+
+
+def _lines(x0, x1, y_top, count, step=0.072, h=0.028, colour=GREY, shorten=(0.0,)):
+    """Rows of bars standing for typed lines: from y_top down, the last ones shorter."""
+    rows = []
+    for k in range(count):
+        cut = shorten[k % len(shorten)] if k == count - 1 else 0.0
+        y = y_top - k * step
+        rows.append(("box", x0, y - h, x1 - (x1 - x0) * (cut + (0.0 if k != count - 1 else 0.4)), y, colour))
+    return rows
+
+
+SHEETS["AgencyNotes"] = [
+    # 0. The fire notice: "In case of fire. Keep calm. Use the fire stair. Do not use the lifts. Meet at the
+    #    assembly point."
+    dict(paper=(232, 232, 226), items=[
+        ("box", 0.0, 1.14, 1.0, 1.414, (36, 38, 46)),
+        ("text", "火災の場合", "round", 0.1, 0.5, 1.28, (232, 232, 226)),
+        ("text", "IN CASE OF FIRE", "caps", 0.085, 0.5, 1.17, YELLOW),
+        ("text", "落ち着いて行動", "round", 0.07, 0.5, 1.0, INK),
+        ("text", "非常階段を使う", "round", 0.07, 0.5, 0.86, GREEN),
+        ("text", "エレベーター使用禁止", "round", 0.06, 0.5, 0.72, INK),
+        ("box", 0.12, 0.62, 0.88, 0.635, INK),
+        ("box", 0.2, 0.34, 0.62, 0.46, GREEN), ("tri", 0.62, 0.3, 0.62, 0.5, 0.8, 0.4, GREEN),
+        ("text", "FIRE STAIR", "caps", 0.07, 0.5, 0.2, GREEN),
+        ("box", 0.0, 0.0, 1.0, 0.07, YELLOW),
+    ]),
+    # 1. The duty roster: a header, rows of names (bars) against three shifts, ticks in the boxes.
+    dict(paper=(236, 234, 224), items=[
+        ("text", "当番表", "round", 0.11, 0.5, 1.26, INK),
+        ("text", "DUTY ROSTER", "caps", 0.07, 0.5, 1.16, INK),
+        ("box", 0.06, 1.1, 0.94, 1.115, INK),
+    ] + [("box", 0.08, 1.0 - k * 0.14, 0.34, 1.0 - k * 0.14 + 0.04, GREY) for k in range(7)]
+      + [("box", 0.06, 0.05 + k * 0.14, 0.94, 0.057 + k * 0.14, (110, 110, 108)) for k in range(8)]
+      + [("box", 0.4 + 0.19 * c, 0.74 - 0.14 * r + (0.0 if (r + c) % 2 else 0.0), 0.49 + 0.19 * c, 0.78 - 0.14 * r, (40, 40, 44))
+         for r in range(5) for c in range(3) if (r * 3 + c * 2) % 3 != 1]),
+    # 2. A memo: "Memo. To all staff." and eleven lines of typed text, a signature bar.
+    dict(paper=(240, 238, 228), items=[
+        ("text", "連絡", "round", 0.12, 0.5, 1.24, INK),
+        ("text", "MEMO", "caps", 0.1, 0.5, 1.12, INK),
+        ("box", 0.08, 1.06, 0.92, 1.075, INK),
+    ] + _lines(0.1, 0.9, 0.98, 11) + [("box", 0.55, 0.1, 0.88, 0.125, INK), ("box", 0.58, 0.14, 0.8, 0.165, (60, 60, 70))]),
+    # 3. A handwritten note on a yellow sheet: "Back at one o'clock."
+    dict(paper=(238, 216, 120), items=[
+        ("text", "一時に", "brush", 0.28, 0.5, 0.88, (40, 38, 46)),
+        ("text", "戻ります", "brush", 0.24, 0.5, 0.52, (40, 38, 46)),
+        ("text", "BACK AT 1", "caps", 0.12, 0.5, 0.22, (70, 66, 60)),
+    ]),
+    # 4. A door notice: "Authorised persons only." A black band over yellow, a stripe of hazard at the foot.
+    dict(paper=YELLOW, items=[
+        ("box", 0.0, 0.84, 1.0, 1.414, (22, 22, 24)),
+        ("text", "関係者以外", "round", 0.15, 0.5, 1.17, YELLOW),
+        ("text", "立入禁止", "round", 0.15, 0.5, 0.97, YELLOW),
+        ("text", "AUTHORISED", "caps", 0.12, 0.5, 0.62, INK),
+        ("text", "PERSONNEL ONLY", "caps", 0.12, 0.5, 0.42, INK),
+        ("box", 0.0, 0.0, 1.0, 0.14, (22, 22, 24)),
+    ] + [("tri", 0.06 + k * 0.16, 0.0, 0.14 + k * 0.16, 0.14, 0.02 + k * 0.16, 0.14, YELLOW) for k in range(6)]),
+    # 5. The cleaning rota: "Cleaning. Mon to Fri." a grid of days with ticks.
+    dict(paper=(232, 236, 232), items=[
+        ("text", "清掃当番", "round", 0.11, 0.5, 1.26, INK),
+        ("text", "CLEANING", "caps", 0.07, 0.5, 1.16, INK),
+        ("box", 0.06, 1.1, 0.94, 1.115, INK),
+    ] + [("box", 0.06, 0.08 + k * 0.17, 0.94, 0.086 + k * 0.17, (110, 110, 108)) for k in range(6)]
+      + [("box", 0.06 + 0.176 * c, 0.08, 0.066 + 0.176 * c, 1.1, (110, 110, 108)) for c in range(6)]
+      + [("box", 0.1 + 0.176 * c, 0.14 + 0.17 * r, 0.2 + 0.176 * c, 0.18 + 0.17 * r, GREEN)
+         for r in range(5) for c in range(5) if (r + c * 2) % 3 != 2]),
+]
+
 # How hard the weather has been on a venue's posters: Tokyo's hang in the street, the campus's indoors, the Bureau's
 # behind glass in frames.
-WEATHER = {"Tokyo": 1.0, "Campus": 0.3, "Agency": 0.08}
+WEATHER = {"Tokyo": 1.0, "Campus": 0.3, "Agency": 0.08, "AgencyNotes": 0.12}
 
 
 def name(venue):
@@ -348,17 +424,17 @@ def _text(coll, words, face, size, x, y, z, rgb):
     coll.objects.link(obj)
 
 
-def _weathered(sheet, seed, hard=1.0):
+def _weathered(sheet, seed, hard=1.0, size=SIZE):
     """The printed sheet as it hangs: on creased paper and, as far as `hard` says (1: in the street),
     bleached a little and grimy at the foot."""
     r = np.random.default_rng(seed)
     paper = scanlib.load("Paper003", 256)
     grain = paper["color"] @ scanlib.LUMA
-    grain = np.tile(grain / float(grain.mean()), (4, 4))[:SIZE, :SIZE]
+    grain = np.tile(grain / float(grain.mean()), (4, 4))[:size, :size]
     out = scanlib.to_linear(sheet) * np.power(grain, 0.8)[..., None]
-    up = np.mgrid[0:SIZE, 0:SIZE][0] / SIZE * COLS  # height on the sheet, in poster widths
+    up = np.mgrid[0:size, 0:size][0] / size * COLS  # height on the sheet, in poster widths
     foot = (up % TALL) / TALL  # 0 at each poster's foot
-    grime = (1 - scanlib.smoothstep(0.0, 0.22, foot)) * (0.25 + 0.5 * scanlib.drift(r, SIZE, 2, 12))
+    grime = (1 - scanlib.smoothstep(0.0, 0.22, foot)) * (0.25 + 0.5 * scanlib.drift(r, size, 2, 12))
     out = out * (1 - 0.45 * hard * grime[..., None])
     grey = (out @ scanlib.LUMA)[..., None]
     out = grey + (out - grey) * (1 - 0.18 * hard)  # the sun has had the colours
@@ -368,6 +444,7 @@ def _weathered(sheet, seed, hard=1.0):
 
 def make(venue):
     posters = SHEETS[venue]
+    px = SIZES.get(venue, SIZE)
     scene = bpy.data.scenes.new("Prints")
     coll = bpy.data.collections.new("Prints")
     scene.collection.children.link(coll)
@@ -396,7 +473,7 @@ def make(venue):
     scene.collection.objects.link(cam)
     scene.camera = cam
     scene.render.engine = "BLENDER_EEVEE"
-    scene.render.resolution_x = scene.render.resolution_y = SIZE
+    scene.render.resolution_x = scene.render.resolution_y = px
     scene.render.film_transparent = False
     scene.view_settings.view_transform = "Standard"
     scene.world = bpy.data.worlds.new("PrintWorld")
@@ -405,13 +482,13 @@ def make(venue):
     scene.render.image_settings.file_format = "PNG"
     bpy.ops.render.render(write_still=True, scene=scene.name)
     img = bpy.data.images.load(raw, check_existing=False)
-    buf = np.empty(SIZE * SIZE * 4, dtype=np.float32)
+    buf = np.empty(px * px * 4, dtype=np.float32)
     img.pixels.foreach_get(buf)
     bpy.data.images.remove(img)
     os.remove(raw)
-    sheet = _weathered(buf.reshape(SIZE, SIZE, 4)[..., :3], seed=len(venue), hard=WEATHER.get(venue, 1.0))
-    rgba = np.concatenate([sheet, np.ones((SIZE, SIZE, 1), dtype=np.float32)], axis=-1)
-    out = bpy.data.images.new(f"Prints{venue}", SIZE, SIZE, alpha=False)
+    sheet = _weathered(buf.reshape(px, px, 4)[..., :3], seed=len(venue), hard=WEATHER.get(venue, 1.0), size=px)
+    rgba = np.concatenate([sheet, np.ones((px, px, 1), dtype=np.float32)], axis=-1)
+    out = bpy.data.images.new(f"Prints{venue}", px, px, alpha=False)
     out.pixels.foreach_set(rgba.ravel())
     path = os.path.join(common.TEXTURES, f"Prints{venue}.png")
     out.filepath_raw = path

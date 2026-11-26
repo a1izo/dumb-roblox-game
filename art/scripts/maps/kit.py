@@ -71,14 +71,14 @@ def _hash(*values):
     return h
 
 
-def overlay(s, a, b, y0, y1, out, u_a, u_b, v0, v1):
-    """A quad of the grime sheet on an upright face from ground point a to b (x, z), facing out (x, z),
+def overlay(s, a, b, y0, y1, out, u_a, u_b, v0, v1, sheet=None):
+    """A quad of the grime sheet (or another alpha sheet, `sheet`) on an upright face from ground point a to b (x, z), facing out (x, z),
     between heights y0 and y1: u_a and u_b the sheet's u at a and at b, v0 and v1 its v at the foot and
     the top. The right way round whichever way the face was given."""
     right = (out[1], -out[0])  # to the right of someone looking at the face
     if (b[0] - a[0]) * right[0] + (b[1] - a[1]) * right[1] < 0:
         a, b, u_a, u_b = b, a, u_b, u_a
-    s.polygon(GRIME, [(a[0], y0, a[1]), (b[0], y0, b[1]), (b[0], y1, b[1]), (a[0], y1, a[1])],
+    s.polygon(sheet or GRIME, [(a[0], y0, a[1]), (b[0], y0, b[1]), (b[0], y1, b[1]), (a[0], y1, a[1])],
               uvs=[(u_a, v0), (u_b, v0), (u_b, v1), (u_a, v1)], tile=1.0)
 
 
@@ -123,6 +123,127 @@ def grime(s, a, t, outward, length, spans, doors, ops, base, seed):
             c0 = cell * 0.25
             ua, ub = (c0 + 0.25, c0) if side < 0 else (c0, c0 + 0.25)  # mirrored on the left of a door
             overlay(s, ground(u0), ground(u1), y0, y1, out, ua, ub, 0.0, 0.25)
+
+
+# Small wear (graphics plan phase 12): scuffs at chair height, tape marks, the dirt round a light switch, and stains under
+# the joints of a pipe run, pasted from the wear sheet (maps/wear.py) like the grime. A wall face whose trim spec has
+# "wear": True gets up to three, of three different kinds in a row, picked by a hash of where the wall stands.
+
+WEAR = "WearOffice"
+WEAR_CELLS = {"scuff": 0, "stain": 1, "switch": 2, "tape": 3}
+# A venue that cannot afford the wear sheet's megapixels ("wear": "grime" in a trim spec) wears the grime sheet's own cells
+# instead: kicks for scuffs, spots and runs for a stain, the soft rub round a switch; no tape marks.
+GRIME_WEAR_CELLS = {"scuff": 0, "stain": 3, "switch": 1}
+WEAR_OFFSET = 0.07  # off a bare face (the grime is 0.03: two alpha layers within 0.02 of each other flicker); notices hang at 0.10
+WEAR_OFFSET_DADO = 0.13
+PLATE = (0.34, 0.55, 0.12)  # a light switch's plate: across, up, deep
+
+
+def wear_quad(s, kind, a, b, y0, y1, out, flip=False, sheet=None):
+    """One mark of the wear sheet on an upright face from ground point a to b (x, z), facing out (x, z), between y0 and y1."""
+    if sheet == "grime":
+        cell = GRIME_WEAR_CELLS.get(kind)
+        if cell is not None:
+            ua, ub = (cell * 0.25 + 0.25, cell * 0.25) if flip else (cell * 0.25, cell * 0.25 + 0.25)
+            overlay(s, a, b, y0, y1, out, ua, ub, 0.0, 0.25)
+        return
+    cell = WEAR_CELLS[kind]
+    c, row = cell % 2, cell // 2
+    u0, u1 = (c * 0.5, c * 0.5 + 0.5)
+    if flip:
+        u0, u1 = u1, u0
+    overlay(s, a, b, y0, y1, out, u0, u1, row * 0.5, row * 0.5 + 0.5, sheet=WEAR)
+
+
+def _clash(ops, u0, u1, y0, y1, base):
+    for op in ops:
+        o0, o1 = op["at"] - op["w"] / 2, op["at"] + op["w"] / 2
+        if o1 > u0 - 0.05 and o0 < u1 + 0.05 and op.get("top", base + 8.5) > y0 and op.get("bottom", base) < y1:
+            return True
+    return False
+
+
+def wear(s, a, t, outward, length, spans, doors, ops, base, seed, dado=False, sheet=None):
+    """The wear on one face of a wall from a (x, z) along t, facing outward: 0 to 3 marks on the unbroken stretches
+    (never on glass, a door or a casing), each of a different kind from the one before it and 2 studs clear of it."""
+    r = random.Random(seed)
+    out = (outward[0], outward[2])
+    off = WEAR_OFFSET_DADO if dado else WEAR_OFFSET  # (scuffs only: tape and switches sit above the dado)
+    rot = math.degrees(math.atan2(-t[2], t[0]))
+
+    def ground(u, d=WEAR_OFFSET):
+        return (a[0] + t[0] * u + out[0] * d, a[1] + t[2] * u + out[1] * d)
+
+    kinds = ["scuff", "tape", "switch"] if sheet != "grime" else ["scuff", "switch"]
+    r.shuffle(kinds)
+    placed = []  # (u0, u1)
+    for kind in kinds[: r.choice((0, 1, 1, 2, 2, 3))]:  # (3 means all the kinds there are)
+        if kind == "switch":
+            if not doors:
+                continue
+            d0, d1 = r.choice(doors)
+            side = r.choice((-1, 1))
+            for side in (side, -side):
+                uc = d1 + 0.5 if side > 0 else d0 - 0.5
+                u0, u1 = uc - 0.7, uc + 0.7
+                y0, y1 = base + 3.5, base + 4.9
+                if u0 < 0.1 or u1 > length - 0.1 or _clash(ops, u0, u1, y0, y1, base):
+                    continue
+                if any(u1 > p0 - 2.0 and u0 < p1 + 2.0 for p0, p1 in placed):
+                    continue
+                wear_quad(s, "switch", ground(u0), ground(u1), y0, y1, out, sheet=sheet)
+                c = ground(uc, 0.06)
+                s.box("CreamTrim", (c[0], base + 4.2, c[1]), (PLATE[0], PLATE[1], PLATE[2]), rot)
+                placed.append((u0, u1))
+                break
+            continue
+        size = 2.0
+        y0 = base + ((0.65 if sheet != "grime" else 1.2) if kind == "scuff" else 4.6)
+        for _ in range(10):
+            span = r.choice([sp for sp in spans if sp[1] - sp[0] > size + 0.8] or [None])
+            if span is None:
+                break
+            u0 = r.uniform(span[0] + 0.4, span[1] - 0.4 - size)
+            u1 = u0 + size
+            if _clash(ops, u0, u1, y0, y0 + size, base) or any(u1 > p0 - 2.0 and u0 < p1 + 2.0 for p0, p1 in placed):
+                continue
+            d = off if kind == "scuff" else WEAR_OFFSET
+            wear_quad(s, kind, ground(u0, d), ground(u1, d), y0, y0 + size, out, flip=r.random() < 0.5, sheet=sheet)
+            placed.append((u0, u1))
+            break
+
+
+def pipe_run(s, a, b, y, out, radius=0.2, off=0.38, mat="Steel", clamp="DarkMetal", step=6.0, joint=9.0, seed=0,
+             sheet=None):
+    """A run of pipe along a wall face from ground point a to b (x, z) at height y, standing `off` out from the face
+    (out: the unit vector away from the wall): clamps every `step` studs, a collar at every joint, and a damp stain on
+    the wall under the first two or three collars. 8-sided: about 250 triangles a 25-stud run."""
+    length = math.dist(a, b)
+    d = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
+    rot = math.degrees(math.atan2(-d[1], d[0]))
+
+    def at(u, away):
+        return (a[0] + d[0] * u + out[0] * away, a[1] + d[1] * u + out[1] * away)
+
+    p0, p1 = at(0.0, off), at(length, off)
+    s.tube(mat, (p0[0], y, p0[1]), (p1[0], y, p1[1]), radius, 8)
+    count = max(1, int(length // step))
+    for k in range(count):
+        u = (length / count) * (k + 0.5)
+        c = at(u, (off + radius) / 2 - 0.02)
+        s.box(clamp, (c[0], y, c[1]), (0.3, radius * 2 + 0.12, off + radius + 0.04), rot)
+    r = random.Random(seed)
+    joints = []
+    u = joint * r.uniform(0.35, 0.8)
+    while u < length - 1.0:
+        c0, c1 = at(u - 0.22, off), at(u + 0.22, off)
+        s.tube(clamp, (c0[0], y, c0[1]), (c1[0], y, c1[1]), radius * 1.4, 8)
+        joints.append(u)
+        u += joint * r.uniform(0.85, 1.15)
+    for u in joints[:3]:
+        if r.random() < 0.75:
+            wear_quad(s, "stain", at(u - 1.0, WEAR_OFFSET), at(u + 1.0, WEAR_OFFSET), y - radius * 1.4 - 2.1,
+                      y - radius * 1.4 - 0.1, out, flip=r.random() < 0.5, sheet=sheet)
 
 
 def trims(s, a, t, outward, spans, height, spec, base=0.0):
@@ -233,11 +354,18 @@ def wall(s, a, b, height, *, thick=1.0, base=0.0, core="PlasterDark", side_n=Non
         trims(s, add3(a, scale(n, thick / 2)), t, n, runs, height, trim_n, base)
         if trim_n.get("grime"):
             grime(s, add3(a, scale(n, thick / 2)), t, n, length, spans, doors, ops, base, _hash(a[0], a[1], 1))
+        if trim_n.get("wear"):
+            wear(s, add3(a, scale(n, thick / 2)), t, n, length, spans, doors, ops, base, _hash(a[0], a[1], 3),
+                 dado=bool(trim_n.get("wainscot")), sheet="grime" if trim_n.get("wear") == "grime" else None)
     if trim_s:
         trims(s, add3(a, scale(n, -thick / 2)), t, scale(n, -1), runs, height, trim_s, base)
         if trim_s.get("grime"):
             grime(s, add3(a, scale(n, -thick / 2)), t, scale(n, -1), length, spans, doors, ops, base,
                   _hash(a[0], a[1], 2))
+        if trim_s.get("wear"):
+            wear(s, add3(a, scale(n, -thick / 2)), t, scale(n, -1), length, spans, doors, ops, base,
+                 _hash(a[0], a[1], 4), dado=bool(trim_s.get("wainscot")),
+                 sheet="grime" if trim_s.get("wear") == "grime" else None)
     return length, t, n
 
 

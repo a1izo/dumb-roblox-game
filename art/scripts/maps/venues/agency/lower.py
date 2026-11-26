@@ -46,10 +46,10 @@ def security(s):
     # key cabinet hang; the wall to the observation room with the staff door; a wall of monitors on that wall's west
     # face. Both painted dark below a rail, as institutions paint the part that gets kicked.
     fit.partition(s, (-100.0, -48.0), (-58.0, -48.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(14.0, 5.0)],
-                  glass="blinds", spans=[(0.6, 10.7), (19.6, 29.0)], dado_n=("PlasterDark", "BlackTrim"))
+                  glass="blinds", spans=[(0.6, 10.7), (19.6, 29.0)], dado_n=("PlasterDark", "BlackTrim"), wear=True)
     fit.framed(s, -82.0, 6.4, -48.3, 0, 1.5, 4, "BlackTrim", 0.12)  # the floor's evacuation plan, by the door
     fit.partition(s, (-58.0, -75.0), (-58.0, -48.0), Y, C, "PlasterDark", "PlasterGrey", doors=[(23.0, 4.2)],
-                  dado_n=("WoodPanel", "BlackTrim", 3.0), dado_s=("PlasterDark", "BlackTrim"))
+                  dado_n=("WoodPanel", "BlackTrim", 3.0), dado_s=("PlasterDark", "BlackTrim"), wear=True)
     # A bulkhead over the monitor wall, carrying their cables (the room's ceiling lights stand clear of it, at x -79).
     s.box("PlasterGrey", (-60.3, C - 0.8, -61.35), (4.0, 1.6, 26.1), skip=("+y",))
     s.box("BlackTrim", (-62.33, C - 1.6, -61.35), (0.1, 0.16, 26.1))  # (its foot 0.08 under the soffit's)
@@ -108,15 +108,17 @@ def security(s):
     fit.ceiling_lights(s, P.ROOMS_L1["security"], C, "panel", [(-80.0, -66.0), (-84.0, -57.0)], spacing=14.0,
                        flicker=[(-80.0, -66.0)], color=fit.COOL, brightness=0.85, shadows=[(-84.0, -57.0)])
     fit.plaque(s, -86.0, 10.6, -47.7, 180, 5.2, 0.9, "警備室 SECURITY")
+    # Conduit along the south wall above the blinds, running into the bulkhead's side (the cables go on over the monitors).
+    kit.pipe_run(s, (-99.4, -48.3), (-61.8, -48.3), C - 1.1, (0.0, -1.0), seed=1)
 
 
 def observation(s):
     # The one-way mirror onto interview 1 (dark glass: it stops a flash either way).
     # (Walnut panelling up to a rail on the room's three walls; the mirror's sill at 3.2 keeps its casing clear of it.)
     fit.partition(s, (-44.0, -75.0), (-44.0, -48.0), Y, C, "PlasterDark", "PlasterDark", glass="mirror",
-                  spans=[(3.0, 14.5)], sill=3.2, head=9.0, dado_s=("WoodPanel", "BlackTrim", 3.0))
+                  spans=[(3.0, 14.5)], sill=3.2, head=9.0, dado_s=("WoodPanel", "BlackTrim", 3.0), wear=True)
     fit.partition(s, (-58.0, -48.0), (-44.0, -48.0), Y, C, "PlasterDark", "PlasterGrey", doors=[(7.0, 4.4)],
-                  dado_n=("WoodPanel", "BlackTrim", 3.0))
+                  dado_n=("WoodPanel", "BlackTrim", 3.0), wear=True)
     # Padded leather over the panelling on the west wall, in squares, so nothing said here carries through to the
     # interview room. (Over the filing cabinet's top, 5.0, and clear of the staff door, z -54.1 to -49.9.)
     for y in (6.45, 8.95):
@@ -130,6 +132,7 @@ def observation(s):
     s.prop("CoffeeMachine", -55.8, -58.2, -90, 1.0, top)  # front to the room, back to the wall
     s.box("NeonRed", (-51.0, 10.1, -48.34), (1.2, 0.35, 0.05))  # the red lamp over the door: recording
     s.sign((-51.0, 10.9, -48.36), 0, 3.0, 0.5, "録音中 ON AIR", "GothamBlack", (255, 90, 90), None)
+    fit.notice(s, -47.6, -48.3, (0.0, -1.0), 6.0, 1.0, 0)  # the fire notice by the door
     s.light("point", (-51.0, 9.8, -49.1), (255, 60, 60), 8, 0.5)
     fit.ceiling_lights(s, P.ROOMS_L1["observation"], C, "panel", [(-50.0, -62.0)], spacing=13.5, size=3.0,
                        brightness=0.75, shadows=[(-50.0, -62.0)])
@@ -155,9 +158,10 @@ def interview(s, x0, x1, table):
 
 
 def interviews(s):
-    fit.partition(s, (-44.0, -58.0), (-8.0, -58.0), Y, C, "PlasterDark", "PlasterGrey", doors=[(9.0, 4.4), (27.0, 4.4)])
-    fit.partition(s, (-26.0, -75.0), (-26.0, -58.0), Y, C, "PlasterDark", "PlasterDark")
-    fit.partition(s, (-8.0, -75.0), (-8.0, -48.0), Y, C, "PlasterGrey", "PlasterDark")
+    fit.partition(s, (-44.0, -58.0), (-8.0, -58.0), Y, C, "PlasterDark", "PlasterGrey", doors=[(9.0, 4.4), (27.0, 4.4)],
+                  wear=True)
+    fit.partition(s, (-26.0, -75.0), (-26.0, -58.0), Y, C, "PlasterDark", "PlasterDark", wear=True)
+    fit.partition(s, (-8.0, -75.0), (-8.0, -48.0), Y, C, "PlasterGrey", "PlasterDark", wear=True)
     interview(s, -44.0, -26.0, (-35.0, -66.5))
     interview(s, -26.0, -8.0, (-19.5, -64.5))
     s.station("Phone", "Interview Recorder", -12.4, -71.4, 180, prop="StationPhoneDesk", spare=True)
@@ -165,7 +169,8 @@ def interviews(s):
     # to it and to the corridor round the core, no wall at the corner between them, 2026-10-26), and from the
     # corridor's end too, where a plant stood in the gap (the user's call of 2026-10-27: a solid wall); a bench, the
     # water cooler, a plant in its corner by the copy room, the room plates.
-    fit.partition(s, (-44.0, -48.0), (-16.0, -48.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(14.0, 5.0)])
+    fit.partition(s, (-44.0, -48.0), (-16.0, -48.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(14.0, 5.0)],
+                  wear=True)
     fit.partition(s, (-16.0, -48.0), (-8.0, -48.0), Y, C, "PlasterGrey", "PlasterGrey")
     s.prop("Bench", -30.0, -56.6, 180)
     s.prop("WaterCooler", -41.8, -56.9, 180)
@@ -176,12 +181,19 @@ def interviews(s):
     fit.ceiling_lights(s, (-44.0, -58.0, -8.0, -48.0), C, "downlight", [(-35.0, -53.0), (-17.0, -53.0)],
                        spacing=9.0, dead=[(-11.0, -53.0)], brightness=0.75, range_=16, shadows=[(-35.0, -53.0)])
     kit.wall_clock(s, -26.0, 10.6, -57.7, 180, 0.9)
+    # Conduit along the interview rooms' wall, notices by the doors: the fire notice, the roster, a memo, the sign for
+    # authorised persons.
+    kit.pipe_run(s, (-43.6, -57.7), (-8.4, -57.7), C - 1.1, (0.0, 1.0), seed=2)
+    for x, idx in ((-38.9, 4), (-31.1, 0), (-21.1, 1), (-12.9, 2)):
+        fit.notice(s, x, -57.7, (0.0, 1.0), 6.0, 1.0, idx)
+    for x, idx in ((-33.8, 5), (-26.3, 0)):
+        fit.notice(s, x, -48.3, (0.0, -1.0), 6.0, 1.0, idx)
 
 
 def copy_room(s):
     fit.partition(s, (-8.0, -48.0), (24.0, -48.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(16.0, 5.0)],
-                  glass="clear")
-    fit.partition(s, (24.0, -75.0), (24.0, -48.0), Y, C, "PlasterGrey", "PlasterLight")
+                  glass="clear", wear=True)
+    fit.partition(s, (24.0, -75.0), (24.0, -48.0), Y, C, "PlasterGrey", "PlasterLight", wear=True)
     for x in (-2.0, 6.0):
         s.prop("Photocopier", x, -71.4, 180)
     top = fit.counter(s, 16.0, -72.4, 180, 9.0, d=2.2, top="WhiteTrim", body="PlasterGrey")
@@ -196,13 +208,19 @@ def copy_room(s):
     fit.table(s, 8.0, -60.0, 6.0, 3.0, 0, Y)
     s.sheet(8.0, 2.8, -60.0, spare=True)
     s.prop("TrashCan", 21.8, -66.0, 0)
+    # Conduit down the wall onto the lockers, the fire notice, a memo and a clock on it.
+    kit.pipe_run(s, (23.7, -74.0), (23.7, -49.0), C - 1.1, (-1.0, 0.0), seed=3)
+    fit.notice(s, 23.7, -56.0, (-1.0, 0.0), 6.0, 1.0, 0)
+    fit.notice(s, 23.7, -69.0, (-1.0, 0.0), 6.0, 1.0, 2)
+    s.prop("WallClock", 23.4, -62.5, 90, 0.6, 9.0)
     fit.ceiling_lights(s, P.ROOMS_L1["copy"], C, "panel", [(4.0, -68.0), (12.0, -60.0)], spacing=11.0,
                        dead=[(16.0, -55.0)], color=fit.COOL, brightness=1.1, range_=18, shadows=[(12.0, -60.0)])
     fit.plaque(s, 8.0, 10.6, -47.7, 180, 5.0, 0.9, "複写室 COPY ROOM")
 
 
 def lockers(s):
-    fit.partition(s, (24.0, -48.0), (50.0, -48.0), Y, C, "TileMetroGrey", "PlasterGrey", doors=[(13.0, 4.4)])
+    fit.partition(s, (24.0, -48.0), (50.0, -48.0), Y, C, "TileMetroGrey", "PlasterGrey", doors=[(13.0, 4.4)],
+                  wear=True)
     for z in (-70.8, -64.6, -58.4):
         s.prop("CoinLockers", 48.3, z, 90)
     for z in (-70.8, -64.6):
@@ -215,14 +233,19 @@ def lockers(s):
                        color=lightbook.OFFICE, brightness=1.15, range_=18, flicker=[(37.0, -53.0)],
                        shadows=[(37.0, -64.0)])
     fit.plaque(s, 37.0, 10.6, -47.7, 180, 5.4, 0.9, "更衣室 LOCKERS")
+    # Conduit along the wall over the benches, the fire notice by the door, the sign for authorised persons, a clock.
+    kit.pipe_run(s, (24.6, -48.3), (49.4, -48.3), C - 1.1, (0.0, -1.0), seed=4)
+    fit.notice(s, 40.3, -48.3, (0.0, -1.0), 6.0, 1.0, 0)
+    fit.notice(s, 33.7, -48.3, (0.0, -1.0), 6.0, 1.0, 4)
+    s.prop("WallClock", 29.5, -48.6, 0, 0.7, 9.4)
 
 
 def break_room(s):
     # (Walnut below a rail on the break room's side of both its walls.)
     fit.partition(s, (50.0, -75.0), (50.0, -40.0), Y, C, "PlasterLight", "TileMetroGrey", doors=[(31.0, 5.0)],
-                  dado_n=("WoodPanel", "Wood"))
+                  dado_n=("WoodPanel", "Wood"), wear=True)
     fit.partition(s, (50.0, -40.0), (100.0, -40.0), Y, C, "PlasterLight", "PlasterGrey", doors=[(25.0, 5.0)],
-                  dado_n=("WoodPanel", "Wood"))
+                  dado_n=("WoodPanel", "Wood"), wear=True)
     # The city at night framed on the west wall past the machines, a clock by the door, a rug in the sofa's corner.
     fit.framed(s, 50.3, 6.4, -52.5, -90, 2.6, 2, "BlackTrim")
     s.prop("WallClock", 56.0, -40.6, 0, 0.7, 8.6)
@@ -250,6 +273,11 @@ def break_room(s):
                        spacing=12.5, dead=[(94.0, -47.0)], brightness=0.85, shadows=[(80.0, -58.0)])
     s.sound("mapOfficeHum", (75.0, 8.0, -58.0), 40.0, 0.2)
     fit.plaque(s, 64.0, 10.6, -40.4, 0, 5.0, 0.9, "休憩室 BREAK ROOM")
+    # Conduit along the west wall over the vending machines (the kitchenette's supply), the fire notice by the door, the
+    # cleaning rota by the other one.
+    kit.pipe_run(s, (50.3, -74.4), (50.3, -40.6), C - 1.1, (1.0, 0.0), seed=5)
+    fit.notice(s, 50.3, -49.0, (1.0, 0.0), 6.0, 1.0, 0)
+    fit.notice(s, 80.0, -40.3, (0.0, -1.0), 6.0, 1.0, 5)
 
 
 def night_desk(s):
@@ -461,9 +489,13 @@ def corridor(s):
     the floor guide."""
     # (the lobby's wall carried on south to the interview hall, two doorways into the bullpen: it lay open to the
     # corridor all along here, 2026-10-26)
-    fit.partition(s, (-16.0, -48.0), (-16.0, 2.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(12.0, 5.0), (38.0, 5.0)])
+    fit.partition(s, (-16.0, -48.0), (-16.0, 2.0), Y, C, "PlasterGrey", "PlasterGrey", doors=[(12.0, 5.0), (38.0, 5.0)],
+                  wear=True)
     corridor_lights(s, C)
     kit.extinguisher(s, P.CORE[0] - 0.5, -36.0, 90)
+    # Conduit down the bullpen's wall, a fire notice between the two doorways.
+    kit.pipe_run(s, (-15.7, -47.0), (-15.7, 1.0), C - 1.1, (1.0, 0.0), seed=6)
+    fit.notice(s, -15.7, -24.0, (1.0, 0.0), 6.0, 1.0, 0)
     kit.extinguisher(s, P.CORE[2] + 0.5, -24.0, -90)
     fit.exit_sign(s, P.CORE[0] - 0.5, 10.0, -20.0, 90)
     fit.plaque(s, P.CORE[0] - 0.5, 7.2, -28.0, 90, 7.0, 4.2,

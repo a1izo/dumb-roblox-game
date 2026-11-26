@@ -103,10 +103,12 @@ def dressed(mat, trims):
 
 
 def partition(s, a, b, y0, y1, mat_n="PlasterLight", mat_s="PlasterLight", doors=(), glass=None, spans=None,
-              sill=3.2, head=9.4, thick=0.6, trim=True, core=None, door_frame="DarkMetal"):
+              sill=3.2, head=9.4, thick=0.6, trim=True, core=None, door_frame="DarkMetal", wear=False):
     """An inner wall from a to b (x, z) between floor y0 and ceiling y1. doors: [(distance from a
     to the door's middle, width)]. glass: a GLASS kind for windows along the wall above waist
-    height, all along it between the doors, or only over spans [(u0, u1)] when given."""
+    height, all along it between the doors, or only over spans [(u0, u1)] when given. wear: kicks, the rub round a
+    switch and a plate (kit.wear, graphics plan phase 12), drawn from the grime sheet: the campus has no megapixels
+    to spare for a sheet of its own."""
     JOINS.append((tuple(a), tuple(b), thick))
     length = math.dist(a, b)
     ops = []
@@ -129,11 +131,33 @@ def partition(s, a, b, y0, y1, mat_n="PlasterLight", mat_s="PlasterLight", doors
                         "frame": "BlackMetal", "mullions": "BlackMetal", "cols": max(1, round((u1 - u0) / 4.5)),
                         "rows": 1, "glass": pane, "blinds": blinds, "blinds_side": 1, "slat": "CreamTrim",
                         "sill": "BlackMetal", "casing": 0.2, "see_through": through})
-    trims = {"base": "BlackTrim", "grime": True} if trim else None
+    trims = {"base": "BlackTrim", "grime": True, "wear": "grime" if wear else False} if trim else None
     side_n, trim_n = dressed(mat_n, trims)
     side_s, trim_s = dressed(mat_s, trims)
     kit.wall(s, a, b, y1, thick=thick, base=y0, core=core or side_n, side_n=side_n, side_s=side_s, openings=ops,
              trim_n=trim_n, trim_s=trim_s)
+
+
+def notice(s, x, z, out, y, w):
+    """A notice on a wall face, made of parts (the campus has no megapixels for a sheet of notices): a white sheet, a dark
+    header with a yellow rule under it, a green arrow, and bars of text; read as the fire notice. x, z at the face, out the
+    unit vector (x, z) away from it, y its middle, w its width (its height is a sheet of paper's, 1.414 times that)."""
+    h = w * 1.414
+    right = (out[1], -out[0])
+    rot = math.degrees(math.atan2(-right[1], right[0]))
+
+    def at(u, v, depth):
+        return (x + right[0] * u + out[0] * depth, y + v, z + right[1] * u + out[1] * depth)
+
+    s.box("WhiteTrim", at(0, 0, 0.05), (w, h, 0.05), rot)
+    s.box("BlackTrim", at(0, h * 0.37, 0.085), (w, h * 0.26, 0.02), rot)
+    s.box("PaintYellow", at(0, h * 0.235, 0.085), (w, h * 0.025, 0.02), rot)
+    for k, width in enumerate((0.72, 0.6, 0.66)):
+        s.box("DarkMetal", at(0, h * 0.1 - k * h * 0.075, 0.08), (w * width, h * 0.022, 0.01), rot)
+    s.box("PaintTeal", at(-w * 0.1, -h * 0.28, 0.08), (w * 0.46, h * 0.07, 0.01), rot)
+    s.box("PaintTeal", at(w * 0.19, -h * 0.28, 0.08), (w * 0.1, h * 0.15, 0.01), rot, skip=())
+    for sign in (-1, 1):
+        s.box("CreamTrim", at(sign * (w / 2 - 0.12), h / 2 - 0.08, 0.095), (0.22, 0.1, 0.02), rot + sign * 8)
 
 
 def closed_door(s, x, z, rot, y=0.0, w=4.0, leaf="WoodPanel", sign=None):

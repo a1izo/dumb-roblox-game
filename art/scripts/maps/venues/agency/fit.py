@@ -52,12 +52,13 @@ def reset():
 
 
 def partition(s, a, b, y0, y1, mat_n="PlasterGrey", mat_s="PlasterGrey", doors=(), glass=None, spans=None,
-              sill=3.2, head=9.4, thick=0.6, trim=True, core=None, dado_n=None, dado_s=None):
+              sill=3.2, head=9.4, thick=0.6, trim=True, core=None, dado_n=None, dado_s=None, wear=False):
     """An inner wall from a to b (x, z) between floor y0 and ceiling y1. doors: [(distance from a
     to the door's middle, width)]. glass: a GLASS kind for windows along the wall above waist
     height, all along it between the doors, or only over spans [(u0, u1)] when given.
     dado_n / dado_s: the lower wall of that side in another finish up to a rail, (material, rail material[,
-    stiles every so many studs]): two-tone paint, or panelling when stiles are given."""
+    stiles every so many studs]): two-tone paint, or panelling when stiles are given. wear: scuffs, tape marks and the
+    dirt round a switch on both faces (kit.wear, graphics plan phase 12); only the rooms that get used."""
     JOINS.append((tuple(a), tuple(b), thick))
     length = math.dist(a, b)
     ops = []
@@ -80,13 +81,13 @@ def partition(s, a, b, y0, y1, mat_n="PlasterGrey", mat_s="PlasterGrey", doors=(
                         "frame": "BlackMetal", "mullions": "BlackMetal", "cols": max(1, round((u1 - u0) / 4.5)),
                         "rows": 1, "glass": pane, "blinds": blinds, "blinds_side": 1, "slat": "CreamTrim",
                         "sill": "BlackMetal", "casing": 0.2, "see_through": through})
-    trims = {"base": "BlackTrim", "grime": True} if trim else None
+    trims = {"base": "BlackTrim", "grime": True, "wear": wear} if trim else None
 
     def dado(spec):
         if not spec:
             return trims
         # (A side with a dado always has its skirting, even on a wall otherwise left bare.)
-        out = dict(trims or {"base": "BlackTrim", "grime": True}, wainscot=(spec[0], DADO_H), rail=spec[1])
+        out = dict(trims or {"base": "BlackTrim", "grime": True, "wear": wear}, wainscot=(spec[0], DADO_H), rail=spec[1])
         if len(spec) > 2:
             out["stiles"] = spec[2]
         return out
@@ -98,6 +99,25 @@ def partition(s, a, b, y0, y1, mat_n="PlasterGrey", mat_s="PlasterGrey", doors=(
 
 # A dado's rail: under a glass partition's sill (3.2) and its casings (from 3.0), clear of both.
 DADO_H = 2.8
+
+
+def notice(s, x, z, out, y, w, index):
+    """A small notice from the Bureau's own sheet (maps/prints.py "AgencyNotes": 0 the fire notice, 1 a duty roster, 2 a
+    memo, 3 a handwritten note, 4 "authorised persons only", 5 a cleaning rota) taped to a wall face: x, z at the face,
+    out the unit vector (x, z) away from it, y its middle, w its width (a sheet of paper's height is 1.414 times that).
+    Two scraps of tape at its top corners, the wear sheet's tape marks being where such a notice came down."""
+    from maps import prints
+
+    h = w * prints.TALL
+    right = (out[1], -out[0])
+    f = (x + out[0] * 0.10, z + out[1] * 0.10)
+    a = (f[0] - right[0] * w / 2, f[1] - right[1] * w / 2)
+    b = (f[0] + right[0] * w / 2, f[1] + right[1] * w / 2)
+    prints.paste(s, "AgencyNotes", a, b, y - h / 2, y + h / 2, out, index)
+    rot = math.degrees(math.atan2(-right[1], right[0]))
+    for sign in (-1, 1):
+        c = (f[0] + right[0] * sign * (w / 2 - 0.12) + out[0] * 0.02, f[1] + right[1] * sign * (w / 2 - 0.12) + out[1] * 0.02)
+        s.box("CreamTrim", (c[0], y + h / 2 - 0.08, c[1]), (0.22, 0.1, 0.02), rot + sign * 8)
 
 
 def closed_door(s, x, z, rot, y=0.0, w=4.0, leaf="WoodPanel", sign=None):
