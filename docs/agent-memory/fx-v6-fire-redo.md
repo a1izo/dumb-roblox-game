@@ -43,3 +43,34 @@ picture: bloom, fog and the Governor are not in it.
 `art/export`, not a worktree), sync scripts (Rojo), then take the old-left / new-right pictures again in the real lobby and only then turn `Pilot.on.manualFire`,
 `trialWisp`, `worldCandle`, `worldBrazier`, `readyCandles` on. Luau ideas if the real picture still whites out: lower the heart layer's Brightness (2.3) for
 `kind = "fire"`, or draw it smaller than 0.5.
+
+**IMPORTED 2026-11-26 (place v654 saved, not published).** Uploaded from the main checkout's `art/export` (display name `DeathsGambitModels_Fx_v6`, creator userId
+1503130900): asset **123679627680169**, operation 6b3a9b22-e026-40d7-8e45-759aaef4c60b, moderation Approved. Two traps new to the steps in [[imports-by-open-cloud]]:
+`open_cloud_invoke` with `files` wants `[{name:"fileContent", path, contentType:"model/fbx"}]` and the JSON goes in `body` as `{"request":"<json string>"}`; and the
+permission PATCH body is `{subjectType:"Universe", subjectId, action:"Use", requests:[{assetId (a number), grantToDependencies:true}]}` (the v5 note's flat form is
+refused: "Invalid SubjectType"). Inserted into ServerStorage, checked (marker `DeathsGambitModelsFx_Version_6`, 49 `Tex_` quads, the four fire sheets), PackageLink removed,
+`PivotTo` the old model's pivot (cubes back at O (75.19, -54.00, 88.40), X +64 in x, Y +64 in y), v5 model destroyed, one Fx model in Workspace, shared with the
+universe (`successAssetIds [123679627680169]`). In a Play session the Fx model is not in the Client's Workspace (the game moves it): `Tex.real("VfxFire")` and
+`"VfxCandle"` read true anyway.
+
+**Flags, seen in the real lobby with the v6 sheets (2026-11-26; private client copy built by rojo into Studio's content folder, stands at about x -5, z 92, camera 3 to
+7 studs in front; old `Recipes.flame` left, `Fresh.flame` right):**
+- `worldCandle` and `readyCandles` ON. New candle = a defined teardrop with a dark wick dot and an inner glow, flickers frame to frame, about as tall as the old tall
+  narrow shard but rounder; the old reads as a plain white cone. Report (booth): `world_candle` FAIL (dots 67%, no ignition burst, 3 layers, no core, 2 lights; 3 particles,
+  3 emitters) to `world_candle_fresh` PASS (dots 25%, 2 particles, 3 emitters, 0 lights): not costlier (world loops budget 12 particles, 4 emitters, 0 lights).
+  Pictures `worldCandle_v6_compare.png` (scale 0.7, close), `readyCandles_v6_compare.png` (0.55, close), `worldCandle_v6_far_compare.png`.
+- `manualFire`, `trialWisp`, `worldBrazier` stay OFF. The v6 fire is one cohesive flame, but in the lobby it is a flat, milky silhouette with a bright heart at its base:
+  `LightEmission` 1 (the kit's default) adds the tint to the grey floor and fog, so DANGER red goes pink, amber goes cream, pale stays pale, and the body colour hardly
+  matters (a body colour of (110,10,10) looked the same). Alpha-blending the body (LightEmission 0 to 0.5, with brighter colour) gives a brick-brown or salmon paper
+  cut-out. The old flame is smaller, with a lit red glow and a white core, and reads as fire. The new stands about 1.5 to 2 times taller at the same scale. Brazier report:
+  `world_brazier_fresh` still FAIL ("no dark layer"), old FAIL (41 particles, 6 emitters). Pictures: `manualFire_v6_compare.png`, `trialWisp_v6_compare.png`,
+  `worldBrazier_v6_compare.png` (cut from `fire_v6_three_pairs.png`, three pairs, red / amber / pale), `manualFire_v6_tuning_variants.png` (old + body brightness and
+  blend variants). The aura's `VfxAuraFlame` tongues were not photographed (a fresh play shot of the aura was not taken).
+- **Heart tuning kept** (Fire.luau, kind "fire" only, so the aura and the candle are unchanged): the white-hot layer is `HEART_SIZE` 0.38 of the body (was 0.5),
+  `HEART_BRIGHT` 1.5 (was 2.3), colour lerped 35% from ramp[1] toward ramp[2]. It stops the middle whiting out; it does not fix the flat body. Only reachable behind the
+  three OFF flags (and the booth's `recipe_new_flame_fire`).
+- **What would make the fire work (not done, needs a sheet redraw + import):** a body sheet with real value contrast (dark edges, a lit core gradient, so the additive
+  draw shows structure) and a shorter silhouette, tested through the lobby, not through a dark simulation: the simulation in `art/export/previews/vfx/fire_v6/` did not
+  predict the grey-floor pink. Also try a cheaper Luau route first: `LightEmission` about 0.5 with a darker, more saturated body colour plus the old recipe's soot layer.
+- Trap: `Fresh.flame`'s `set()` runs a 0.3 s tween that calls `apply()` every frame, which re-enables every emitter; edit emitter properties by hand only after it ends.
+Checks: stylua and selene clean on Fire.luau; `fx.verify` 0 problems; the nine Vfx and Emote specs against this code (bundle, Play client): 103 passed, 0 failed.

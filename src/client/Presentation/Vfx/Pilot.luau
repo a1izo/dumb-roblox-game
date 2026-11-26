@@ -117,12 +117,12 @@ Pilot.on = {
 	diveCrash = true, -- (the dive crash into the roof, Controllers/DiveController; report FAIL to PASS, 14 emitters to 8, 25% dots to 0, picture: a clean flat blow with a lit core against the old spiked slab)
 	eyesDealEyes = false, -- (the Deathsinger eyes lit, Presentation/EyesDealFx; report only, not photographed)
 	eyesDealIgnite = false, -- (your eyes taking fire, Presentation/EyesDealFx; seen: a bright white star in the middle of the face, the deal red is lost, so not shipped)
-	manualFire = false, -- (the Manual's red fire, UI/WorldFx; seen 2026-11-25 with the real VfxFire (Fx 5): a fan of white spikes with pink fringes, the danger red lost, bigger than the old flame: not better)
-	trialWisp = false, -- (the Trial's wisp flame, Onboarding/TrialWisp; seen 2026-11-25 with the real VfxFire: detached white teardrops, the amber lost, the old flame is a single cohesive one: not better)
+	manualFire = false, -- (the Manual's red fire, UI/WorldFx; seen 2026-11-25 with the real VfxFire (Fx 5): a fan of white spikes with pink fringes, the danger red lost, bigger than the old flame: not better; 2026-11-26 with the v6 sheet and a smaller, dimmer heart layer: one cohesive flame now, but a flat pink silhouette on the lobby's grey, the red still lost: not better)
+	trialWisp = false, -- (the Trial's wisp flame, Onboarding/TrialWisp; seen 2026-11-25 with the real VfxFire: detached white teardrops, the amber lost, the old flame is a single cohesive one: not better; 2026-11-26 v6: a cohesive cream slab, amber lost, twice the old's height: not better)
 	-- stage 4e, the world (read when a flame is stood: World/Flames, World/ReadyCircle); false = the old flame
-	worldCandle = false, -- (the maps' candle wicks: the plain kit candle costs less (3 to 2 particles, report FAIL to PASS) but a picture shows it little better than the old; the full one is crisper but 3 to 8 particles: not shipped)
-	worldBrazier = false, -- (the maps' braziers: 41 to 2 particles, but the picture shows a bigger fan of separate pale spikes, not a clearly better fire)
-	readyCandles = false, -- (the lobby's ring of ready candles: same call as worldCandle, same lamp; off for the same reason)
+	worldCandle = true, -- (the maps' candle wicks: ON 2026-11-26 with the v6 candle sheet (Fx 6): in the lobby a teardrop with a dark wick against the old tall narrow shard, flickers, report FAIL to PASS (3 to 2 particles, 3 emitters, 2 lights to 0); before v6 it was not better)
+	worldBrazier = false, -- (the maps' braziers: 41 to 2 particles; with the v6 sheet (2026-11-26) one cohesive flame, but a flat milky silhouette (additive pale on the lobby's grey) against the old's lit glow, report "no dark layer": not better)
+	readyCandles = true, -- (the lobby's ring of ready candles: same call as worldCandle, same lamp, ON for the same reason)
 	-- stage 4a: Presentation/Materialize (the smoke and specks, and the glint when whole; callers that ask for quiet are unchanged)
 	materialize = true,
 	-- stage 4a: the glint where a soul is gathered (Specter/GhostController) and where the dive's string takes the body

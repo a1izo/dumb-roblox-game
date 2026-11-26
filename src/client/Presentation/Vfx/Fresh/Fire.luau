@@ -41,6 +41,7 @@ export type FlameOptions = {
 
 local CANDLE = { Color3.new(1, 1, 1), Color3.fromRGB(238, 232, 214), Color3.fromRGB(120, 110, 92) } :: Palette.Ramp
 local STEADY = 4
+local HEART_SIZE, HEART_BRIGHT, HEART_TINT = 0.38, 1.5, 0.35 -- (a fire's heart layer, see Fire.flame)
 
 -- A flame on `parent` (a part or attachment at the wick; the flame stands up from it).
 function Fire.flame(parent: Instance, options: FlameOptions?): Flame
@@ -100,16 +101,19 @@ function Fire.flame(parent: Instance, options: FlameOptions?): Flame
 		}),
 		true
 	)
-	-- the white-hot heart, a smaller tongue low inside it: the brightest thing in the flame
+	-- the white-hot heart, a smaller tongue low inside it: the brightest thing in the flame. A fire (the big one) keeps its
+	-- colour: its heart is drawn smaller, dimmer and a little toward the body's colour, because at 0.5 and 2.3 a sheet of
+	-- many tongues is over 1.0 nearly everywhere and the whole middle whites out (seen in the lobby 2026-11-25 and 2026-11-26).
+	local fire = kind == "fire"
 	add(
 		attachmentAt(Vector3.new(0, -size * 0.1, 0)),
 		steady({
 			tex = tex,
-			color = ramp[1],
-			size = size * 0.5,
+			color = if fire then ramp[1]:Lerp(ramp[2], HEART_TINT) else ramp[1],
+			size = size * (if fire then HEART_SIZE else 0.5),
 			face = "up",
 			locked = true,
-			bright = 2.3,
+			bright = if fire then HEART_BRIGHT else 2.3,
 			z = 0.4,
 		}),
 		true
