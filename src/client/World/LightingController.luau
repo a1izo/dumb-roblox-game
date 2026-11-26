@@ -446,8 +446,23 @@ local function apply(look: LightingPresets.Look, time: number)
 	applyLamps(look, time)
 end
 
+-- The graphics quality this client is drawn at (Enum.QualityLevel's value: 0 = Automatic, 1 to 21), nil when it cannot be
+-- read. Under LightingPresets.LOW_UNDER Roblox draws no bloom, so a map takes its low-quality variant (resolve).
+local function qualityLevel(): number?
+	local ok, level = pcall(function()
+		return (settings() :: any).Rendering.QualityLevel
+	end)
+	if ok and typeof(level) == "EnumItem" then
+		return (level :: any).Value
+	end
+	return nil
+end
+local quality: number? = qualityLevel()
+
 local function resolve(): LightingPresets.Look
 	return LightingPresets.resolve(currentPreset, moodOf(moodName()), {
+		-- (only the maps: the Grey Realm is grey on purpose and the meeting room is lit by its own key)
+		lowness = if currentVenue == "map" then LightingPresets.lowness(quality) else 0,
 		low = Settings.get("lowGraphics") == true,
 		noGlow = Governor.cut("glow"),
 		fewShadows = Governor.cut("shadows"),
@@ -751,6 +766,12 @@ function LightingController.init()
 	task.spawn(function()
 		while true do
 			task.wait(0.5)
+			-- (the player may change the setting, or Automatic may move it, at any time)
+			local level = qualityLevel()
+			if level ~= quality then
+				quality = level
+				update(true)
+			end
 			update()
 			-- Move the shadow-casting keys along with the camera (one lamp at a time as you walk, held: pickKeys).
 			local look = currentLook

@@ -924,7 +924,34 @@ local function scaled(color: Color3, factor: number): Color3
 	)
 end
 
+-- The graphics quality levels under this have lost the bloom (seen 2026-11-26 in the three finished rooms: a window's
+-- halo, a neon strip's glow and a sign's bloom are there at level 10 and gone at level 5; the lamps, their pools and the
+-- grade hold down to level 1). It is also where the notice that asks players to raise the setting starts
+-- (World/QualityNotice).
+LightingPresets.LOW_UNDER = 7
+-- How much of the low-quality variant a client at this level gets, 0 to 1: nothing from LOW_UNDER up, all of it at
+-- level 1. `level` is Enum.QualityLevel's value (0 = Automatic, which could be anything, so a quarter of it; nil when
+-- it cannot be read: nothing).
+function LightingPresets.lowness(level: number?): number
+	if level == nil then
+		return 0
+	elseif level <= 0 then
+		return 0.25
+	end
+	return math.clamp((LightingPresets.LOW_UNDER - level) / (LightingPresets.LOW_UNDER - 1), 0, 1)
+end
+
+-- What a map's low-quality variant adds at lowness 1 (resolve): the glow the bloom gave is made up by colour and
+-- depth, so the picture is a plainer version of the same one and not a dull one. The fill stays under the owner's cap
+-- (the maps' ambient is held to 32..56 on its brightest channel by the spec).
+local LOW_SATURATION = 0.1
+local LOW_CONTRAST = 0.06
+local LOW_DENSITY = 0.08
+local LOW_FILL = 0.12
+local FILL_CAP = 55 / 255
+
 export type Options = {
+	lowness: number?, -- LightingPresets.lowness of the client's graphics quality (maps only): the low-quality variant
 	low: boolean?, -- the Low graphics setting: both of the cuts below
 	noGlow: boolean?, -- no bloom, haze or glare, thinner air (World/Governor's second cut)
 	fewShadows: boolean?, -- at most two shadow-casting lamps, shorter lamp range (its third)
@@ -945,21 +972,29 @@ function LightingPresets.resolve(p: Preset, m: Mood, options: Options?): Look
 		tint = tint:Lerp(creep.tint, creep.amount * t)
 		exposure += creep.exposure * t
 	end
+	local k = math.clamp(o.lowness or 0, 0, 1)
+	-- (the fill rises only up to the cap, and never lowers a preset that is above it already)
+	local fill = 1
+	if k > 0 then
+		local brightest =
+			math.max(p.ambient.R, p.ambient.G, p.ambient.B, p.outdoorAmbient.R, p.outdoorAmbient.G, p.outdoorAmbient.B)
+		fill = math.max(1, math.min(1 + LOW_FILL * k, FILL_CAP / math.max(brightest, 0.001)))
+	end
 	return {
 		clockTime = p.clockTime,
 		brightness = p.brightness * m.brightness,
 		exposure = exposure,
-		ambient = scaled(p.ambient, m.ambient),
-		outdoorAmbient = scaled(p.outdoorAmbient, m.ambient),
+		ambient = scaled(p.ambient, m.ambient * fill),
+		outdoorAmbient = scaled(p.outdoorAmbient, m.ambient * fill),
 		envDiffuse = p.envDiffuse,
 		envSpecular = p.envSpecular,
-		density = math.clamp((p.density + m.density) * (if noGlow then 0.6 else 1), 0, 1),
+		density = math.clamp((p.density + m.density) * (if noGlow then 0.6 else 1) * (1 + LOW_DENSITY * k), 0, 1),
 		haze = if noGlow then 0 else p.haze,
 		glare = if noGlow then 0 else p.glare,
 		atmosphereColor = p.atmosphereColor,
 		decay = p.decay,
-		saturation = math.clamp(p.saturation + m.saturation, -1, 1),
-		contrast = math.clamp(p.contrast + m.contrast, -1, 1),
+		saturation = math.clamp(p.saturation + m.saturation + LOW_SATURATION * k, -1, 1),
+		contrast = math.clamp(p.contrast + m.contrast + LOW_CONTRAST * k, -1, 1),
 		tint = tint,
 		bloom = if noGlow then 0 else p.bloom * m.bloom,
 		bloomSize = p.bloomSize,

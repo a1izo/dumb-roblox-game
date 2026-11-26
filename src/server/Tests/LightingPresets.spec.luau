@@ -57,6 +57,35 @@ return function(t)
 			expect(look.haze).to.equal(0)
 			expect(look.keyLights <= 2).to.equal(true)
 		end)
+		it("maps lowness from the graphics quality: none from level 7 up, all of it at level 1", function()
+			expect(LightingPresets.lowness(21)).to.equal(0)
+			expect(LightingPresets.lowness(LightingPresets.LOW_UNDER)).to.equal(0)
+			expect(LightingPresets.lowness(1)).to.equal(1)
+			expect(LightingPresets.lowness(3) > LightingPresets.lowness(5)).to.equal(true)
+			expect(LightingPresets.lowness(nil)).to.equal(0)
+			expect(LightingPresets.lowness(0)).to.be.near(0.25)
+		end)
+		it(
+			"gives a map at a low quality a plainer look: more colour and depth, fill under the cap, no bloom change",
+			function()
+				for _, mapId in ipairs({ "TokyoDistrict", "TaskForceHQ", "UniversityCampus" }) do
+					local p = LightingPresets.maps[mapId]
+					local full = LightingPresets.resolve(p, LightingPresets.NEUTRAL, { lowness = 0 })
+					local low = LightingPresets.resolve(p, LightingPresets.NEUTRAL, { lowness = 1 })
+					expect(low.saturation > full.saturation).to.equal(true)
+					expect(low.contrast > full.contrast).to.equal(true)
+					expect(low.density >= full.density).to.equal(true)
+					expect(low.bloom).to.equal(full.bloom)
+					local brightest = math.max(low.ambient.R, low.ambient.G, low.ambient.B)
+					expect(brightest <= math.max(56 / 255, full.ambient.R, full.ambient.G, full.ambient.B) + 1e-6).to.equal(
+						true
+					)
+					-- (the fill is never lowered to make room)
+					expect(brightest >= math.max(full.ambient.R, full.ambient.G, full.ambient.B) - 1e-6).to.equal(true)
+					expect(LightingPresets.resolve(p, LightingPresets.NEUTRAL).saturation).to.equal(full.saturation)
+				end
+			end
+		)
 		it("keeps the rebuilt maps readable at night", function()
 			-- Maps rebuilt at full size get a night you can see in (the moods still darken them). Noir since
 			-- 2026-11-02, seen in play tests at full quality: the fill stays low so the lamps' pools are the
@@ -66,8 +95,8 @@ return function(t)
 				local p = LightingPresets.maps[mapId]
 				local brightest = math.max(p.ambient.R, p.ambient.G, p.ambient.B)
 				expect(p.exposure >= 0).to.equal(true)
-				expect(brightest >= 32 / 255).to.equal(true)
-				expect(brightest <= 56 / 255).to.equal(true)
+				expect(brightest >= 32 / 255 - 1e-6).to.equal(true)
+				expect(brightest <= 56 / 255 + 1e-6).to.equal(true) -- (Color3 keeps float32: 56 / 255 read back is a hair over)
 				-- Mist and haze make the mood, but another player must stay recognisable at ~80 studs.
 				expect(p.density <= 0.45).to.equal(true)
 				local grim = LightingPresets.resolve(p, LightingPresets.moods.Blackout)
